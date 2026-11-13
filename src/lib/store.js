@@ -16,6 +16,7 @@ export const state = {
   positions: [],
   candidates: [],
   hires: [],
+  nomina: [],
   loadedAt: null,
 };
 
@@ -40,12 +41,13 @@ export async function loadAll({ silent = false } = {}) {
   if (!silent) set({ loading: true, error: null });
   try {
     const staff = state.isStaff;
-    const [stages, positions, candidates, hires, terna] = await Promise.all([
+    const [stages, positions, candidates, hires, terna, nomina] = await Promise.all([
       fetchAll('stages', '*', 'orden'),
       fetchAll(staff ? 'positions' : 'positions_public'),
       fetchAll(staff ? 'candidates' : 'candidates_public'),
       staff ? fetchAll('hires') : Promise.resolve([]),
       staff ? fetchAll('position_candidates', '*', 'added_at') : Promise.resolve([]),
+      staff ? fetchAll('nomina', '*', 'nombre') : Promise.resolve([]),
     ]);
     const stageMap = Object.fromEntries(stages.map((s) => [s.code, s]));
     if (staff) {
@@ -63,7 +65,7 @@ export async function loadAll({ silent = false } = {}) {
         c._ternas.push(p);
       }
     }
-    set({ stages, stageMap, positions, candidates, hires, loading: false, error: null, loadedAt: new Date() });
+    set({ stages, stageMap, positions, candidates, hires, nomina, loading: false, error: null, loadedAt: new Date() });
   } catch (e) {
     console.error(e);
     set({ loading: false, error: e.message || String(e) });
