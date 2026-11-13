@@ -225,7 +225,10 @@ function listSection(today, all) {
   return html`<section class="card">
     <header class="list-head">
       <h2 class="card-title">Listado <small class="muted">${rows.length} candidatos</small></h2>
-      <label class="search"><input type="search" id="cand-search" placeholder="Buscar nombre, DNI, mail, teléfono…" value="${search}"></label>
+      <div class="list-actions">
+        <label class="search"><input type="search" id="cand-search" placeholder="Buscar nombre, DNI, mail, teléfono…" value="${search}"></label>
+        <button class="btn btn--sm btn--excel" data-act="fichas" title="Una fila por persona con silla, datos personales, talles, etapas y nómina">⬇ Excel fichas completas (${rows.length})</button>
+      </div>
     </header>
     ${rows.length ? html`<div class="table-wrap"><table class="tbl tbl--cand is-clickable">
       <thead><tr><th>Nombre</th><th>Etapa</th><th class="hide-sm">Área · Servicio</th><th class="hide-sm">Posición</th><th class="hide-sm">Procedencia</th><th class="hide-sm">Localidad</th><th>Silla</th><th class="hide-sm num">Días</th><th class="hide-sm">CV</th></tr></thead>
@@ -257,6 +260,15 @@ function bind(el) {
       if (kc) { filters.stage = new Set(GRUPOS[kc.dataset.kpi]()); page = 1; persist(); render(el); return; }
       if (act === 'rep-csv') {
         downloadCSV(`reporte_${repFilas}_x_${repCols}_${todayISO()}.csv`, `Reporte: ${tituloSeleccion()}\r\n` + pivotCSV(pivot(filterRows(null), repVal[repFilas], repVal[repCols]), dimLabel(repFilas)));
+        return;
+      }
+      if (act === 'fichas') {
+        let rows = filterRows(null);
+        if (search) { const q = norm(search); rows = rows.filter((c) => norm([c.nombre, c.dni, c.mail, c.telefono, c.posicion, c.localidad].join(' ')).includes(q)); }
+        const g = grupoActivo();
+        import('../lib/reporteExcel.js').then(({ descargarFichas }) => descargarFichas(rows, { sufijo: g && g !== 'todos' ? g : (activeCount() ? 'filtrado' : 'todos') }))
+          .then((n) => toast(`Excel descargado: ${n} fichas`, 'ok'))
+          .catch((err) => toast('No se pudo armar el Excel: ' + err.message, 'error'));
         return;
       }
       if (act === 'rep-personas') {

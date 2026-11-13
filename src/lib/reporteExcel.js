@@ -21,6 +21,78 @@ function pivotSheet(name, title, rows, rowFn, colFn, rowLabel) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Ficha completa: una fila por persona con TODO (silla, etapas, datos
+// personales, talles, nómina). Solo RRHH.
+// ---------------------------------------------------------------------------
+const edadDe = (iso) => {
+  if (!iso) return null;
+  const [y, m, d] = iso.split('-').map(Number); const h = new Date();
+  return h.getFullYear() - y - ((h.getMonth() + 1 < m || (h.getMonth() + 1 === m && h.getDate() < d)) ? 1 : 0);
+};
+const FICHA_COLS = [
+  // persona
+  ['Apellido y nombre', 30], ['Etapa', 17], ['Área', 6], ['Servicio / sector', 15], ['Posición', 22], ['Origen', 13],
+  // silla
+  ['Silla: puesto', 26], ['Silla: POS SAP', 11], ['Silla: Id SAP', 10], ['Silla: área', 8], ['Silla: sector', 15], ['Jefe directo', 15],
+  ['Diagrama', 9], ['Turno', 7], ['Encuadre', 8], ['Tipo de cobertura', 17], ['Categoría', 9], ['Puesto de convenio', 28], ['Convenio', 26],
+  ['Básico', 12], ['Mes objetivo', 11], ['Estado de la silla', 17], ['Candidatos en terna', 9], ['También en terna de', 24],
+  // datos personales
+  ['DNI', 11], ['CUIL', 14], ['Fecha de nacimiento', 12], ['Edad', 6], ['Domicilio', 32], ['Localidad', 20], ['Provincia', 11],
+  ['Teléfono', 14], ['Mail', 28],
+  // talles
+  ['Talle mameluco', 9], ['Talle botas', 8], ['Talle campera', 9],
+  // proceso
+  ['CV recibido', 12], ['En entrevista', 12], ['Entrevista OK', 9], ['Validación RRLL', 12], ['EPO (examen)', 12], ['Clínica', 12],
+  ['Aptitud recibida', 12], ['Aptitud', 16], ['Fecha de ingreso', 12], ['Días CV → ingreso', 9], ['Motivos de baja', 24], ['Comentarios', 30],
+  ['CV cargado', 8],
+  // nómina
+  ['Nº personal', 10], ['CECO', 12], ['POS (nómina)', 11], ['Yacimiento (nómina)', 11], ['Función (nómina)', 20], ['DDJJ', 10], ['Regalo kit', 10],
+  ['Estado en nómina', 10], ['Fecha de baja', 12],
+];
+export function fichaCompletaSheet(cands, { incluirSinFicha = true, titulo = 'Ficha completa por persona' } = {}) {
+  const posByCand = new Map(state.positions.filter((p) => p.candidate_id).map((p) => [p.candidate_id, p]));
+  const nomByCand = new Map(state.nomina.filter((n) => n.candidate_id).map((n) => [n.candidate_id, n]));
+  const nomByDni = new Map(state.nomina.filter((n) => n.dni).map((n) => [String(n.dni), n]));
+  const days = (a, b) => (a && b ? Math.round((Date.parse(b) - Date.parse(a)) / 864e5) : null);
+  const fila = (c, p, n) => [
+    c?.nombre || p?.candidato_nombre || n?.nombre, c ? lbl(c.stage) : p ? lbl(p.stage) : '', c?.area || p?.yacimiento, c?.servicio, c?.posicion,
+    c?.procedencia || p?.procedencia || n?.procedencia,
+    p?.puesto, p?.pos_sap, p?.id_sap, p?.yacimiento, p?.sector, p?.jefe_directo, p?.diagrama, p?.turno, p?.encuadre, p?.tipo_cobertura,
+    p?.categoria, p?.puesto_convenio, p?.convenio, p?.basico != null ? Number(p.basico) : null, p?.fecha_objetivo ? fmtMonth(p.fecha_objetivo) : '',
+    p ? lbl(p.stage) : '', p?.cand_activos || null,
+    (c?._ternas || []).filter((t) => t.candidate_id !== c.id).map((t) => `${t.puesto} (${t.yacimiento})`).join(', '),
+    c?.dni || n?.dni, c?.cuil || n?.cuil, c?.fecha_nacimiento || n?.fecha_nacimiento, edadDe(c?.fecha_nacimiento || n?.fecha_nacimiento),
+    c?.domicilio || n?.domicilio, c?.localidad || n?.localidad || p?.localidad, c?.provincia || n?.provincia, c?.telefono || n?.telefono, c?.mail || n?.mail,
+    c?.talle_mameluco || n?.talle_mameluco, c?.talle_botas || n?.talle_botas, c?.talle_campera || n?.talle_campera,
+    c?.cv_recibido, c?.en_entrevista, c ? (c.entrevista_ok ? 'Sí' : 'No') : '', c?.validacion_rrll, c?.epo, c?.clinica, c?.aptitud_recibida, c?.aptitud,
+    c?.fecha_ingreso || p?.fecha_ingreso || n?.fecha_ingreso, days(c?.cv_recibido, c?.fecha_ingreso), (c?.motivos_baja || []).join(', '), c?.comentarios,
+    c ? (c.cv_path ? 'Sí' : 'No') : '',
+    n?.nro_pers, n?.ceco, n?.pos, n?.yacimiento, n?.funcion || n?.titling, n?.ddjj, n?.regalo_kit, n?.estado, n?.fecha_baja,
+  ];
+  const rows = [...cands].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+    .map((c) => fila(c, posByCand.get(c.id) || c._silla, nomByCand.get(c.id) || (c.dni ? nomByDni.get(String(c.dni)) : null)));
+  if (incluirSinFicha) {
+    // personas sentadas sin ficha de candidato (movimientos internos): datos desde la nómina
+    const nomByPos = new Map(state.nomina.filter((n) => n.position_id).map((n) => [n.position_id, n]));
+    for (const p of state.positions) {
+      if (p.candidate_id || !(p.candidato_nombre || '').trim()) continue;
+      rows.push(fila(null, p, nomByPos.get(p.id)));
+    }
+  }
+  return {
+    name: 'Ficha completa', title: titulo, note: 'Datos personales: uso interno de RRHH. Una fila por persona.',
+    columns: FICHA_COLS.map(([header, width]) => ({ header, width })), rows,
+  };
+}
+
+export async function descargarFichas(cands, { incluirSinFicha = false, sufijo = '' } = {}) {
+  const { downloadXlsx } = await import('./xlsx.js');
+  downloadXlsx(`Fichas_completas${sufijo ? '_' + sufijo : ''}_${todayISO()}.xlsx`,
+    [fichaCompletaSheet(cands, { incluirSinFicha, titulo: `Ficha completa por persona${sufijo ? ' · ' + sufijo.replace(/_/g, ' ') : ''}` })]);
+  return cands.length;
+}
+
 export function armarLibro() {
   const hoy = todayISO();
   const staff = state.isStaff;
@@ -117,6 +189,7 @@ export function armarLibro() {
   if (!staff) return sheets;
 
   // ---------------- solo RRHH ----------------
+  sheets.push(fichaCompletaSheet(C));
   sheets.push({
     name: 'Candidatos', title: 'Candidatos PP (con datos personales — uso interno RRHH)',
     columns: [['Nombre', 30], ['Etapa', 18], ['Área', 6], ['Servicio', 14], ['Posición', 22], ['Origen', 13], ['Localidad', 20], ['Provincia', 11],
