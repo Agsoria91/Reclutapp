@@ -155,7 +155,8 @@ const FIELDS = [
   ['fecha_ingreso', 'Fecha de ingreso', { type: 'date' }], ['f_reconocida', 'Fecha reconocida', { type: 'date' }],
   ['encuadre', 'Encuadre'], ['categoria', 'Categoría'], ['fin_pf', 'Fin plazo fijo', { type: 'date' }], ['titling', 'Titling'],
   ['funcion', 'Función'], ['sector', 'Sector'], ['yacimiento', 'Yacimiento'], ['diagrama', 'Diagrama'], ['jefe', 'Jefe'],
-  ['pos', 'POS'], ['ceco', 'CECO'], ['domicilio', 'Domicilio', { span: 2 }], ['localidad', 'Localidad'], ['provincia', 'Provincia'],
+  ['pos', 'POS'], ['ceco', 'CECO'], ['puesto', 'Puesto (silla)'], ['basico', 'Básico', { type: 'number', step: '0.01' }],
+  ['procedencia', 'Procedencia'], ['tipo_cobertura', 'Tipo de cobertura', { options: [['', '—'], 'Búsqueda externa', 'Movimiento interno'] }], ['domicilio', 'Domicilio', { span: 2 }], ['localidad', 'Localidad'], ['provincia', 'Provincia'],
   ['telefono', 'Teléfono', { type: 'tel' }], ['mail', 'Mail', { type: 'email' }],
   ['talle_mameluco', 'Talle mameluco'], ['talle_botas', 'Talle botas'], ['talle_campera', 'Talle campera'],
   ['aportes', 'Aportes'], ['ddjj', 'DDJJ'], ['regalo_kit', 'Regalo kit'],
@@ -166,9 +167,9 @@ const FIELDS = [
 function openPersona(id) {
   const n = id ? state.nomina.find((x) => x.id === id) : { estado: 'activo', origen: 'planilla' };
   if (!n) return;
-  const hire = n.hire_id ? state.hires.find((h) => h.id === n.hire_id) : null;
+  const silla = n.position_id ? state.positions.find((p) => p.id === n.position_id) : null;
   const root = openDrawer(html`
-    ${hire ? html`<p class="note small">Vinculado al legajo de ingreso (${hire.puesto || ''} · ${hire.area || ''} · ingreso ${fmtDate(hire.fecha_ingreso)}).</p>` : ''}
+    ${silla ? html`<p class="note small">Ingresó por la silla <b>${silla.puesto}</b> (${silla.yacimiento} · ${silla.sector || ''})${n.procedencia ? ` · ${n.procedencia}` : ''}. También aparece en Legajos.</p>` : ''}
     <form id="nom-form" class="form-grid">
       ${FIELDS.map(([k, l, o = {}]) => field(l, k, n[k], o))}
       <div class="form-actions field--wide">
