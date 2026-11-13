@@ -1,0 +1,62 @@
+// Estado global mínimo + carga de datos.
+// La decisión de QUÉ datos viajan al navegador se toma acá y en la base:
+//   - sin login de RRHH se leen SOLO las vistas *_public (sin campos sensibles);
+//   - con login de RRHH se leen las tablas completas (RLS lo permite solo a staff).
+import { sb, fetchAll } from './supabase.js';
+
+const listeners = new Set();
+export const state = {
+  session: null,
+  isStaff: false,
+  authChecked: false,
+  loading: true,
+  error: null,
+  stages: [],
+  stageMap: {},
+  positions: [],
+  candidates: [],
+  hires: [],
+  loadedAt: null,
+};
+
+export function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
+export function emit() { listeners.forEach((fn) => fn(state)); }
+export function set(patch) { Object.assign(state, patch); emit(); }
+
+export async function refreshAuth() {
+  const { data } = await sb.auth.getSession();
+  const session = data.session;
+  let isStaff = false;
+  if (session) {
+    const { data: ok, error } = await sb.rpc('is_staff');
+    isStaff = !error && ok === true;
+  }
+  state.session = session;
+  state.isStaff = isStaff;
+  state.authChecked = true;
+}
+
+export async function loadAll({ silent = false } = {}) {
+  if (!silent) set({ loading: true, error: null });
+  try {
+    const staff = state.isStaff;
+    const [stages, positions, candidates, hires] = await Promise.all([
+      fetchAll('stages', '*', 'orden'),
+      fetchAll(staff ? 'positions' : 'positions_public'),
+      fetchAll(staff ? 'candidates' : 'candidates_public'),
+      staff ? fetchAll('hires') : Promise.resolve([]),
+    ]);
+    const stageMap = Object.fromEntries(stages.map((s) => [s.code, s]));
+    if (staff) {
+      const seat = new Map(positions.filter((p) => p.candidate_id).map((p) => [p.candidate_id, p]));
+      candidates.forEach((c) => { c._silla = seat.get(c.id) || null; });
+    }
+    set({ stages, stageMap, positions, candidates, hires, loading: false, error: null, loadedAt: new Date() });
+  } catch (e) {
+    console.error(e);
+    set({ loading: false, error: e.message || String(e) });
+  }
+}
+
+export const stageOrder = (code) => state.stageMap[code]?.orden ?? -1;
+export const stageLabel = (code) => state.stageMap[code]?.label ?? code;

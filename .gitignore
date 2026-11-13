@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.DS_Store
+*.local
+# Nunca subir planillas con datos personales: se importan desde la app
+*.csv
+*.xlsx
+*.xls
+data/
