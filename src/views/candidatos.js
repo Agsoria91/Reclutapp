@@ -1,39 +1,48 @@
 import { html, raw, $ } from '../lib/html.js';
 import { state, loadAll, stageOrder } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
-import { fmtDate, fmtInt, pct, todayISO, norm, daysBetween } from '../lib/format.js';
-import { applyFilters, countBy, candidateKpis, sectorMatches } from '../lib/kpis.js';
+import { fmtInt, pct, todayISO, norm, daysBetween, fmtMonth } from '../lib/format.js';
+import { countBy, candidateKpis, sectorMatches } from '../lib/kpis.js';
 import {
   stagePill, filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, formData, field,
-  confirmDialog, saveLocal, loadLocal, serializeFilters, restoreFilters,
+  confirmDialog, saveLocal, loadLocal, serializeFilters, restoreFilters, prevSize,
+  animateIn,
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 import { openAssignFromCandidate } from './asignar.js';
 import { celebrate } from './posiciones.js';
 
-const DIMS = ['area', 'sector', 'procedencia', 'stage'];
-const KEY = 'reclutapp.cand.filters';
+// Dimensiones de filtro cruzado: tocar una barra filtra por ese valor y todo
+// lo demás se recalcula. Cada gráfico se calcula con TODOS los filtros menos
+// el suyo, así se ve qué barra está elegida y cuánto pesan las otras.
+const DIMS = ['area', 'sector', 'procedencia', 'stage', 'motivo', 'localidad', 'mes'];
+const DIM_LABEL = { area: 'Área', sector: 'Sector', procedencia: 'Procedencia', stage: 'Etapa', motivo: 'Motivo de baja', localidad: 'Localidad', mes: 'Mes de CV' };
+const KEY = 'reclutapp.cand.filters2';
 const filters = restoreFilters(loadLocal(KEY, {}), DIMS);
 let search = '';
 let page = 1;
 const PAGE = 60;
 
-const getters = {
-  area: (c) => c.area || '—',
-  sector: (c) => c.servicio || '—',
-  procedencia: (c) => c.procedencia || '—',
-  stage: (c) => state.stageMap[c.stage]?.label || c.stage,
+const values = {
+  area: (c) => [c.area || '—'],
+  sector: (c) => [c.servicio || '—'],
+  procedencia: (c) => [c.procedencia || 'Sin dato'],
+  stage: (c) => [state.stageMap[c.stage]?.label || c.stage],
+  motivo: (c) => (c.motivos_baja?.length ? c.motivos_baja : ['—']),
+  localidad: (c) => [c.localidad || 'Sin dato'],
+  mes: (c) => [(c.cv_recibido || c.created_origen || '').slice(0, 7) || 'Sin fecha'],
 };
 
-function optionsFor(dim) {
-  // la etapa solo filtra el listado de RRHH; los KPIs y sus filtros la ignoran
-  const scope = dim === 'stage' ? { ...filters } : { area: filters.area, sector: filters.sector, procedencia: filters.procedencia };
-  const rows = applyFilters(state.candidates, { ...scope, [dim]: new Set() }, getters);
-  const counts = countBy(rows, getters[dim]);
-  if (dim === 'stage') counts.sort((a, b) => (state.stages.find((s) => s.label === a[0])?.orden ?? 999) - (state.stages.find((s) => s.label === b[0])?.orden ?? 999));
-  else counts.sort((a, b) => String(a[0]).localeCompare(String(b[0]), 'es'));
-  for (const v of filters[dim]) if (!counts.some(([k]) => k === v)) counts.push([v, 0]);
-  return counts;
+function filterRows(except) {
+  return state.candidates.filter((c) => DIMS.every((d) =>
+    d === except || !filters[d].size || values[d](c).some((v) => filters[d].has(v))));
+}
+const counts = (rows, dim) => countBy(rows, (c) => values[dim](c));
+
+function pillOptions(dim) {
+  const c = counts(filterRows(dim), dim).sort((a, b) => String(a[0]).localeCompare(String(b[0]), 'es'));
+  for (const v of filters[dim]) if (!c.some(([k]) => k === v)) c.push([v, 0]);
+  return c;
 }
 
 // Necesidad = sillas del mapa de posiciones que corresponden a los filtros de área/sector.
@@ -43,89 +52,124 @@ function positionsForFilters() {
     (!filters.sector.size || [...filters.sector].some((s) => sectorMatches(s, p.sector))));
 }
 
+function persist() { saveLocal(KEY, serializeFilters(filters)); }
+const activeCount = () => DIMS.reduce((n, d) => n + filters[d].size, 0);
+
 export function render(el) {
   if (state.loading && !state.candidates.length) { el.innerHTML = String(mascot('loading')); return; }
   if (state.error) { el.innerHTML = String(mascot('error', { text: state.error })); return; }
 
   const today = todayISO();
-  const kpiFilters = { area: filters.area, sector: filters.sector, procedencia: filters.procedencia };
-  const base = applyFilters(state.candidates, kpiFilters, getters);
-  const k = candidateKpis(base, state.stageMap, positionsForFilters(), today);
+  const all = filterRows(null);
+  const k = candidateKpis(all, state.stageMap, positionsForFilters(), today);
   const staff = state.isStaff;
 
-  const funnel = state.stages
-    .filter((s) => s.code !== 'sin_candidato')
-    .map((s) => [s.label, k.porEtapa.get(s.code) || 0, s.color]);
+  // por etapa (en orden de pipeline)
+  const byStage = new Map(counts(filterRows('stage'), 'stage'));
+  const funnel = state.stages.filter((s) => s.code !== 'sin_candidato')
+    .map((s) => [s.label, byStage.get(s.label) || 0, s.color]);
+  const totStage = funnel.reduce((a, r) => a + r[1], 0);
+
+  const rOrigen = filterRows('procedencia');
+  const rMotivo = filterRows('motivo').filter((c) => c.stage === 'cancelado');
+  const motivos = counts(rMotivo, 'motivo').filter(([m]) => m !== '—');
+  const rLoc = filterRows('localidad');
+  const rMes = filterRows('mes');
+  const meses = counts(rMes, 'mes').filter(([m]) => m !== 'Sin fecha').sort((a, b) => a[0].localeCompare(b[0])).slice(-9);
+  const mesMax = Math.max(1, ...meses.map((m) => m[1]));
+
+  const chips = DIMS.flatMap((d) => [...filters[d]].map((v) => [d, v]));
 
   el.innerHTML = String(html`
   <section class="page-head">
     <div>
       <h1>Candidatos PP</h1>
-      <p class="muted">Pipeline de todos los orígenes. ${staff ? 'Tocá un candidato para ver su ficha, su CV o sentarlo en una silla.' : 'Indicadores agregados; el detalle por persona es solo para RRHH.'}</p>
+      <p class="muted">Tocá cualquier barra para filtrar: todo lo demás se recalcula. ${staff ? 'Abajo, el listado con las fichas.' : 'El detalle por persona es solo para RRHH.'}</p>
     </div>
     ${staff ? html`<div class="head-actions"><button class="btn" data-act="new">+ Nuevo candidato</button></div>` : ''}
   </section>
 
   <section class="filters card">
-    ${filterGroup({ dim: 'area', label: 'Área', options: optionsFor('area'), selected: filters.area })}
-    ${filterGroup({ dim: 'sector', label: 'Sector', options: optionsFor('sector'), selected: filters.sector, allLabel: 'Todos' })}
-    ${filterGroup({ dim: 'procedencia', label: 'Procedencia', options: optionsFor('procedencia'), selected: filters.procedencia })}
+    ${filterGroup({ dim: 'area', label: 'Área', options: pillOptions('area'), selected: filters.area })}
+    ${filterGroup({ dim: 'sector', label: 'Sector', options: pillOptions('sector'), selected: filters.sector, allLabel: 'Todos' })}
+    <div class="active-filters ${chips.length ? '' : 'is-empty'}" aria-live="polite">
+      ${chips.length ? html`<span class="muted small">Filtrando por:</span>
+        ${chips.map(([d, v]) => html`<button type="button" class="chip chip--on" data-filter="${d}" data-value="${v}" title="Quitar">${DIM_LABEL[d]}: <b>${d === 'mes' && v !== 'Sin fecha' ? fmtMonth(v) : v}</b> ✕</button>`)}
+        <button type="button" class="btn btn--ghost btn--sm" data-act="clear">Limpiar todo</button>`
+      : html`<span class="muted small">Sin filtros: mostrando los ${fmtInt(state.candidates.length)} candidatos.</span>`}
+    </div>
   </section>
 
-  <section class="kpis">
-    ${kpi('Candidatos', fmtInt(k.total))}
-    ${kpi('En proceso', fmtInt(k.activos), { tone: 'blue', big: true })}
-    ${kpi('Ingresados', fmtInt(k.ingresados), { tone: 'green', sub: `${k.conversion}% de conversión` })}
-    ${kpi('Avance vs necesidad', `${pct(k.cubiertas, k.necesidad)}%`, { tone: 'navy', sub: `${k.cubiertas} de ${k.necesidad} sillas cubiertas` })}
-    ${kpi('Días promedio postulado', k.diasPromedioActivos ?? '—', { sub: 'activos, desde CV recibido' })}
-    ${kpi('Días CV → ingreso', k.diasPromedioIngreso ?? '—', { sub: 'promedio ingresados' })}
+  <section class="kpis kpis--6">
+    ${kpi('Candidatos', k.total, { id: 'c-total' })}
+    ${kpi('En proceso', k.activos, { tone: 'blue', big: true, id: 'c-act' })}
+    ${kpi('Ingresados', k.ingresados, { tone: 'green', sub: `${k.conversion}% de conversión`, id: 'c-ing' })}
+    ${kpi('Avance vs necesidad', pct(k.cubiertas, k.necesidad), { suffix: '%', tone: 'navy', sub: `${k.cubiertas} de ${k.necesidad} sillas cubiertas`, id: 'c-av' })}
+    ${kpi('Días promedio postulado', k.diasPromedioActivos ?? '—', { sub: 'activos, desde CV recibido', id: 'c-dias' })}
+    ${kpi('Días CV → ingreso', k.diasPromedioIngreso ?? '—', { sub: 'promedio ingresados', id: 'c-ding' })}
+  </section>
+
+  <section class="card">
+    <h2 class="card-title">CV recibidos por mes</h2>
+    <div class="cols" role="group" aria-label="CV recibidos por mes">
+      ${meses.map(([m, n]) => {
+        const sel = filters.mes.has(m);
+        const dim = filters.mes.size && !sel;
+        return html`<button type="button" class="col ${sel ? 'is-sel' : ''} ${dim ? 'is-dim' : ''}" data-filter="mes" data-value="${m}" aria-pressed="${sel}" title="${fmtMonth(m)}: ${n} CV">
+          <span class="col-val">${n}</span>
+          <span class="col-bar"><span class="col-fill" style="height:${prevSize('mes|' + m)}%" data-h="${(n / mesMax) * 100}" data-k="mes|${m}"></span></span>
+          <span class="col-lbl">${fmtMonth(m, { short: true })}</span>
+        </button>`;
+      })}
+    </div>
   </section>
 
   <section class="grid-2">
     <article class="card">
       <h2 class="card-title">Por etapa</h2>
-      ${bars(funnel, { limit: 20, total: k.total })}
+      ${bars(funnel, { limit: 20, total: totStage, dim: 'stage', selected: filters.stage, chart: 'c-stage' })}
     </article>
     <article class="card">
       <h2 class="card-title">Origen de candidatos</h2>
-      ${bars(k.origen, { color: 'green', total: k.total })}
+      ${bars(counts(rOrigen, 'procedencia'), { color: 'green', total: rOrigen.length, dim: 'procedencia', selected: filters.procedencia, chart: 'c-orig' })}
       <h2 class="card-title mt">Motivos de baja</h2>
-      ${k.motivos.length ? bars(k.motivos, { color: 'red', total: k.cancelados }) : html`<p class="muted">Sin bajas con motivo.</p>`}
+      ${motivos.length ? bars(motivos, { color: 'red', total: rMotivo.length, dim: 'motivo', selected: filters.motivo, chart: 'c-mot' }) : html`<p class="muted">Sin bajas con motivo en esta selección.</p>`}
     </article>
     <article class="card">
       <h2 class="card-title">Localidades</h2>
-      ${bars(k.localidades, { color: 'sky', limit: 12, total: k.total })}
+      ${bars(counts(rLoc, 'localidad'), { color: 'sky', limit: 12, total: rLoc.length, dim: 'localidad', selected: filters.localidad, chart: 'c-loc' })}
     </article>
     <article class="card">
       <h2 class="card-title">Avance por área</h2>
-      ${bars(avancePorArea(), { color: 'green', max: 100, fmt: (n) => n + '%' })}
-      <p class="muted small">Sillas cubiertas (Ingresado) sobre total de sillas del mapa de posiciones.</p>
+      ${bars(avancePorArea(), { color: 'green', max: 100, fmt: (n) => n + '%', dim: 'area', selected: filters.area, chart: 'c-av' })}
+      <p class="muted small">Sillas cubiertas (Ingresado) sobre el total del mapa de posiciones. Tocá un área para filtrar.</p>
     </article>
   </section>
 
-  ${staff ? listSection(today) : ''}
+  ${staff ? listSection(today, all) : ''}
   `);
   bind(el);
+  animateIn(el);
 }
 
 function avancePorArea() {
-  const pos = positionsForFilters();
+  const pos = state.positions.filter((p) => !filters.sector.size || [...filters.sector].some((s) => sectorMatches(s, p.sector)));
   const m = new Map();
   for (const p of pos) {
     const a = m.get(p.yacimiento) || [0, 0];
     a[1]++; if (p.stage === 'ingresado') a[0]++;
     m.set(p.yacimiento, a);
   }
-  return [...m.entries()].map(([a, [c, t]]) => [`${a} (${c}/${t})`, pct(c, t)]).sort((a, b) => b[1] - a[1]);
+  return [...m.entries()].map(([a, [c, t]]) => [`${a} (${c}/${t})`, pct(c, t), null, a]).sort((a, b) => b[1] - a[1]);
 }
 
-function listSection(today) {
-  let rows = applyFilters(state.candidates, filters, getters);
+function listSection(today, all) {
+  let rows = all;
   if (search) {
     const q = norm(search);
     rows = rows.filter((c) => norm([c.nombre, c.dni, c.mail, c.telefono, c.posicion, c.localidad].join(' ')).includes(q));
   }
-  rows.sort((a, b) => (stageOrder(a.stage) === 99) - (stageOrder(b.stage) === 99) ||
+  rows = [...rows].sort((a, b) => (stageOrder(a.stage) === 99) - (stageOrder(b.stage) === 99) ||
     stageOrder(b.stage) - stageOrder(a.stage) || (b.created_origen || '').localeCompare(a.created_origen || ''));
   const shown = rows.slice(0, page * PAGE);
   return html`<section class="card">
@@ -133,7 +177,6 @@ function listSection(today) {
       <h2 class="card-title">Listado <small class="muted">${rows.length} candidatos</small></h2>
       <label class="search"><input type="search" id="cand-search" placeholder="Buscar nombre, DNI, mail, teléfono…" value="${search}"></label>
     </header>
-    ${filterGroup({ dim: 'stage', label: 'Etapa', options: optionsFor('stage'), selected: filters.stage, allLabel: 'Todas' })}
     ${rows.length ? html`<div class="table-wrap"><table class="tbl tbl--cand is-clickable">
       <thead><tr><th>Nombre</th><th>Etapa</th><th class="hide-sm">Área · Servicio</th><th class="hide-sm">Posición</th><th class="hide-sm">Procedencia</th><th class="hide-sm">Localidad</th><th>Silla</th><th class="hide-sm num">Días</th><th class="hide-sm">CV</th></tr></thead>
       <tbody>${shown.map((c) => html`<tr data-id="${c.id}" tabindex="0">
@@ -157,8 +200,9 @@ function bind(el) {
     el._bound = true;
     el.addEventListener('click', (e) => {
       const f = e.target.closest('[data-filter]');
-      if (f) { toggleFilter(filters, f.dataset.filter, f.dataset.value); page = 1; saveLocal(KEY, serializeFilters(filters)); render(el); return; }
+      if (f) { toggleFilter(filters, f.dataset.filter, f.dataset.value); page = 1; persist(); render(el); return; }
       const act = e.target.closest('[data-act]')?.dataset.act;
+      if (act === 'clear') { DIMS.forEach((d) => filters[d].clear()); page = 1; persist(); render(el); return; }
       if (act === 'more') { page++; render(el); return; }
       if (act === 'new') { openCandidate(null); return; }
       const tr = e.target.closest('tr[data-id]');

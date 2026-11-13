@@ -3,7 +3,7 @@ import './styles/app.css';
 import { html, $ } from './lib/html.js';
 import { sb } from './lib/supabase.js';
 import { state, subscribe, refreshAuth, loadAll, set } from './lib/store.js';
-import { loadLocal, saveLocal, closeDrawer, toast } from './components/ui.js';
+import { loadLocal, saveLocal, closeDrawer, toast, animateIn } from './components/ui.js';
 import { mascot } from './components/mascot.js';
 import * as posiciones from './views/posiciones.js';
 import * as candidatos from './views/candidatos.js';
@@ -11,12 +11,14 @@ import * as legajos from './views/legajos.js';
 import * as presentar from './views/presentar.js';
 import * as importar from './views/importar.js';
 import * as login from './views/login.js';
+import * as usuarios from './views/usuarios.js';
 
 const ROUTES = {
   posiciones: { view: posiciones, label: 'Posiciones' },
   candidatos: { view: candidatos, label: 'Candidatos PP' },
   legajos: { view: legajos, label: 'Legajos', staff: true },
   importar: { view: importar, label: 'Importar', staff: true },
+  usuarios: { view: usuarios, label: 'Usuarios', staff: true },
   presentar: { view: presentar, bare: true },
   login: { view: login },
 };
@@ -65,6 +67,7 @@ function shell(name) {
       <button class="icon-btn" id="btn-theme" title="Tema claro / oscuro" aria-label="Cambiar tema">◐</button>
       ${state.session
         ? html`<span class="user ${state.isStaff ? '' : 'user--warn'}" title="${state.session.user.email}">${state.isStaff ? 'RRHH' : 'Sin permisos'} · ${state.session.user.email.split('@')[0]}</span>
+               ${state.isStaff ? html`<button class="btn btn--ghost btn--sm" id="btn-pass">Mi contraseña</button>` : ''}
                <button class="btn btn--ghost btn--sm" id="btn-logout">Salir</button>`
         : html`<a class="btn btn--sm" href="#/login">Ingresar RRHH</a>`}
     </div>
@@ -87,6 +90,7 @@ function route() {
   $('#btn-theme')?.addEventListener('click', toggleTheme);
   $('#btn-refresh')?.addEventListener('click', () => loadAll());
   $('#btn-logout')?.addEventListener('click', async () => { await sb.auth.signOut(); });
+  $('#btn-pass')?.addEventListener('click', () => usuarios.openChangePassword());
 }
 
 function draw() {
@@ -95,6 +99,7 @@ function draw() {
   const active = document.activeElement?.id;
   try {
     ROUTES[current.name].view.render(current.container, current.params);
+    animateIn(current.container);
   } catch (e) {
     console.error(e);
     current.container.innerHTML = String(mascot('error', { text: e.message }));

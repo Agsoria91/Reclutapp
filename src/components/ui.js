@@ -44,23 +44,81 @@ export function loadLocal(key, fallback) {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
 }
 
-export function kpi(label, value, { sub, tone = '', big = false } = {}) {
+// KPI. Si value es número, se anima (cuenta) desde el valor anterior.
+export function kpi(label, value, { sub, tone = '', big = false, suffix = '', id } = {}) {
+  const isNum = typeof value === 'number' && Number.isFinite(value);
+  const key = id || label;
   return html`<div class="kpi ${tone ? 'kpi--' + tone : ''} ${big ? 'kpi--big' : ''}">
     <span class="kpi-label">${label}</span>
-    <span class="kpi-value">${value}</span>
+    <span class="kpi-value" ${isNum ? raw(`data-n="${value}" data-k="${esc(key)}" data-suffix="${esc(suffix)}"`) : ''}>${isNum ? fmtNum(numCache.get(key) ?? value) + suffix : value ?? '—'}</span>
     ${sub ? html`<span class="kpi-sub">${sub}</span>` : ''}
   </div>`;
 }
+const fmtNum = (n) => Math.round(n).toLocaleString('es-AR');
+const numCache = new Map();
+const barCache = new Map();
+export const prevSize = (key) => barCache.get(key) ?? 0;
 
-// Barras horizontales simples (sin librería de gráficos).
-export function bars(rows, { max, color = 'blue', limit = 10, fmt = (n) => n, total } = {}) {
+// Selector desplegable para filtros de una sola opción (Set de 0 o 1 valores).
+export function selectFilter({ dim, label, options, selected, allLabel = 'Todos' }) {
+  const cur = selected && selected.size ? [...selected][0] : '';
+  return html`<label class="fselect"><span>${label}</span>
+    <select data-select-filter="${dim}">
+      <option value="">${allLabel}</option>
+      ${options.map(([v, n]) => html`<option value="${v}" ${raw(v === cur ? 'selected' : '')}>${v}${n != null ? ` (${n})` : ''}</option>`)}
+    </select></label>`;
+}
+
+// Barras horizontales (sin librería). Con `dim`, cada barra es un botón que
+// filtra esa dimensión: el resto de la pantalla se recalcula y las barras se
+// animan desde su ancho anterior.
+export function bars(rows, { max, color = 'blue', limit = 10, fmt = (n) => n, total, dim, selected, chart } = {}) {
   const top = rows.slice(0, limit);
   const m = max ?? Math.max(1, ...top.map((r) => r[1]));
-  return html`<ul class="bars">${top.map(([k, n, tone]) => html`<li>
-      <span class="bars-label" title="${k}">${k}</span>
-      <span class="bars-track"><span class="bars-fill bars-fill--${tone || color}" style="width:${Math.max(2, (n / m) * 100)}%"></span></span>
-      <span class="bars-val">${fmt(n)}${total ? html` <small>${Math.round((n / total) * 100)}%</small>` : ''}</span>
-    </li>`)}</ul>`;
+  const anySel = selected && selected.size > 0;
+  const cid = chart || dim || color;
+  return html`<ul class="bars ${dim ? 'bars--click' : ''}">${top.map(([k, n, tone, value]) => {
+    const v = value ?? k;
+    const sel = anySel && selected.has(v);
+    const w = Math.max(n ? 2 : 0, (n / m) * 100);
+    const key = `${cid}|${v}`;
+    const from = barCache.has(key) ? barCache.get(key) : 0;
+    const inner = html`<span class="bars-label" title="${k}">${k}</span>
+      <span class="bars-track"><span class="bars-fill bars-fill--${tone || color}" style="width:${from}%" data-w="${w}" data-k="${key}"></span></span>
+      <span class="bars-val">${fmt(n)}${total ? html` <small>${Math.round((n / total) * 100)}%</small>` : ''}</span>`;
+    return html`<li class="${sel ? 'is-sel' : anySel ? 'is-dim' : ''}">${dim
+      ? html`<button type="button" class="bars-btn" data-filter="${dim}" data-value="${v}" aria-pressed="${!!sel}" title="Filtrar por ${k}">${inner}</button>`
+      : inner}</li>`;
+  })}</ul>`;
+}
+
+// Anima barras y KPIs recién dibujados (desde su valor anterior al nuevo).
+export function animateIn(root) {
+  if (!root) return;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fills = root.querySelectorAll('.bars-fill[data-w]');
+  const cols = root.querySelectorAll('.col-fill[data-h]');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    fills.forEach((f) => { f.style.width = f.dataset.w + '%'; barCache.set(f.dataset.k, +f.dataset.w); });
+    cols.forEach((f) => { f.style.height = f.dataset.h + '%'; barCache.set(f.dataset.k, +f.dataset.h); });
+  }));
+  root.querySelectorAll('.kpi-value[data-n]').forEach((el) => {
+    const to = +el.dataset.n;
+    const key = el.dataset.k;
+    const suffix = el.dataset.suffix || '';
+    const from = numCache.has(key) ? numCache.get(key) : 0;
+    numCache.set(key, to);
+    if (reduce || from === to) { el.textContent = fmtNum(to) + suffix; return; }
+    const t0 = performance.now();
+    const dur = 450;
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / dur);
+      const e = 1 - Math.pow(1 - k, 3);
+      el.textContent = fmtNum(from + (to - from) * e) + suffix;
+      if (k < 1 && el.isConnected) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
 }
 
 // ---------------------------------------------------------------------------

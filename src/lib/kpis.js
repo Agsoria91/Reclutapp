@@ -23,6 +23,9 @@ export function applyFilters(rows, filters, getters) {
 // Posiciones
 // ---------------------------------------------------------------------------
 export const isCovered = (p) => p.stage === 'ingresado';
+// La fecha objetivo se interpreta por mes/año: el día no importa.
+export const monthKey = (iso) => (iso ? String(iso).slice(0, 7) : '');
+export const isLate = (p, today) => !isCovered(p) && !!p.fecha_objetivo && monthKey(p.fecha_objetivo) < monthKey(today);
 export const hasPerson = (p) => !!(p.candidato_nombre && p.candidato_nombre.trim());
 
 export function positionKpis(rows, today) {
@@ -31,16 +34,16 @@ export function positionKpis(rows, today) {
   const pendientes = rows.filter((p) => !isCovered(p));
   const sinCandidato = pendientes.filter((p) => !hasPerson(p)).length;
   const enProceso = pendientes.length - sinCandidato;
-  const vencidas = pendientes.filter((p) => p.fecha_objetivo && p.fecha_objetivo < today).length;
+  const vencidas = pendientes.filter((p) => isLate(p, today)).length;
   return { total, cubiertas, pendientes: pendientes.length, sinCandidato, enProceso, vencidas };
 }
 
-// Posiciones que faltan cubrir agrupadas por fecha objetivo (y área).
+// Posiciones que faltan cubrir agrupadas por MES objetivo (y área).
 export function pendingByTarget(rows, today) {
   const groups = new Map();
   for (const p of rows) {
     if (isCovered(p)) continue;
-    const k = p.fecha_objetivo || '';
+    const k = monthKey(p.fecha_objetivo);
     if (!groups.has(k)) groups.set(k, { fecha: k, total: 0, sinCandidato: 0, enProceso: 0, porArea: new Map() });
     const g = groups.get(k);
     g.total++;
@@ -48,7 +51,7 @@ export function pendingByTarget(rows, today) {
     g.porArea.set(p.yacimiento, (g.porArea.get(p.yacimiento) || 0) + 1);
   }
   return [...groups.values()]
-    .map((g) => ({ ...g, vencida: !!g.fecha && g.fecha < today, porArea: [...g.porArea.entries()].sort() }))
+    .map((g) => ({ ...g, vencida: !!g.fecha && g.fecha < monthKey(today), porArea: [...g.porArea.entries()].sort() }))
     .sort((a, b) => (a.fecha || '9999').localeCompare(b.fecha || '9999'));
 }
 

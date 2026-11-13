@@ -8,10 +8,12 @@ export function fmtDate(iso, opts = {}) {
   return `${d}/${m}/${y}`;
 }
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-export function fmtMonth(iso) {
+const MESES_L = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+// Mes/año: "Nov 2026" (o "Nov 26" en corto). Acepta 'AAAA-MM' o 'AAAA-MM-DD'.
+export function fmtMonth(iso, { short = false } = {}) {
   if (!iso) return 'Sin fecha';
-  const [y, m] = iso.split('-');
-  return `${MESES[+m - 1]} ${y}`;
+  const [y, m] = String(iso).split('-');
+  return `${MESES_L[+m - 1]} ${short ? y.slice(2) : y}`;
 }
 export function daysBetween(a, b) {
   if (!a || !b) return null;

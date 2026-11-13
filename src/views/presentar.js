@@ -3,8 +3,8 @@
 // aunque quien la abra esté logueado como RRHH.
 import { html, raw } from '../lib/html.js';
 import { state } from '../lib/store.js';
-import { fmtDate, todayISO, pct, fmtInt } from '../lib/format.js';
-import { applyFilters, positionKpis, pendingByTarget, isCovered, hasPerson } from '../lib/kpis.js';
+import { fmtDate, fmtMonth, todayISO, pct, fmtInt } from '../lib/format.js';
+import { applyFilters, positionKpis, pendingByTarget, isCovered, hasPerson, isLate } from '../lib/kpis.js';
 import { stagePill } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 import { posGetters, pendingTable } from './posiciones.js';
@@ -53,7 +53,7 @@ export function render(el, params) {
       <div class="kpi kpi--orange"><span class="kpi-label">Sin candidato</span><span class="kpi-value">${fmtInt(k.sinCandidato)}</span></div>
       <div class="kpi ${k.vencidas ? 'kpi--red' : ''}"><span class="kpi-label">Vencidas</span><span class="kpi-value">${fmtInt(k.vencidas)}</span></div>
     </section>
-    ${pend.length ? html`<section class="present-block"><h2>Faltan cubrir, por fecha objetivo</h2>${pendingTable(pend, k.pendientes)}</section>` : ''}
+    ${pend.length ? html`<section class="present-block"><h2>Faltan cubrir, por mes objetivo</h2>${pendingTable(pend, k.pendientes)}</section>` : ''}
     <section class="present-grid">
       ${[...groups.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es')).map(([g, ps]) => {
         const cub = ps.filter(isCovered).length;
@@ -64,7 +64,7 @@ export function render(el, params) {
             <td>${p.puesto}</td>
             <td>${hasPerson(p) ? p.candidato_nombre : html`<span class="muted">— vacante —</span>`}</td>
             <td>${stagePill(p.stage, { small: true })}</td>
-            <td class="${!isCovered(p) && p.fecha_objetivo && p.fecha_objetivo < today ? 'is-late-txt' : 'muted'}">${fmtDate(p.fecha_objetivo, { short: true })}</td>
+            <td class="${isLate(p, today) ? 'is-late-txt' : 'muted'}">${p.fecha_objetivo ? fmtMonth(p.fecha_objetivo, { short: true }) : ''}</td>
           </tr>`)}</tbody></table>
         </article>`;
       })}

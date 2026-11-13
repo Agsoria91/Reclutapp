@@ -1,11 +1,12 @@
 import { html, raw, $ } from '../lib/html.js';
 import { state, loadAll } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
-import { fmtDate, fmtMonth, fmtMoney, todayISO, norm, pct, fmtInt } from '../lib/format.js';
-import { applyFilters, countBy, positionKpis, pendingByTarget, isCovered, hasPerson } from '../lib/kpis.js';
+import { fmtMonth, fmtMoney, todayISO, norm, pct } from '../lib/format.js';
+import { applyFilters, countBy, positionKpis, pendingByTarget, isCovered, hasPerson, isLate } from '../lib/kpis.js';
 import {
-  stagePill, filterGroup, toggleFilter, kpi, openDrawer, closeDrawer, toast, formData, field,
+  stagePill, filterGroup, selectFilter, toggleFilter, kpi, openDrawer, closeDrawer, toast, formData, field,
   confirmDialog, saveLocal, loadLocal, serializeFilters, restoreFilters, datalist,
+  animateIn,
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 import { openAssignFromPosition } from './asignar.js';
@@ -29,7 +30,7 @@ export function filteredPositions({ ignoreSearch = false } = {}) {
   if (soloPendientes) rows = rows.filter((p) => !isCovered(p));
   if (!ignoreSearch && search) {
     const q = norm(search);
-    rows = rows.filter((p) => norm([p.puesto, p.candidato_nombre, p.pos_sap, p.jefe_directo, p.sector].join(' ')).includes(q));
+    rows = rows.filter((p) => norm([p.puesto, p.candidato_nombre, p.pos_sap, p.sector].join(' ')).includes(q));
   }
   return rows;
 }
@@ -55,6 +56,8 @@ export function presentHash() {
   return '#/presentar' + (q.toString() ? '?' + q : '');
 }
 
+let openGroups = new Set(loadLocal('reclutapp.pos.open', []));
+
 export function render(el) {
   if (state.loading && !state.positions.length) { el.innerHTML = String(mascot('loading')); return; }
   if (state.error) { el.innerHTML = String(mascot('error', { text: state.error })); return; }
@@ -74,12 +77,13 @@ export function render(el) {
     groups.get(g).push(p);
   }
   const sortedGroups = [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es'));
+  const allOpen = sortedGroups.length && sortedGroups.every(([g]) => openGroups.has(g));
 
   el.innerHTML = String(html`
   <section class="page-head">
     <div>
       <h1>Mapa de posiciones</h1>
-      <p class="muted">Cada fila es una silla a cubrir. ${staff ? 'Tocá una fila para editarla o sentar a un candidato.' : 'Vista de solo lectura.'}</p>
+      <p class="muted">Cada fila es una silla a cubrir. ${staff ? 'Abrí un sector y tocá una silla para editarla o sentar a un candidato.' : 'Vista de solo lectura.'}</p>
     </div>
     <div class="head-actions">
       ${staff ? html`<button class="btn" data-act="new">+ Nueva silla</button>` : ''}
@@ -90,86 +94,90 @@ export function render(el) {
   <section class="filters card">
     ${filterGroup({ dim: 'area', label: 'Área', options: optionsFor('area'), selected: posFilters.area })}
     ${filterGroup({ dim: 'sector', label: 'Sector', options: optionsFor('sector'), selected: posFilters.sector, allLabel: 'Todos' })}
-    ${filterGroup({ dim: 'stage', label: 'Estado', options: optionsFor('stage'), selected: posFilters.stage, allLabel: 'Todos' })}
-    ${filterGroup({ dim: 'cobertura', label: 'Cobertura', options: optionsFor('cobertura'), selected: posFilters.cobertura })}
     <div class="filters-row">
+      ${selectFilter({ dim: 'stage', label: 'Estado', options: optionsFor('stage'), selected: posFilters.stage })}
+      ${selectFilter({ dim: 'cobertura', label: 'Cobertura', options: optionsFor('cobertura'), selected: posFilters.cobertura, allLabel: 'Todas' })}
       <label class="search"><span class="sr-only">Buscar</span>
-        <input type="search" id="pos-search" placeholder="Buscar puesto, persona, POS SAP, jefe…" value="${search}">
+        <input type="search" id="pos-search" placeholder="Buscar puesto, persona, POS SAP…" value="${search}">
       </label>
-      <label class="check"><input type="checkbox" id="pos-pend" ${raw(soloPendientes ? 'checked' : '')}> Solo pendientes de cubrir</label>
+      <label class="check"><input type="checkbox" id="pos-pend" ${raw(soloPendientes ? 'checked' : '')}> Solo pendientes</label>
     </div>
   </section>
 
-  <section class="kpis">
-    ${kpi('Sillas', fmtInt(k.total))}
-    ${kpi('Cubiertas', fmtInt(k.cubiertas), { sub: `${pct(k.cubiertas, k.total)}% del total`, tone: 'green' })}
-    ${kpi('Faltan cubrir', fmtInt(k.pendientes), { tone: 'blue', big: true })}
-    ${kpi('Con candidato en proceso', fmtInt(k.enProceso), { tone: 'navy' })}
-    ${kpi('Sin candidato', fmtInt(k.sinCandidato), { tone: 'orange' })}
-    ${kpi('Vencidas', fmtInt(k.vencidas), { sub: 'fecha objetivo pasada', tone: k.vencidas ? 'red' : '' })}
+  <section class="kpis kpis--6">
+    ${kpi('Sillas', k.total, { id: 'pos-total' })}
+    ${kpi('Cubiertas', k.cubiertas, { sub: `${pct(k.cubiertas, k.total)}% del total`, tone: 'green', id: 'pos-cub' })}
+    ${kpi('Faltan cubrir', k.pendientes, { tone: 'blue', big: true, id: 'pos-pend' })}
+    ${kpi('En proceso', k.enProceso, { tone: 'navy', sub: 'con candidato', id: 'pos-proc' })}
+    ${kpi('Sin candidato', k.sinCandidato, { tone: 'orange', id: 'pos-sin' })}
+    ${kpi('Vencidas', k.vencidas, { sub: 'mes objetivo pasado', tone: k.vencidas ? 'red' : '', id: 'pos-venc' })}
   </section>
 
   <section class="card">
-    <h2 class="card-title">Faltan cubrir, por fecha objetivo</h2>
+    <h2 class="card-title">Faltan cubrir, por mes objetivo</h2>
     ${pend.length ? pendingTable(pend, k.pendientes) : html`<p class="muted">No quedan posiciones pendientes con estos filtros.</p>`}
   </section>
 
-  <section class="groups">
-    ${rows.length ? sortedGroups.map(([key, ps]) => groupBlock(key, ps, today, staff)) : mascot('empty')}
+  <section class="card groups-card">
+    <header class="list-head">
+      <h2 class="card-title">Sillas por área y sector <small class="muted">${rows.length}</small></h2>
+      ${sortedGroups.length ? html`<button class="btn btn--ghost btn--sm" data-act="toggle-all">${allOpen ? 'Contraer todo' : 'Expandir todo'}</button>` : ''}
+    </header>
+    ${rows.length ? html`<div class="groups">${sortedGroups.map(([key, ps]) => groupBlock(key, ps, today, staff))}</div>` : mascot('empty')}
   </section>
   ${staff ? datalists() : ''}
   `);
 
   bind(el);
+  animateIn(el);
 }
 
 export function pendingTable(pend, totalPend) {
   const max = Math.max(...pend.map((g) => g.total));
-  return html`<div class="table-wrap"><table class="tbl tbl--pend">
-    <thead><tr><th>Fecha objetivo</th><th class="num">Faltan</th><th class="hide-sm">Sin candidato</th><th class="hide-sm">En proceso</th><th>Por área</th><th class="bar-col hide-sm"></th></tr></thead>
-    <tbody>${pend.map((g) => html`<tr class="${g.vencida ? 'is-late' : ''}">
-      <td><strong>${g.fecha ? fmtDate(g.fecha) : 'Sin fecha'}</strong> ${g.vencida ? html`<span class="tag tag--late">vencida</span>` : ''}</td>
-      <td class="num"><strong>${g.total}</strong></td>
-      <td class="num hide-sm">${g.sinCandidato}</td>
-      <td class="num hide-sm">${g.enProceso}</td>
-      <td>${g.porArea.map(([a, n]) => html`<span class="chip">${a} <b>${n}</b></span>`)}</td>
-      <td class="bar-col hide-sm"><span class="minibar"><span style="width:${(g.total / max) * 100}%"></span></span></td>
-    </tr>`)}</tbody>
-    <tfoot><tr><td>Total</td><td class="num"><strong>${totalPend}</strong></td><td colspan="4"></td></tr></tfoot>
-  </table></div>`;
+  return html`<div class="pend">${pend.map((g) => html`<div class="pend-row ${g.vencida ? 'is-late' : ''}">
+      <span class="pend-month"><strong>${g.fecha ? fmtMonth(g.fecha) : 'Sin fecha'}</strong>${g.vencida ? html` <span class="tag tag--late">vencida</span>` : ''}</span>
+      <span class="pend-bar" title="${g.sinCandidato} sin candidato · ${g.enProceso} en proceso">
+        <span class="pend-seg pend-seg--proc" style="width:${(g.enProceso / max) * 100}%"></span><span class="pend-seg pend-seg--sin" style="width:${(g.sinCandidato / max) * 100}%"></span>
+      </span>
+      <span class="pend-num"><b>${g.total}</b></span>
+      <span class="pend-areas hide-sm">${g.porArea.map(([a, n]) => html`<span class="chip">${a} <b>${n}</b></span>`)}</span>
+    </div>`)}
+    <div class="pend-foot"><span class="legend"><i class="pend-seg--proc"></i> en proceso <i class="pend-seg--sin"></i> sin candidato</span><span>Total <b>${totalPend}</b></span></div>
+  </div>`;
 }
 
 function groupBlock(key, ps, today, staff) {
   const [area, sector] = key.split('|||');
   const cub = ps.filter(isCovered).length;
+  const faltan = ps.length - cub;
+  const late = ps.filter((p) => isLate(p, today)).length;
+  const proximo = ps.filter((p) => !isCovered(p) && p.fecha_objetivo).map((p) => p.fecha_objetivo).sort()[0];
+  const open = openGroups.has(key) || !!search;
   ps.sort((a, b) => a.puesto.localeCompare(b.puesto, 'es', { numeric: true }));
-  return html`<article class="group card">
-    <header class="group-head">
-      <h3><span class="area-tag">${area}</span> ${sector}</h3>
-      <span class="group-meta">${cub}/${ps.length} cubiertas · faltan <b>${ps.length - cub}</b></span>
+  return html`<details class="group" data-g="${key}" ${raw(open ? 'open' : '')}>
+    <summary class="group-head">
+      <span class="group-title"><span class="area-tag">${area}</span> ${sector}</span>
       <span class="progress" aria-hidden="true"><span style="width:${pct(cub, ps.length)}%"></span></span>
-    </header>
+      <span class="group-meta"><b>${cub}</b>/${ps.length} cubiertas</span>
+      <span class="group-meta ${faltan ? '' : 'muted'}">${faltan ? html`faltan <b>${faltan}</b>` : 'completo'}</span>
+      <span class="group-meta hide-sm ${late ? 'is-late-txt' : 'muted'}">${proximo ? html`objetivo ${fmtMonth(proximo, { short: true })}` : ''}</span>
+    </summary>
     <div class="table-wrap"><table class="tbl tbl--pos ${staff ? 'is-clickable' : ''}">
       <thead><tr>
-        <th>Puesto</th><th class="hide-sm">POS SAP</th><th class="hide-sm">Diagrama</th><th>Persona asignada</th>
-        <th>Estado</th><th>Objetivo</th><th class="hide-sm">Ingreso</th>${staff ? html`<th class="hide-sm">Básico</th>` : ''}
+        <th>Puesto</th><th class="hide-sm">Diagrama</th><th>Persona asignada</th>
+        <th>Estado</th><th>Mes objetivo</th>${staff ? html`<th class="hide-sm">POS SAP</th><th class="hide-sm num">Básico</th>` : ''}
       </tr></thead>
-      <tbody>${ps.map((p) => {
-        const late = !isCovered(p) && p.fecha_objetivo && p.fecha_objetivo < today;
-        return html`<tr data-id="${p.id}" ${raw(staff ? 'tabindex="0"' : '')}>
-          <td data-th="Puesto"><strong>${p.puesto}</strong>${p.jefe_directo ? html`<small class="muted block">Jefe: ${p.jefe_directo}</small>` : ''}</td>
-          <td data-th="POS SAP" class="hide-sm mono">${p.pos_sap || ''}</td>
+      <tbody>${ps.map((p) => html`<tr data-id="${p.id}" ${raw(staff ? 'tabindex="0"' : '')}>
+          <td data-th="Puesto"><strong>${p.puesto}</strong></td>
           <td data-th="Diagrama" class="hide-sm">${[p.diagrama, p.turno].filter(Boolean).join(' · ')}</td>
           <td data-th="Persona">${hasPerson(p) ? html`${p.candidato_nombre}${(p.candidate_id || p.tiene_ficha) ? '' : html` <span class="tag" title="Sin ficha en Candidatos PP">sin ficha</span>`}` : html`<span class="muted">— vacante —</span>`}
             ${p.tipo_cobertura === 'Movimiento interno' ? html` <span class="tag tag--int">interno</span>` : ''}</td>
-          <td data-th="Estado">${stagePill(p.stage)}</td>
-          <td data-th="Objetivo" class="${late ? 'is-late-txt' : ''}">${fmtDate(p.fecha_objetivo)}</td>
-          <td data-th="Ingreso" class="hide-sm">${fmtDate(p.fecha_ingreso)}</td>
-          ${staff ? html`<td data-th="Básico" class="hide-sm num">${fmtMoney(p.basico)}</td>` : ''}
-        </tr>`;
-      })}</tbody>
+          <td data-th="Estado">${stagePill(p.stage, { small: true })}</td>
+          <td data-th="Objetivo" class="${isLate(p, today) ? 'is-late-txt' : ''}">${p.fecha_objetivo ? fmtMonth(p.fecha_objetivo, { short: true }) : ''}</td>
+          ${staff ? html`<td data-th="POS SAP" class="hide-sm mono">${p.pos_sap || ''}</td><td data-th="Básico" class="hide-sm num">${fmtMoney(p.basico)}</td>` : ''}
+        </tr>`)}</tbody>
     </table></div>
-  </article>`;
+  </details>`;
 }
 
 function datalists() {
@@ -184,6 +192,20 @@ function bind(el) {
     el._bound = true;
     el.addEventListener('click', onClick);
     el.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('tr[data-id]')) openEditor(e.target.dataset.id); });
+    el.addEventListener('change', (e) => {
+      const s = e.target.closest('[data-select-filter]');
+      if (!s) return;
+      const dim = s.dataset.selectFilter;
+      posFilters[dim] = new Set(s.value ? [s.value] : []);
+      persist(); render(el);
+    });
+    // recordar qué sectores quedaron abiertos
+    el.addEventListener('toggle', (e) => {
+      const d = e.target.closest?.('details[data-g]');
+      if (!d || search) return;
+      if (d.open) openGroups.add(d.dataset.g); else openGroups.delete(d.dataset.g);
+      saveLocal('reclutapp.pos.open', [...openGroups]);
+    }, true);
   }
   const s = $('#pos-search', el);
   s?.addEventListener('input', () => {
@@ -201,7 +223,15 @@ function onClick(e) {
   const el = e.currentTarget;
   const f = e.target.closest('[data-filter]');
   if (f) { toggleFilter(posFilters, f.dataset.filter, f.dataset.value); persist(); render(el); return; }
-  if (e.target.closest('[data-act="new"]')) { openEditor(null); return; }
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'new') { openEditor(null); return; }
+  if (act === 'toggle-all') {
+    const keys = [...el.querySelectorAll('details[data-g]')].map((d) => d.dataset.g);
+    const allOpen = keys.every((k) => openGroups.has(k));
+    keys.forEach((k) => (allOpen ? openGroups.delete(k) : openGroups.add(k)));
+    saveLocal('reclutapp.pos.open', [...openGroups]);
+    render(el); return;
+  }
   const tr = e.target.closest('tr[data-id]');
   if (tr && state.isStaff) openEditor(tr.dataset.id);
 }
@@ -242,7 +272,7 @@ export function openEditor(id) {
       ${field('Estado', 'stage', p.stage, { options: stageOpts, hint: linked ? 'Se sincroniza con la ficha del candidato.' : 'Al pasar a "Ingresado" se crea el legajo.' })}
       ${linked ? '' : field('Persona (texto libre)', 'candidato_nombre', p.candidato_nombre, { hint: 'Para movimientos internos o gente sin ficha.' })}
       ${field('Fecha inicio búsqueda', 'fecha_inicio', p.fecha_inicio, { type: 'date' })}
-      ${field('Fecha objetivo', 'fecha_objetivo', p.fecha_objetivo, { type: 'date' })}
+      ${field('Mes objetivo', 'fecha_objetivo', p.fecha_objetivo ? p.fecha_objetivo.slice(0, 7) : '', { type: 'month', hint: 'Solo importa mes y año.' })}
       ${field('Fecha de ingreso', 'fecha_ingreso', p.fecha_ingreso, { type: 'date' })}
       ${field('Categoría', 'categoria', p.categoria)}
       ${field('Puesto de convenio', 'puesto_convenio', p.puesto_convenio, { list: 'dl-conv', span: 2 })}
@@ -263,6 +293,7 @@ export function openEditor(id) {
     e.preventDefault();
     const data = formData(e.target);
     if (linked) delete data.candidato_nombre;
+    if (data.fecha_objetivo && /^\d{4}-\d{2}$/.test(data.fecha_objetivo)) data.fecha_objetivo += '-01';
     const btn = e.submitter; btn.disabled = true;
     const q = p.id ? sb.from('positions').update(data).eq('id', p.id) : sb.from('positions').insert(data);
     const { error } = await q;
@@ -302,4 +333,3 @@ export function celebrate() {
   setTimeout(() => d.remove(), 2600);
 }
 
-export { fmtMonth };
