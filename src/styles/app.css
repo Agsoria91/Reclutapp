@@ -527,3 +527,35 @@ fieldset.sensitive { border-color: color-mix(in srgb, var(--tp-orange) 60%, var(
 }
 .fmonth.is-active select { border-color: var(--accent); }
 .icon-btn--sm { width: 30px; height: 30px; font-size: 13px; }
+
+/* ======================= v3: terna, pre-ingreso ======================= */
+.tag--terna { color: var(--st-violet); background: color-mix(in srgb, var(--st-violet) 12%, transparent); border-color: transparent; font-weight: 700; }
+.form-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 640px) { .form-grid--3 { grid-template-columns: 1fr 1fr; } }
+
+.terna-box { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; gap: 8px; }
+.terna-box > header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.terna-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.terna-list li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 8px; border-radius: 6px; background: var(--surface-2); }
+.terna-list li.is-main { box-shadow: inset 3px 0 0 var(--st-green); }
+.terna-list li.is-out { opacity: .55; }
+.terna-actions { display: flex; gap: 4px; }
+@media (max-width: 640px) { .terna-list li { grid-template-columns: 1fr auto; } .terna-actions { grid-column: 1 / -1; } }
+
+/* selector de modo (segmentado) */
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 4px; }
+.seg-opt { padding: 7px 12px; cursor: pointer; font-size: 13.5px; font-weight: 700; color: var(--text-2); }
+.seg-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.seg-opt.is-on { background: var(--accent); color: var(--accent-ink); }
+.seg-opt:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: -2px; }
+
+/* próximos ingresos */
+.ing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--gap); }
+.ing-card { display: grid; gap: 10px; align-content: start; }
+.ing-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.ing-name { font: 700 17px var(--font-serif); }
+.ing-meta { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13.5px; }
+.ing-progress { display: flex; align-items: center; gap: 8px; }
+.ing-progress .progress { flex: 1; max-width: none; margin: 0; }
+.ing-card p { margin: 0; }
+@media (max-width: 640px) { .ing-grid { grid-template-columns: 1fr; } }

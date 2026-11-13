@@ -12,10 +12,12 @@ import * as presentar from './views/presentar.js';
 import * as importar from './views/importar.js';
 import * as login from './views/login.js';
 import * as usuarios from './views/usuarios.js';
+import * as ingresos from './views/ingresos.js';
 
 const ROUTES = {
   posiciones: { view: posiciones, label: 'Posiciones' },
   candidatos: { view: candidatos, label: 'Candidatos PP' },
+  ingresos: { view: ingresos, label: 'Próximos ingresos', staff: true },
   legajos: { view: legajos, label: 'Legajos', staff: true },
   importar: { view: importar, label: 'Importar', staff: true },
   usuarios: { view: usuarios, label: 'Usuarios', staff: true },
