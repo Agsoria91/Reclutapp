@@ -8,7 +8,7 @@ import { countBy } from '../lib/kpis.js';
 import { decodeBytes } from '../lib/csv.js';
 import { parseNominaCSV } from '../lib/importers.js';
 import {
-  filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, formData, field, confirmDialog, animateIn,
+  filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, formData, field, confirmDialog, animateIn, pickField,
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 
@@ -164,6 +164,19 @@ const FIELDS = [
   ['motivo_baja', 'Motivo de baja'], ['notas', 'Notas', { type: 'textarea', span: 2 }],
 ];
 
+// campos con desplegable de valores existentes
+const PICK = {
+  yacimiento: () => [state.nomina.map((x) => x.yacimiento), state.positions.map((x) => x.yacimiento)],
+  sector: () => state.nomina.map((x) => x.sector),
+  encuadre: () => state.nomina.map((x) => x.encuadre),
+  categoria: () => state.nomina.map((x) => x.categoria),
+  diagrama: () => [state.nomina.map((x) => x.diagrama), state.positions.map((x) => x.diagrama)],
+  jefe: () => [state.nomina.map((x) => x.jefe), state.positions.map((x) => x.jefe_directo)],
+  localidad: () => [state.nomina.map((x) => x.localidad), state.candidates.map((x) => x.localidad)],
+  provincia: () => state.nomina.map((x) => x.provincia),
+  procedencia: () => [state.nomina.map((x) => x.procedencia), state.candidates.map((x) => x.procedencia)],
+};
+
 function openPersona(id) {
   const n = id ? state.nomina.find((x) => x.id === id) : { estado: 'activo', origen: 'planilla' };
   if (!n) return;
@@ -171,7 +184,7 @@ function openPersona(id) {
   const root = openDrawer(html`
     ${silla ? html`<p class="note small">Ingresó por la silla <b>${silla.puesto}</b> (${silla.yacimiento} · ${silla.sector || ''})${n.procedencia ? ` · ${n.procedencia}` : ''}. También aparece en Legajos.</p>` : ''}
     <form id="nom-form" class="form-grid">
-      ${FIELDS.map(([k, l, o = {}]) => field(l, k, n[k], o))}
+      ${FIELDS.map(([k, l, o = {}]) => (PICK[k] ? pickField(l, k, n[k], PICK[k](), o) : field(l, k, n[k], o)))}
       <div class="form-actions field--wide">
         ${n.id ? html`<button type="button" class="btn btn--danger-ghost" data-act="delete">Eliminar</button>` : ''}
         <span class="spacer"></span>

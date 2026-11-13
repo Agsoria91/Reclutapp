@@ -581,3 +581,7 @@ fieldset.sensitive { border-color: color-mix(in srgb, var(--tp-orange) 60%, var(
 @media (max-width: 640px) { .funnel li { grid-template-columns: 1fr 90px; } .funnel-bar { grid-column: 1 / -1; grid-row: 2; } }
 .tbl tr.is-off td { opacity: .55; }
 @media (max-width: 1500px) { .brand-app { display: none; } .nav a { padding: 8px 10px; } }
+.pick-otro { margin-top: 6px; }
+.backup-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; padding: 6px 24px;
+  background: color-mix(in srgb, var(--tp-orange) 14%, var(--surface)); border-bottom: 1px solid var(--line); }
+@media (max-width: 640px) { .backup-banner { padding: 6px 16px; } }

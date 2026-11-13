@@ -228,3 +228,58 @@ export function field(label, name, value, { type = 'text', options, required, hi
 export function datalist(id, values) {
   return html`<datalist id="${id}">${values.map((v) => html`<option value="${v}"></option>`)}</datalist>`;
 }
+
+// ---------------------------------------------------------------------------
+// Desplegable con los valores que ya existen en la app + "Otro…" para escribir
+// uno nuevo. Reemplaza a las listas de sugerencias del navegador (datalist),
+// que solo aparecen al escribir y se filtran por lo que ya tiene el campo.
+// ---------------------------------------------------------------------------
+const normKey = (v) => String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+// Une listas de valores, sin duplicados por mayúsculas/acentos (gana la escritura más usada).
+export function opcionesDe(...listas) {
+  const m = new Map();
+  for (const v of listas.flat(Infinity)) {
+    const s = String(v ?? '').trim();
+    if (!s) continue;
+    const k = normKey(s);
+    const e = m.get(k) || new Map();
+    e.set(s, (e.get(s) || 0) + (s === s.toUpperCase() && s.length > 4 ? 0.5 : 1));
+    m.set(k, e);
+  }
+  return [...m.values()].map((e) => [...e].sort((a, b) => b[1] - a[1])[0][0]).sort((a, b) => a.localeCompare(b, 'es'));
+}
+
+export function pickField(label, name, value, valores, { required, span = 1, hint } = {}) {
+  const id = `f-${name}`;
+  const cur = String(value ?? '').trim();
+  const lista = opcionesDe(valores);
+  const match = lista.find((v) => normKey(v) === normKey(cur));
+  const opts = cur && !match ? [...lista, cur].sort((a, b) => a.localeCompare(b, 'es')) : lista;
+  const sel = match || cur;
+  return html`<label class="field ${span === 2 ? 'field--wide' : ''}" for="${id}"><span>${label}</span>
+    <select id="${id}" name="${name}" data-pick="${name}" ${raw(required ? 'required' : '')}>
+      <option value="">— elegir —</option>
+      ${opts.map((v) => html`<option value="${v}" ${raw(v === sel ? 'selected' : '')}>${v}</option>`)}
+      <option value="__otro__">＋ Otro…</option>
+    </select>
+    <input type="text" class="pick-otro" data-otro-for="${name}" placeholder="Escribí el nuevo valor" hidden autocomplete="off">
+    ${hint ? html`<small>${hint}</small>` : ''}</label>`;
+}
+
+// "Otro…": muestra el campo de texto y le pasa el nombre del campo para que se guarde.
+if (typeof document !== 'undefined' && !document._pickBound) {
+  document._pickBound = true;
+  document.addEventListener('change', (e) => {
+    const s = e.target.closest?.('select[data-pick]');
+    if (!s) return;
+    const input = s.parentElement.querySelector(`input[data-otro-for="${s.dataset.pick}"]`);
+    if (s.value === '__otro__') {
+      s.name = '';
+      input.hidden = false; input.name = s.dataset.pick; input.required = s.required; input.focus();
+    } else {
+      s.name = s.dataset.pick;
+      input.hidden = true; input.name = ''; input.required = false;
+    }
+  });
+}

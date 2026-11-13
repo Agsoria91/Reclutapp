@@ -4,7 +4,7 @@ import { sb } from '../lib/supabase.js';
 import { fmtMonth, fmtMoney, todayISO, norm, pct } from '../lib/format.js';
 import { applyFilters, countBy, positionKpis, pendingByTarget, isCovered, hasPerson, isLate, monthKey } from '../lib/kpis.js';
 import {
-  stagePill, filterGroup, selectFilter, multiSelectFilter, toggleFilter, kpi, openDrawer, closeDrawer, toast, formData, field,
+  stagePill, filterGroup, selectFilter, multiSelectFilter, toggleFilter, pickField, kpi, openDrawer, closeDrawer, toast, formData, field,
   confirmDialog, saveLocal, loadLocal, serializeFilters, restoreFilters, datalist,
   animateIn,
 } from '../components/ui.js';
@@ -333,12 +333,12 @@ export function openEditor(id) {
     ${p.id ? ternaBox(p) : ''}
 
     <form id="pos-form" class="form-grid">
-      ${field('Área (yacimiento)', 'yacimiento', p.yacimiento, { required: true, list: 'dl-area' })}
-      ${field('Sector', 'sector', p.sector, { list: 'dl-sector' })}
+      ${pickField('Área (yacimiento)', 'yacimiento', p.yacimiento, state.positions.map((x) => x.yacimiento), { required: true })}
+      ${pickField('Sector', 'sector', p.sector, state.positions.map((x) => x.sector))}
       ${field('Puesto', 'puesto', p.puesto, { required: true, span: 2 })}
       ${field('POS SAP', 'pos_sap', p.pos_sap)}
-      ${field('Jefe directo', 'jefe_directo', p.jefe_directo, { list: 'dl-jefe' })}
-      ${field('Diagrama', 'diagrama', p.diagrama, { list: 'dl-diag' })}
+      ${pickField('Jefe directo', 'jefe_directo', p.jefe_directo, [state.positions.map((x) => x.jefe_directo), state.nomina.map((x) => x.jefe)])}
+      ${pickField('Diagrama', 'diagrama', p.diagrama, [state.positions.map((x) => x.diagrama), state.nomina.map((x) => x.diagrama)])}
       ${field('Turno', 'turno', p.turno)}
       ${field('Encuadre', 'encuadre', p.encuadre)}
       ${field('Tipo de cobertura', 'tipo_cobertura', p.tipo_cobertura, { options: ['Búsqueda externa', 'Movimiento interno'] })}

@@ -4,7 +4,7 @@ import { sb } from '../lib/supabase.js';
 import { fmtDate, fmtMoney, fmtInt, norm, fmtMonth } from '../lib/format.js';
 import { applyFilters, countBy } from '../lib/kpis.js';
 import {
-  filterGroup, toggleFilter, kpi, bars, animateIn, openDrawer, closeDrawer, toast, formData, field,
+  filterGroup, toggleFilter, kpi, bars, animateIn, openDrawer, closeDrawer, toast, formData, field, pickField,
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 import { convenioFields, bindConvenio, preingresoFields } from '../components/ingreso.js';
@@ -100,13 +100,13 @@ function openHire(id) {
     ${field('Nombre completo', 'nombre', h.nombre, { required: true, span: 2 })}
     ${field('Fecha de ingreso', 'fecha_ingreso', h.fecha_ingreso, { type: 'date' })}
     ${field('Estado', 'estado', h.estado, { options: [['activo', 'Activo'], ['baja', 'Baja']] })}
-    ${field('Área (yacimiento)', 'yacimiento', h.yacimiento)}
-    ${field('Sector', 'sector', h.sector)}
+    ${pickField('Área (yacimiento)', 'yacimiento', h.yacimiento, [state.nomina.map((x) => x.yacimiento), state.positions.map((x) => x.yacimiento)])}
+    ${pickField('Sector', 'sector', h.sector, state.nomina.map((x) => x.sector))}
     ${field('Puesto', 'puesto', h.puesto, { span: 2 })}
     ${convenioFields(h)}
-    ${field('Jefe directo', 'jefe', h.jefe)}
+    ${pickField('Jefe directo', 'jefe', h.jefe, [state.nomina.map((x) => x.jefe), state.positions.map((x) => x.jefe_directo)])}
     ${field('Básico', 'basico', h.basico, { type: 'number', step: '0.01' })}
-    ${field('Procedencia', 'procedencia', h.procedencia)}
+    ${pickField('Procedencia', 'procedencia', h.procedencia, [state.candidates.map((x) => x.procedencia), state.nomina.map((x) => x.procedencia)])}
     ${field('Tipo de cobertura', 'tipo_cobertura', h.tipo_cobertura, { options: [['', '—'], 'Búsqueda externa', 'Movimiento interno'] })}
     ${preingresoFields(h)}
     ${field('Fecha de baja', 'fecha_baja', h.fecha_baja, { type: 'date' })}

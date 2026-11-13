@@ -1,7 +1,8 @@
 // Piezas compartidas: buscador de puesto de convenio y datos de pre-ingreso.
 import { html, raw } from '../lib/html.js';
 import CONVENIO from '../data/convenio.json';
-import { field } from './ui.js';
+import { field, pickField } from './ui.js';
+import { state } from '../lib/store.js';
 
 // ---------------------------------------------------------------------------
 // Puesto de convenio: en el formulario se elige primero el PUESTO (buscador)
@@ -68,6 +69,15 @@ const TALLES_ROPA = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '38', '40', '42',
 const TALLES_BOTAS = Array.from({ length: 14 }, (_, i) => String(35 + i));
 const PROVINCIAS = ['Neuquén', 'Río Negro', 'Mendoza', 'La Pampa', 'Chubut', 'Buenos Aires', 'Córdoba', 'Santa Cruz', 'Salta'];
 
+// talles en su orden natural (no alfabético)
+function pickTalle(label, name, value, talles) {
+  const cur = String(value ?? '').trim().toUpperCase();
+  const opts = cur && !talles.includes(cur) ? [...talles, cur] : talles;
+  return html`<label class="field" for="f-${name}"><span>${label}</span>
+    <select id="f-${name}" name="${name}"><option value="">—</option>
+      ${opts.map((t) => html`<option value="${t}" ${raw(t === cur ? 'selected' : '')}>${t}</option>`)}</select></label>`;
+}
+
 export function preingresoFields(c) {
   return html`
     <fieldset class="field--wide sensitive"><legend>Datos personales · solo RRHH</legend>
@@ -78,20 +88,17 @@ export function preingresoFields(c) {
         ${field('Teléfono', 'telefono', c.telefono, { type: 'tel' })}
         ${field('Mail', 'mail', c.mail, { type: 'email', span: 2 })}
         ${field('Domicilio', 'domicilio', c.domicilio, { span: 2 })}
-        ${field('Localidad', 'localidad', c.localidad)}
-        ${field('Provincia', 'provincia', c.provincia, { list: 'dl-prov' })}
+        ${pickField('Localidad', 'localidad', c.localidad, [state.candidates.map((x) => x.localidad), state.nomina.map((x) => x.localidad), state.positions.map((x) => x.localidad)])}
+        ${pickField('Provincia', 'provincia', c.provincia, [PROVINCIAS, state.candidates.map((x) => x.provincia), state.nomina.map((x) => x.provincia)])}
       </div>
     </fieldset>
     <fieldset class="field--wide"><legend>Talles de ropa de trabajo</legend>
       <div class="form-grid form-grid--3">
-        ${field('Mameluco', 'talle_mameluco', c.talle_mameluco, { list: 'dl-talle-ropa' })}
-        ${field('Botas', 'talle_botas', c.talle_botas, { list: 'dl-talle-botas' })}
-        ${field('Campera', 'talle_campera', c.talle_campera, { list: 'dl-talle-ropa' })}
+        ${pickTalle('Mameluco', 'talle_mameluco', c.talle_mameluco, TALLES_ROPA)}
+        ${pickTalle('Botas', 'talle_botas', c.talle_botas, TALLES_BOTAS)}
+        ${pickTalle('Campera', 'talle_campera', c.talle_campera, TALLES_ROPA)}
       </div>
-    </fieldset>
-    <datalist id="dl-talle-ropa">${TALLES_ROPA.map((t) => html`<option value="${t}"></option>`)}</datalist>
-    <datalist id="dl-talle-botas">${TALLES_BOTAS.map((t) => html`<option value="${t}"></option>`)}</datalist>
-    <datalist id="dl-prov">${PROVINCIAS.map((t) => html`<option value="${t}"></option>`)}</datalist>`;
+    </fieldset>`;
 }
 
 export { raw };

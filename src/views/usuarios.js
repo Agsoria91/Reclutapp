@@ -26,7 +26,11 @@ export function render(el) {
         <div class="form-actions field--wide"><span class="spacer"></span><button class="btn btn--primary" type="submit">Dar acceso</button></div>
       </form>
     </section>
-    <section class="card"><h2 class="card-title">Con acceso</h2><div id="u-list">${mascot('loading', { compact: true, size: 90 })}</div></section>`);
+    <section class="card"><h2 class="card-title">Con acceso</h2><div id="u-list">${mascot('loading', { compact: true, size: 90 })}</div></section>
+    <section class="card"><h2 class="card-title">Respaldo de datos</h2>
+      <p class="muted">Descarga en un archivo todas las sillas, candidatos, ternas y la nómina completa. Guardalo en el OneDrive/Drive de RRHH (contiene datos personales: no lo compartas fuera del equipo). Con ese archivo se pueden restaurar los datos si algo saliera mal.</p>
+      <div class="form-actions"><button class="btn btn--primary" data-act="respaldo">Descargar respaldo</button></div>
+    </section>`);
   load(el);
 
   el.querySelector('#u-form').addEventListener('submit', async (e) => {
