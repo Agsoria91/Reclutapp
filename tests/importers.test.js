@@ -78,3 +78,20 @@ test('rango de mes objetivo', () => {
   assert.ok(!inMonthRange(p(null), '', '2026-12'));
   assert.ok(inMonthRange(p(null), '', ''));
 });
+
+test('embudo de entrevistas: cancelados cuentan hasta donde llegaron', async () => {
+  const { interviewStats } = await import('../src/lib/kpis.js');
+  const SM = Object.fromEntries(['cv_recibido', 'entrevista', 'entrevista_aprobada', 'validacion_rrll', 'examen_medico', 'apto', 'proximo_ingreso', 'ingresado', 'cancelado']
+    .map((c, i) => [c, { orden: (i + 1) * 10 }]));
+  const rows = [
+    { stage: 'cv_recibido' },
+    { stage: 'cancelado', en_entrevista: '2026-10-01' },                       // entrevistado, no aprobó
+    { stage: 'cancelado', en_entrevista: '2026-10-01', entrevista_ok: true, epo: '2026-10-05' }, // cae en examen
+    { stage: 'entrevista_aprobada' },                                          // sin fechas: cuenta por etapa
+    { stage: 'ingresado', en_entrevista: '2026-09-01', entrevista_ok: true, epo: '2026-09-05', aptitud_recibida: '2026-09-10', fecha_ingreso: '2026-10-01' },
+  ];
+  const s = interviewStats(rows, SM);
+  assert.deepEqual([s.entrevistados, s.aprobados, s.examen, s.aptos, s.ingresados, s.bajasPost], [4, 3, 2, 1, 1, 2]);
+  assert.equal(s.efectividad, 75);
+  assert.equal(s.conversion, 25);
+});

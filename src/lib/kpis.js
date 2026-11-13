@@ -110,3 +110,39 @@ export function candidateKpis(cands, stageMap, positions, today) {
     conversion: cands.length ? Math.round((ingresados.length / cands.length) * 100) : 0,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Entrevistas y efectividad. Un candidato "llegó" a un hito si tiene la fecha o
+// el indicador cargado, o si su etapa actual (no cancelada) es igual o posterior.
+// Así los cancelados cuentan hasta donde llegaron.
+// ---------------------------------------------------------------------------
+export const HITOS = [
+  ['entrevista', 'Entrevistados', (c) => !!c.en_entrevista || !!c.entrevista_ok],
+  ['entrevista_aprobada', 'Entrevista aprobada', (c) => !!c.entrevista_ok],
+  ['examen_medico', 'Examen médico', (c) => !!c.epo],
+  ['apto', 'Apto', (c) => !!c.aptitud_recibida],
+  ['ingresado', 'Ingresaron', (c) => !!c.fecha_ingreso && c.stage === 'ingresado'],
+];
+
+export function reached(c, code, stageMap) {
+  const h = HITOS.find((x) => x[0] === code);
+  if (h && h[2](c)) return true;
+  if (c.stage === 'cancelado' || !stageMap[c.stage] || !stageMap[code]) return false;
+  return stageMap[c.stage].orden >= stageMap[code].orden;
+}
+
+export function interviewStats(rows, stageMap) {
+  const n = (code) => rows.filter((c) => reached(c, code, stageMap)).length;
+  const entrevistados = n('entrevista');
+  const aprobados = n('entrevista_aprobada');
+  const examen = n('examen_medico');
+  const aptos = n('apto');
+  const ingresados = n('ingresado');
+  const bajasPost = rows.filter((c) => c.stage === 'cancelado' && reached(c, 'entrevista', stageMap)).length;
+  const pctOf = (a, b) => (b ? Math.round((a / b) * 100) : null);
+  return {
+    cvs: rows.length, entrevistados, aprobados, examen, aptos, ingresados, bajasPost,
+    efectividad: pctOf(aprobados, entrevistados), // de cada 100 entrevistas, cuántas aprueban
+    conversion: pctOf(ingresados, entrevistados), // de cada 100 entrevistas, cuántos ingresan
+  };
+}
