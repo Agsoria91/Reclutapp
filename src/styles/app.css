@@ -579,3 +579,5 @@ fieldset.sensitive { border-color: color-mix(in srgb, var(--tp-orange) 60%, var(
 .efe .minibar { flex: 1; }
 .efe .minibar span { background: var(--st-green); }
 @media (max-width: 640px) { .funnel li { grid-template-columns: 1fr 90px; } .funnel-bar { grid-column: 1 / -1; grid-row: 2; } }
+.tbl tr.is-off td { opacity: .55; }
+@media (max-width: 1500px) { .brand-app { display: none; } .nav a { padding: 8px 10px; } }

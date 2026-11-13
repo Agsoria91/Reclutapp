@@ -14,13 +14,15 @@ import * as login from './views/login.js';
 import * as usuarios from './views/usuarios.js';
 import * as ingresos from './views/ingresos.js';
 import * as entrevistas from './views/entrevistas.js';
+import * as nomina from './views/nomina.js';
 
 const ROUTES = {
   posiciones: { view: posiciones, label: 'Posiciones' },
-  candidatos: { view: candidatos, label: 'Candidatos PP' },
+  candidatos: { view: candidatos, label: 'Candidatos' },
   entrevistas: { view: entrevistas, label: 'Entrevistas' },
-  ingresos: { view: ingresos, label: 'Próximos ingresos', staff: true },
+  ingresos: { view: ingresos, label: 'Ingresos', staff: true },
   legajos: { view: legajos, label: 'Legajos', staff: true },
+  nomina: { view: nomina, label: 'Nómina', staff: true },
   importar: { view: importar, label: 'Importar', staff: true },
   usuarios: { view: usuarios, label: 'Usuarios', staff: true },
   presentar: { view: presentar, bare: true },
@@ -132,7 +134,7 @@ async function boot() {
     if (uid === lastUser && event !== 'SIGNED_OUT') return;
     lastUser = uid;
     await refreshAuth();
-    set({ positions: [], candidates: [], hires: [], loading: true }); // nunca mezclar datos de sesiones distintas
+    set({ positions: [], candidates: [], hires: [], nomina: [], loading: true }); // nunca mezclar datos de sesiones distintas
     if (event === 'SIGNED_IN') {
       toast(state.isStaff ? `Hola, ${session.user.email}` : 'Tu usuario no está habilitado como RRHH', state.isStaff ? 'ok' : 'error', 5000);
       if (state.isStaff && parseHash().name === 'login') location.hash = '#/posiciones';

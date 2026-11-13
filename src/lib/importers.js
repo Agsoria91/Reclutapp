@@ -271,7 +271,50 @@ export function parseCandidatesCSV(bytesOrText) {
 
 export function detectKind(text) {
   const head = norm(text.slice(0, 2000));
+  if (head.includes('apellido y nombre') && head.includes('cuil') && head.includes('ceco')) return 'nomina';
   if (head.includes('pos sap') && head.includes('puesto')) return 'positions';
   if (head.includes('title') && head.includes('status')) return 'candidates';
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Nómina EFiS (Windows-1252, separador ;). Clave: DNI.
+// ---------------------------------------------------------------------------
+const NOM_COLS = {
+  'id ext': 'id_ext', 'no pers.': 'nro_pers', 'nº pers.': 'nro_pers', 'apellido y nombre': 'nombre', 'dni': 'dni', 'cuil': 'cuil',
+  'nacimiento': 'fecha_nacimiento', 'f/ reconocida': 'f_reconocida', 'f/ ingreso': 'fecha_ingreso', 'sexo': 'sexo',
+  'encuadre': 'encuadre', 'categoria': 'categoria', 'fin pf': 'fin_pf', 'titling': 'titling', 'funcion': 'funcion',
+  'sector': 'sector', 'yacimiento': 'yacimiento', 'diagrama': 'diagrama', 'jefe': 'jefe', 'domicilio': 'domicilio',
+  'localidad': 'localidad', 'provincia': 'provincia', 'telefono': 'telefono', 'correo electronico': 'mail', 'pos': 'pos',
+  'ceco': 'ceco', 'aportes': 'aportes', 'ddjj': 'ddjj', 'regalo kit': 'regalo_kit',
+};
+const NOM_DATES = new Set(['fecha_nacimiento', 'f_reconocida', 'fecha_ingreso', 'fin_pf']);
+
+export function parseNominaCSV(bytesOrText) {
+  const text = typeof bytesOrText === 'string' ? bytesOrText : decodeBytes(bytesOrText);
+  const rows = parseCSV(text, guessSeparator(text.split(/\r?\n/, 1)[0]));
+  const hIdx = rows.findIndex((r) => r.some((c) => norm(c) === 'apellido y nombre') && r.some((c) => norm(c) === 'dni'));
+  if (hIdx < 0) throw new Error('No encontré las columnas "APELLIDO Y NOMBRE" y "DNI". ¿Es la planilla de Nómina?');
+  const header = rows[hIdx].map(norm);
+  const out = []; const warnings = [];
+  for (let r = hIdx + 1; r < rows.length; r++) {
+    const row = rows[r];
+    if (!row.some((c) => clean(c))) continue;
+    const o = {};
+    header.forEach((h, i) => {
+      const k = NOM_COLS[h];
+      if (!k) return;
+      const v = clean(row[i]);
+      o[k] = NOM_DATES.has(k) ? parseDMY(v) : v;
+    });
+    o.dni = (o.dni || '').replace(/\D/g, '') || null;
+    o.cuil = (o.cuil || '').replace(/\D/g, '') || null;
+    if (!o.nombre || !o.dni) { warnings.push(`Fila ${r + 1}: sin nombre o DNI, salteada`); continue; }
+    o.nombre = titleCase(o.nombre);
+    o.localidad = normLocalidad(o.localidad);
+    if (o.jefe === '#N/A') o.jefe = null;
+    if (o.mail) o.mail = o.mail.toLowerCase();
+    out.push(o);
+  }
+  return { rows: out, warnings };
 }

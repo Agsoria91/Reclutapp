@@ -67,6 +67,7 @@ async function readFile(el, file) {
     const text = decodeBytes(bytes);
     const kind = detectKind(text);
     if (!kind) throw new Error('No reconozco el archivo: no tiene las columnas de Seguimiento de ingresos ni de Candidatos PP.');
+    if (kind === 'nomina') throw new Error('Es la planilla de Nómina: importala desde Nómina → "Reimportar planilla".');
     const res = kind === 'positions' ? parsePositionsCSV(text) : parseCandidatesCSV(text);
     pending = { kind, ...res, fileName: file.name };
 
