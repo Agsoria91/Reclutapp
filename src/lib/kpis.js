@@ -25,6 +25,14 @@ export function applyFilters(rows, filters, getters) {
 export const isCovered = (p) => p.stage === 'ingresado';
 // La fecha objetivo se interpreta por mes/año: el día no importa.
 export const monthKey = (iso) => (iso ? String(iso).slice(0, 7) : '');
+// Rango de mes objetivo [desde, hasta] en 'AAAA-MM'. Con algún extremo
+// elegido, las sillas sin fecha objetivo quedan afuera.
+export function inMonthRange(p, desde, hasta) {
+  if (!desde && !hasta) return true;
+  const m = monthKey(p.fecha_objetivo);
+  if (!m) return false;
+  return (!desde || m >= desde) && (!hasta || m <= hasta);
+}
 export const isLate = (p, today) => !isCovered(p) && !!p.fecha_objetivo && monthKey(p.fecha_objetivo) < monthKey(today);
 export const hasPerson = (p) => !!(p.candidato_nombre && p.candidato_nombre.trim());
 
