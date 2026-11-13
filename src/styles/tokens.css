@@ -1,0 +1,109 @@
+/* ==========================================================================
+   Tokens de marca · Manual de Marca Tecpetrol, Edición 3.0 (feb 2026)
+   Primarios (web RGB):  Pantone 3015 / 348 / 369 / Cool Gray 10
+   Secundarios:          292, 513, 716, 7406, 582, 541, 490, 519
+   Tipografía en pantalla: Arial (palo seco) y Georgia (serif), según manual.
+   Para cambiar la identidad, tocar SOLO este archivo.
+   ========================================================================== */
+:root {
+  /* paleta primaria */
+  --tp-blue: #0073B4;      /* Pantone 3015 */
+  --tp-green: #008750;     /* Pantone 348  */
+  --tp-lime: #78B450;      /* Pantone 369  */
+  --tp-gray: #666666;      /* Cool Gray 10 */
+  /* paleta secundaria */
+  --tp-sky: #78BEE6;       /* 292  */
+  --tp-violet: #964B9B;    /* 513  */
+  --tp-orange: #FA9E32;    /* 716  */
+  --tp-yellow: #FFCD05;    /* 7406 */
+  --tp-olive: #8C8C0A;     /* 582  */
+  --tp-navy: #14467D;      /* 541  */
+  --tp-plum: #6E2864;      /* 519  */
+  --tp-wine: #642364;      /* 490  */
+  /* color funcional (fuera de manual, solo para estados de error/baja) */
+  --fx-red: #B4462D;
+
+  --font-sans: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --gap: 16px;
+  --shadow: 0 1px 2px rgb(0 0 0 / .06), 0 4px 16px rgb(0 0 0 / .05);
+
+  /* tema claro (por defecto) */
+  --bg: #F4F6F8;
+  --surface: #FFFFFF;
+  --surface-2: #EEF2F5;
+  --line: #DCE2E8;
+  --text: #22272B;
+  --text-2: #5C6670;
+  --accent: var(--tp-blue);
+  --accent-ink: #FFFFFF;
+  --focus: var(--tp-blue);
+  --logo-mono: none;
+  --logo-color: block;
+  color-scheme: light;
+}
+
+/* Tema oscuro "HUD": fondo azul noche, líneas finas, acentos de marca brillantes */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B1622;
+    --surface: #102030;
+    --surface-2: #15293C;
+    --line: #23415C;
+    --text: #E6EEF5;
+    --text-2: #93A9BD;
+    --accent: var(--tp-sky);
+    --accent-ink: #0B1622;
+    --focus: var(--tp-sky);
+    --shadow: 0 0 0 1px rgb(120 190 230 / .06), 0 8px 24px rgb(0 0 0 / .35);
+    --logo-mono: block;
+    --logo-color: none;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B1622;
+  --surface: #102030;
+  --surface-2: #15293C;
+  --line: #23415C;
+  --text: #E6EEF5;
+  --text-2: #93A9BD;
+  --accent: var(--tp-sky);
+  --accent-ink: #0B1622;
+  --focus: var(--tp-sky);
+  --shadow: 0 0 0 1px rgb(120 190 230 / .06), 0 8px 24px rgb(0 0 0 / .35);
+  --logo-mono: block;
+  --logo-color: none;
+  color-scheme: dark;
+}
+
+/* Colores por etapa: el nombre del token viene de public.stages.color */
+:root {
+  --st-neutral: var(--tp-gray);
+  --st-sky: #3E8FC0;
+  --st-blue: var(--tp-blue);
+  --st-navy: var(--tp-navy);
+  --st-plum: var(--tp-plum);
+  --st-violet: var(--tp-violet);
+  --st-orange: #D9790B;
+  --st-yellow: #A88600;
+  --st-lime: #4F8A2B;
+  --st-green: var(--tp-green);
+  --st-red: var(--fx-red);
+}
+:root[data-theme="dark"] {
+  --st-neutral: #9AA7B3; --st-sky: var(--tp-sky); --st-blue: #4FA8E0; --st-navy: #7FA6D6;
+  --st-plum: #D07BC4; --st-violet: #C58BCB; --st-orange: var(--tp-orange); --st-yellow: var(--tp-yellow);
+  --st-lime: var(--tp-lime); --st-green: #3DBE7E; --st-red: #F07D62;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --st-neutral: #9AA7B3; --st-sky: var(--tp-sky); --st-blue: #4FA8E0; --st-navy: #7FA6D6;
+    --st-plum: #D07BC4; --st-violet: #C58BCB; --st-orange: var(--tp-orange); --st-yellow: var(--tp-yellow);
+    --st-lime: var(--tp-lime); --st-green: #3DBE7E; --st-red: #F07D62;
+  }
+}
