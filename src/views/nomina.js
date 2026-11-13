@@ -9,7 +9,7 @@ import { decodeBytes } from '../lib/csv.js';
 import { parseNominaCSV } from '../lib/importers.js';
 import {
   filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, formData, field, confirmDialog, animateIn, pickField,
-  pivot, pivotTable, pivotCSV, downloadCSV, dimSelect, saveLocal, loadLocal,
+
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 
@@ -17,12 +17,7 @@ const DIMS = ['yacimiento', 'sector', 'encuadre', 'estado', 'pendiente'];
 const filters = Object.fromEntries(DIMS.map((d) => [d, new Set(d === 'estado' ? ['activo'] : [])]));
 let search = '';
 let page = 1;
-// Reporte cruzado de la nómina
-const REP = [['yacimiento', 'Yacimiento'], ['sector', 'Sector'], ['localidad', 'Localidad'], ['provincia', 'Provincia'],
-  ['encuadre', 'Encuadre'], ['categoria', 'Categoría'], ['funcion', 'Función'], ['jefe', 'Jefe'], ['diagrama', 'Diagrama'],
-  ['sexo', 'Sexo'], ['anioIngreso', 'Año de ingreso'], ['edad', 'Rango de edad'], ['origen', 'Origen del registro']];
-let repFilas = loadLocal('reclutapp.nom.repFilas', 'yacimiento');
-let repCols = loadLocal('reclutapp.nom.repCols', 'encuadre');
+
 const PAGE = 80;
 
 const okVal = (v) => /^ok$/i.test((v || '').trim()) || /no corresponde/i.test(v || '');
@@ -54,14 +49,7 @@ const getters = {
   pendiente: (n) => pendientes(n),
 };
 const edad = (n) => (n.fecha_nacimiento ? Math.floor(daysBetween(n.fecha_nacimiento, todayISO()) / 365.25) : null);
-const repVal = {
-  yacimiento: (n) => getters.yacimiento(n), sector: (n) => getters.sector(n), localidad: (n) => n.localidad, provincia: (n) => n.provincia,
-  encuadre: (n) => n.encuadre, categoria: (n) => n.categoria, funcion: (n) => n.funcion || n.titling, jefe: (n) => n.jefe, diagrama: (n) => n.diagrama,
-  sexo: (n) => n.sexo, anioIngreso: (n) => n.fecha_ingreso?.slice(0, 4),
-  edad: (n) => { const e = edad(n); return e == null ? null : e < 25 ? '< 25' : e < 35 ? '25–34' : e < 45 ? '35–44' : e < 55 ? '45–54' : '55 +'; },
-  origen: (n) => (n.position_id || n.candidate_id ? 'Ingreso por silla' : n.origen === 'app' ? 'Alta en la app' : 'Planilla'),
-};
-const repLabel = (k) => REP.find((d) => d[0] === k)?.[1] || k;
+
 
 function filterRows(except) {
   return state.nomina.filter((n) => DIMS.every((d) => d === except || !filters[d].size || [].concat(getters[d](n)).some((v) => filters[d].has(v))));
@@ -117,19 +105,6 @@ export function render(el) {
     <article class="card"><h2 class="card-title">Por yacimiento</h2>${bars(countBy(filterRows('yacimiento'), getters.yacimiento), { dim: 'yacimiento', selected: filters.yacimiento, chart: 'n-yac', limit: 12 })}</article>
     <article class="card"><h2 class="card-title">Por sector</h2>${bars(countBy(filterRows('sector'), getters.sector), { color: 'green', dim: 'sector', selected: filters.sector, chart: 'n-sec', limit: 12 })}</article>
   </section>
-  <section class="card" id="reporte-nomina">
-    <header class="report-head">
-      <div><h2 class="card-title" style="margin:0">Reporte de nómina</h2>
-        <p class="muted small" style="margin:4px 0 0">${base.length} personas · ${repLabel(repFilas)} × ${repLabel(repCols)}${DIMS.some((d) => filters[d].size) ? ' · con los filtros de arriba' : ''}</p></div>
-      <div class="controls report-actions">
-        ${dimSelect('nrep-filas', 'Filas', REP, repFilas)}
-        ${dimSelect('nrep-cols', 'Columnas', REP, repCols)}
-        <button class="btn btn--sm" data-act="nrep-csv">Exportar reporte</button>
-        <button class="btn btn--sm" data-act="nrep-print">Imprimir</button>
-      </div>
-    </header>
-    ${pivotTable(pivot(base, repVal[repFilas], repVal[repCols]), { rowLabel: repLabel(repFilas) })}
-  </section>
   <section class="card">
     <header class="list-head"><h2 class="card-title">Personal <small class="muted">${rows.length}</small></h2>
       <label class="search"><input type="search" id="nom-search" placeholder="Buscar nombre, DNI, Nº pers., POS, función, jefe…" value="${search}"></label></header>
@@ -164,8 +139,6 @@ export function render(el) {
       const act = e.target.closest('[data-act]')?.dataset.act;
       if (act === 'more') { page++; render(el); return; }
       if (act === 'export') return exportCSV(currentRows(el));
-      if (act === 'nrep-csv') return downloadCSV(`nomina_${repFilas}_x_${repCols}_${todayISO()}.csv`, pivotCSV(pivot(filterRows(null), repVal[repFilas], repVal[repCols]), repLabel(repFilas)));
-      if (act === 'nrep-print') { document.body.classList.add('print-reporte'); window.print(); setTimeout(() => document.body.classList.remove('print-reporte'), 500); return; }
       if (act === 'new') return openPersona(null);
       const tr = e.target.closest('tr[data-id]');
       if (tr) openPersona(tr.dataset.id);
@@ -173,8 +146,6 @@ export function render(el) {
     el.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('tr[data-id]')) openPersona(e.target.dataset.id); });
     el.addEventListener('change', (e) => {
       if (e.target.id === 'nom-file' && e.target.files[0]) reimportar(e.target.files[0]);
-      if (e.target.id === 'nrep-filas') { repFilas = e.target.value; saveLocal('reclutapp.nom.repFilas', repFilas); render(el); }
-      if (e.target.id === 'nrep-cols') { repCols = e.target.value; saveLocal('reclutapp.nom.repCols', repCols); render(el); }
     });
   }
   el._rows = rows;
