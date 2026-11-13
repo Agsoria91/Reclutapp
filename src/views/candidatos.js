@@ -5,7 +5,7 @@ import { fmtInt, pct, todayISO, norm, daysBetween, fmtMonth } from '../lib/forma
 import { countBy, candidateKpis, sectorMatches } from '../lib/kpis.js';
 import {
   stagePill, filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, formData, field,
-  confirmDialog, saveLocal, loadLocal, serializeFilters, restoreFilters, prevSize,
+  confirmDialog, saveLocal, loadLocal, serializeFilters, restoreFilters, prevSize, pickField,
   animateIn,
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
@@ -253,10 +253,10 @@ export function openCandidate(id) {
     <form id="cand-form" class="form-grid">
       ${field('Nombre y apellido', 'nombre', c.nombre, { required: true, span: 2 })}
       ${field('Etapa', 'stage', c.stage, { options: stageOpts, hint: c._silla ? 'Se refleja en su silla.' : '' })}
-      ${field('Área', 'area', c.area, { list: 'dlc-area' })}
-      ${field('Servicio / Sector', 'servicio', c.servicio, { list: 'dlc-serv' })}
-      ${field('Posición', 'posicion', c.posicion, { list: 'dlc-pos' })}
-      ${field('Procedencia', 'procedencia', c.procedencia, { list: 'dlc-proc' })}
+      ${pickField('Área', 'area', c.area, [state.candidates.map((x) => x.area), state.positions.map((x) => x.yacimiento)])}
+      ${pickField('Servicio / Sector', 'servicio', c.servicio, state.candidates.map((x) => x.servicio))}
+      ${pickField('Posición', 'posicion', c.posicion, state.candidates.map((x) => x.posicion))}
+      ${pickField('Procedencia', 'procedencia', c.procedencia, [state.candidates.map((x) => x.procedencia), state.positions.map((x) => x.procedencia)])}
       ${preingresoFields(c)}
       ${field('CV recibido', 'cv_recibido', c.cv_recibido, { type: 'date' })}
       ${field('En entrevista', 'en_entrevista', c.en_entrevista, { type: 'date' })}
@@ -277,11 +277,6 @@ export function openCandidate(id) {
         <button type="submit" class="btn btn--primary">Guardar</button>
       </div>
     </form>
-    <datalist id="dlc-area">${u((x) => x.area).map((v) => html`<option value="${v}">`)}</datalist>
-    <datalist id="dlc-serv">${u((x) => x.servicio).map((v) => html`<option value="${v}">`)}</datalist>
-    <datalist id="dlc-pos">${u((x) => x.posicion).map((v) => html`<option value="${v}">`)}</datalist>
-    <datalist id="dlc-proc">${u((x) => x.procedencia).map((v) => html`<option value="${v}">`)}</datalist>
-    <datalist id="dlc-loc">${u((x) => x.localidad).map((v) => html`<option value="${v}">`)}</datalist>
   `, { title: c.id ? c.nombre : 'Nuevo candidato', wide: true });
 
   const form = root.querySelector('#cand-form');

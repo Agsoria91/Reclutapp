@@ -46,6 +46,12 @@ Las migraciones están en `supabase/migrations/`. La clave de `src/config.js` es
 * Base de datos: 500 MB. Las 128 sillas y 338 candidatos actuales ocupan menos de 5 MB.
 * Importante: un proyecto gratuito se **pausa tras 7 días sin uso**. Se reactiva desde el panel de Supabase (Restore). Con uso semanal normal no pasa.
 
+## Respaldos
+
+* **Respaldo descargable**: *Usuarios → Descargar respaldo* (o el aviso naranja que aparece si pasan 7 días sin bajar uno) descarga un archivo con sillas, candidatos, ternas y la nómina completa. Guardarlo en el OneDrive/Drive de RRHH: contiene datos personales.
+* **Respaldo en la base**: el schema `respaldo` de Supabase guarda copias tomadas antes de cada carga masiva o cambio de estructura (no es visible desde la app ni la API).
+* Los CVs están en el Storage de Supabase (bucket privado `cvs`) y no se incluyen en el archivo descargable.
+
 ## Administración
 
 **Dar acceso a alguien de RRHH**: desde la app, pantalla *Usuarios* → email y nombre → *Dar acceso*. Se genera una contraseña temporal que la persona cambia en *Mi contraseña*. Desde la misma pantalla se genera una contraseña nueva o se quita el acceso.

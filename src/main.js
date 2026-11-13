@@ -15,6 +15,7 @@ import * as usuarios from './views/usuarios.js';
 import * as ingresos from './views/ingresos.js';
 import * as entrevistas from './views/entrevistas.js';
 import * as nomina from './views/nomina.js';
+import { descargarRespaldo, diasDesdeRespaldo } from './lib/respaldo.js';
 
 const ROUTES = {
   posiciones: { view: posiciones, label: 'Posiciones' },
@@ -79,6 +80,10 @@ function shell(name) {
     </div>
   </header>
   ${!state.isStaff && name !== 'login' ? html`<div class="public-banner">Vista pública · solo lectura, sin datos personales ni sueldos.</div>` : ''}
+  ${state.isStaff && (diasDesdeRespaldo() == null || diasDesdeRespaldo() >= 7) ? html`<div class="backup-banner">
+    ${diasDesdeRespaldo() == null ? 'Todavía no descargaste un respaldo desde esta computadora.' : `Hace ${diasDesdeRespaldo()} días que no descargás un respaldo.`}
+    Conviene guardar uno por semana en el OneDrive/Drive de RRHH.
+    <button class="btn btn--sm" data-act="respaldo">Descargar respaldo</button></div>` : ''}
   <main id="view" class="view" tabindex="-1"></main>
   <footer class="foot">Tecpetrol · Operación EFiS · Recursos Humanos</footer>`;
 }
@@ -97,6 +102,14 @@ function route() {
   $('#btn-refresh')?.addEventListener('click', () => loadAll());
   $('#btn-logout')?.addEventListener('click', async () => { await sb.auth.signOut(); });
   $('#btn-pass')?.addEventListener('click', () => usuarios.openChangePassword());
+  document.querySelectorAll('[data-act="respaldo"]').forEach((b) => b.addEventListener('click', async () => {
+    b.disabled = true; b.textContent = 'Preparando…';
+    try {
+      const c = await descargarRespaldo();
+      toast(`Respaldo descargado: ${c.nomina} personas, ${c.candidates} candidatos, ${c.positions} sillas`, 'ok', 6000);
+      route();
+    } catch (e) { toast(e.message, 'error'); b.disabled = false; b.textContent = 'Descargar respaldo'; }
+  }));
 }
 
 function draw() {
