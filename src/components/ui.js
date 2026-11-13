@@ -71,10 +71,10 @@ export function selectFilter({ dim, label, options, selected, allLabel = 'Todos'
 
 // Desplegable de selección MÚLTIPLE con casillas. `presets` son atajos
 // ([etiqueta, [valores]]), p. ej. "Todos menos Ingresado".
-export function multiSelectFilter({ dim, label, options, selected, allLabel = 'Todos', presets = [], open = false }) {
+export function multiSelectFilter({ dim, label, options, selected, allLabel = 'Todos', presets = [], open = false, labelOf = (v) => v }) {
   const sel = selected || new Set();
   const summary = !sel.size ? allLabel
-    : sel.size === 1 ? [...sel][0]
+    : sel.size <= 2 ? [...sel].map(labelOf).join(' + ')
     : `${sel.size} seleccionados`;
   return html`<div class="fmulti"><span class="fmulti-label">${label}</span>
     <details class="fmulti-box" data-multi="${dim}" ${raw(open ? 'open' : '')}>
@@ -86,7 +86,7 @@ export function multiSelectFilter({ dim, label, options, selected, allLabel = 'T
         </div>
         ${options.map(([v, n]) => html`<label class="check fmulti-opt">
           <input type="checkbox" data-multi-opt="${dim}" value="${v}" ${raw(sel.has(v) ? 'checked' : '')}>
-          <span>${v}</span>${n != null ? html`<small>${n}</small>` : ''}</label>`)}
+          <span>${labelOf(v)}</span>${n != null ? html`<small>${n}</small>` : ''}</label>`)}
       </div>
     </details></div>`;
 }

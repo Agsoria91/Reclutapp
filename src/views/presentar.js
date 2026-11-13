@@ -4,25 +4,22 @@
 import { html, raw } from '../lib/html.js';
 import { state } from '../lib/store.js';
 import { fmtDate, fmtMonth, todayISO, pct, fmtInt } from '../lib/format.js';
-import { applyFilters, positionKpis, pendingByTarget, isCovered, hasPerson, isLate, inMonthRange } from '../lib/kpis.js';
+import { applyFilters, positionKpis, pendingByTarget, isCovered, hasPerson, isLate } from '../lib/kpis.js';
 import { stagePill } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
-import { posGetters, pendingTable } from './posiciones.js';
+import { posGetters, pendingTable, mesLabel } from './posiciones.js';
 
 export function render(el, params) {
   if (state.loading && !state.positions.length) { el.innerHTML = String(mascot('loading')); return; }
   if (state.error) { el.innerHTML = String(mascot('error', { text: state.error })); return; }
 
   const f = {};
-  for (const d of ['area', 'sector', 'stage', 'cobertura']) f[d] = new Set((params.get(d) || '').split('|').filter(Boolean));
+  for (const d of ['area', 'sector', 'stage', 'cobertura', 'mes']) f[d] = new Set((params.get(d) || '').split('|').filter(Boolean));
   let rows = applyFilters(state.positions, f, posGetters);
   const soloPend = params.get('pend') === '1';
   if (soloPend) rows = rows.filter((p) => !isCovered(p));
-  const desde = params.get('desde') || '';
-  const hasta = params.get('hasta') || '';
-  rows = rows.filter((p) => inMonthRange(p, desde, hasta));
-  const rango = desde && hasta ? ` · objetivo ${fmtMonth(desde)} a ${fmtMonth(hasta)}`
-    : desde ? ` · objetivo desde ${fmtMonth(desde)}` : hasta ? ` · objetivo hasta ${fmtMonth(hasta)}` : '';
+  const meses = [...f.mes].sort();
+  const rango = meses.length ? ` · objetivo ${meses.map(mesLabel).join(', ')}` : '';
   const today = todayISO();
   const k = positionKpis(rows, today);
   const pend = pendingByTarget(rows, today);
