@@ -518,3 +518,12 @@ fieldset.sensitive { border-color: color-mix(in srgb, var(--tp-orange) 60%, var(
 .fmulti-opt:hover { background: var(--surface-2); }
 .fmulti-opt small { color: var(--text-2); font-weight: 700; }
 @media (max-width: 640px) { .fmulti { width: 100%; } .fmulti-box, .fmulti-box > summary { flex: 1; max-width: none; } }
+
+/* rango de mes objetivo */
+.fmonth { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.fmonth select {
+  min-height: 38px; padding: 6px 8px; border-radius: var(--radius-sm); border: 1px solid var(--line);
+  background: var(--surface); color: var(--text); font: 14px var(--font-sans);
+}
+.fmonth.is-active select { border-color: var(--accent); }
+.icon-btn--sm { width: 30px; height: 30px; font-size: 13px; }

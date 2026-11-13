@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parsePositionsCSV, parseCandidatesCSV, parseDayMonth, parseNumber, detectKind } from '../src/lib/importers.js';
 import { parseCSV } from '../src/lib/csv.js';
-import { positionKpis, pendingByTarget, sectorMatches } from '../src/lib/kpis.js';
+import { positionKpis, pendingByTarget, sectorMatches, inMonthRange } from '../src/lib/kpis.js';
 
 // Fixtures sintéticas: nunca usar datos reales de personas en el repo.
 const POS = [
@@ -67,4 +67,14 @@ test('KPIs de posiciones', () => {
   assert.deepEqual(positionKpis(P, '2026-11-13'), { total: 5, cubiertas: 1, pendientes: 4, sinCandidato: 2, enProceso: 2, vencidas: 1 });
   const g = pendingByTarget(P, '2026-11-13');
   assert.deepEqual(g.map((x) => [x.fecha, x.total, x.vencida]), [['2026-10', 1, true], ['2026-11', 1, false], ['2027-01', 2, false]]);
+});
+
+test('rango de mes objetivo', () => {
+  const p = (f) => ({ fecha_objetivo: f });
+  assert.ok(inMonthRange(p('2026-12-15'), '', '2026-12'));
+  assert.ok(!inMonthRange(p('2027-01-01'), '', '2026-12'));
+  assert.ok(inMonthRange(p('2026-10-01'), '2026-10', '2026-12'));
+  assert.ok(!inMonthRange(p('2026-09-30'), '2026-10', ''));
+  assert.ok(!inMonthRange(p(null), '', '2026-12'));
+  assert.ok(inMonthRange(p(null), '', ''));
 });
