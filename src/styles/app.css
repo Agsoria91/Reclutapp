@@ -602,3 +602,6 @@ fieldset.sensitive { border-color: color-mix(in srgb, var(--tp-orange) 60%, var(
   .report-actions, .filters, .head-actions, .backup-banner { display: none !important; }
   .tbl--pivot td { background: none !important; }
 }
+.btn--excel { color: var(--tp-green); border-color: color-mix(in srgb, var(--tp-green) 50%, var(--line)); }
+:root[data-theme="dark"] .btn--excel { color: var(--tp-lime); }
+@media (max-width: 640px) { .btn--excel { display: none; } }

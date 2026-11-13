@@ -16,6 +16,7 @@ import * as ingresos from './views/ingresos.js';
 import * as entrevistas from './views/entrevistas.js';
 import * as nomina from './views/nomina.js';
 import { descargarRespaldo, diasDesdeRespaldo } from './lib/respaldo.js';
+import { descargarExcel } from './lib/reporteExcel.js';
 
 const ROUTES = {
   posiciones: { view: posiciones, label: 'Posiciones' },
@@ -70,6 +71,7 @@ function shell(name) {
       ${navItems.map(([k, v]) => html`<a href="#/${k}" class="${k === name ? 'is-active' : ''}" ${k === name ? html`aria-current="page"` : ''}>${v.label}</a>`)}
     </nav>
     <div class="topbar-right">
+      <button class="btn btn--sm btn--excel" id="btn-excel" title="${state.isStaff ? 'Descargar todo en Excel (incluye nómina y datos personales)' : 'Descargar resumen en Excel (sin datos personales)'}">⬇ Excel</button>
       <button class="icon-btn" id="btn-refresh" title="Actualizar datos" aria-label="Actualizar datos">⟳</button>
       <button class="icon-btn" id="btn-theme" title="Tema claro / oscuro" aria-label="Cambiar tema">◐</button>
       ${state.session
@@ -102,6 +104,12 @@ function route() {
   $('#btn-refresh')?.addEventListener('click', () => loadAll());
   $('#btn-logout')?.addEventListener('click', async () => { await sb.auth.signOut(); });
   $('#btn-pass')?.addEventListener('click', () => usuarios.openChangePassword());
+  $('#btn-excel')?.addEventListener('click', async (e) => {
+    const b = e.currentTarget; b.disabled = true; b.textContent = 'Armando…';
+    try { const n = await descargarExcel(); toast(`Excel descargado: ${n} hojas`, 'ok'); }
+    catch (err) { console.error(err); toast('No se pudo armar el Excel: ' + err.message, 'error', 6000); }
+    b.disabled = false; b.textContent = '⬇ Excel';
+  });
   document.querySelectorAll('[data-act="respaldo"]').forEach((b) => b.addEventListener('click', async () => {
     b.disabled = true; b.textContent = 'Preparando…';
     try {
