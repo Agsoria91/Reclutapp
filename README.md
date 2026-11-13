@@ -6,7 +6,8 @@ App web que une las tres patas del reclutamiento de la operación EFiS:
 |---|---|---|
 | **Posiciones** ("el taco") | Una fila por silla a cubrir: área, sector, persona asignada, estado, fecha objetivo. Incluye **Modo reunión** limpio e imprimible (PDF). | Público (solo lectura) · RRHH edita |
 | **Candidatos PP** | Pipeline de todos los orígenes: KPIs por etapa, avance vs. necesidad, días promedio, origen, motivos de baja, localidades. RRHH ve fichas, CVs y **sienta candidatos en sillas**. | KPIs públicos · fichas solo RRHH |
-| **Legajos** | Registro de ingresados. Se crea solo cuando una silla pasa a *Ingresado*; editable y exportable a CSV. | Solo RRHH |
+| **Nómina** | Registro único de todo el personal EFiS (planilla + ingresos confirmados en la app). | Solo RRHH |
+| **Legajos** | La nómina filtrada a quienes ingresaron por una silla (mismo registro, no una copia). | Solo RRHH |
 
 Frontend: Vite + JavaScript con módulos ES (sin framework). Backend: Supabase (Postgres + Auth + Storage), consumido directo desde el navegador. Hosting: GitHub Pages.
 

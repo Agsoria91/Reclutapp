@@ -41,15 +41,16 @@ export async function loadAll({ silent = false } = {}) {
   if (!silent) set({ loading: true, error: null });
   try {
     const staff = state.isStaff;
-    const [stages, positions, candidates, hires, terna, nomina] = await Promise.all([
+    const [stages, positions, candidates, terna, nomina] = await Promise.all([
       fetchAll('stages', '*', 'orden'),
       fetchAll(staff ? 'positions' : 'positions_public'),
       fetchAll(staff ? 'candidates' : 'candidates_public'),
-      staff ? fetchAll('hires') : Promise.resolve([]),
       staff ? fetchAll('position_candidates', '*', 'added_at') : Promise.resolve([]),
       staff ? fetchAll('nomina', '*', 'nombre') : Promise.resolve([]),
     ]);
     const stageMap = Object.fromEntries(stages.map((s) => [s.code, s]));
+    // Legajos = la nómina filtrada a quienes ingresaron por una silla (mismo registro)
+    const hires = nomina.filter((n) => n.position_id || n.candidate_id);
     if (staff) {
       const seat = new Map(positions.filter((p) => p.candidate_id).map((p) => [p.candidate_id, p]));
       candidates.forEach((c) => { c._silla = seat.get(c.id) || null; c._ternas = []; });
