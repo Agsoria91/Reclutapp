@@ -45,9 +45,18 @@ export function loadLocal(key, fallback) {
 }
 
 // KPI. Si value es número, se anima (cuenta) desde el valor anterior.
-export function kpi(label, value, { sub, tone = '', big = false, suffix = '', id } = {}) {
+export function kpi(label, value, { sub, tone = '', big = false, suffix = '', id, act, selected = false, hint } = {}) {
   const isNum = typeof value === 'number' && Number.isFinite(value);
   const key = id || label;
+  if (act) {
+    // cuadro clickeable: filtra la pantalla
+    return html`<button type="button" class="kpi kpi--click ${tone ? 'kpi--' + tone : ''} ${big ? 'kpi--big' : ''} ${selected ? 'is-sel' : ''}" data-kpi="${act}" aria-pressed="${!!selected}">
+      <span class="kpi-label">${label}</span>
+      <span class="kpi-value" ${isNum ? raw(`data-n="${value}" data-k="${esc(key)}" data-suffix="${esc(suffix)}"`) : ''}>${isNum ? fmtNum(numCache.get(key) ?? value) + suffix : value ?? '—'}</span>
+      ${sub ? html`<span class="kpi-sub">${sub}</span>` : ''}
+      <span class="kpi-hint">${selected ? 'Mostrando ✓' : hint || 'Ver detalle'}</span>
+    </button>`;
+  }
   return html`<div class="kpi ${tone ? 'kpi--' + tone : ''} ${big ? 'kpi--big' : ''}">
     <span class="kpi-label">${label}</span>
     <span class="kpi-value" ${isNum ? raw(`data-n="${value}" data-k="${esc(key)}" data-suffix="${esc(suffix)}"`) : ''}>${isNum ? fmtNum(numCache.get(key) ?? value) + suffix : value ?? '—'}</span>
@@ -282,4 +291,83 @@ if (typeof document !== 'undefined' && !document._pickBound) {
       input.hidden = true; input.name = ''; input.required = false;
     }
   });
+}
+
+// ---------------------------------------------------------------------------
+// Reporte cruzado (tabla dinámica): filas × columnas con totales.
+// ---------------------------------------------------------------------------
+export function pivot(rows, rowFn, colFn) {
+  const cells = new Map(); const rt = new Map(); const ct = new Map();
+  // agrupar sin distinguir mayúsculas/acentos ("NEUQUEN" = "Neuquén"); se muestra la escritura más usada
+  const vistas = new Map();
+  const canon = (v) => {
+    const s = String(v ?? '').trim();
+    if (!s) return 'Sin dato';
+    const k = normKey(s);
+    const m = vistas.get(k) || new Map(); m.set(s, (m.get(s) || 0) + (s === s.toUpperCase() && s.length > 4 ? 0.5 : 1)); vistas.set(k, m);
+    return k;
+  };
+  const etiqueta = (k) => (k === 'Sin dato' ? k : [...vistas.get(k)].sort((x, y) => y[1] - x[1])[0][0]);
+  const tmp = rows.map((r) => [canon(rowFn(r)), canon(colFn(r))]);
+  rows = tmp;
+  rowFn = (r) => r[0]; colFn = (r) => r[1];
+  for (const r of rows) {
+    const a = rowFn(r) || 'Sin dato'; const b = colFn(r) || 'Sin dato';
+    const k = a + '\u0000' + b;
+    cells.set(k, (cells.get(k) || 0) + 1);
+    rt.set(a, (rt.get(a) || 0) + 1); ct.set(b, (ct.get(b) || 0) + 1);
+  }
+  const byCount = (m) => [...m.entries()].sort((x, y) => y[1] - x[1] || String(x[0]).localeCompare(String(y[0]), 'es')).map((e) => e[0]);
+  // se devuelven las etiquetas visibles; internamente se cruzan por clave normalizada
+  const rk = byCount(rt); const ck = byCount(ct);
+  const rl = new Map(rk.map((k) => [etiqueta(k), k])); const cl = new Map(ck.map((k) => [etiqueta(k), k]));
+  return {
+    rowKeys: [...rl.keys()], colKeys: [...cl.keys()], total: rows.length,
+    cell: (a, b) => cells.get(rl.get(a) + '\u0000' + cl.get(b)) || 0,
+    rowTotal: (a) => rt.get(rl.get(a)) || 0, colTotal: (b) => ct.get(cl.get(b)) || 0,
+    max: Math.max(1, ...cells.values()),
+  };
+}
+
+export function pivotTable(p, { rowLabel = '', limit = 30 } = {}) {
+  if (!p.total) return html`<p class="muted">Sin datos para esta selección.</p>`;
+  const rows = p.rowKeys.slice(0, limit);
+  const resto = p.rowKeys.slice(limit);
+  return html`<div class="table-wrap"><table class="tbl tbl--pivot">
+    <thead><tr><th>${rowLabel}</th>${p.colKeys.map((c) => html`<th class="num">${c}</th>`)}<th class="num">Total</th><th class="num">%</th></tr></thead>
+    <tbody>${rows.map((r) => html`<tr><td><strong>${r}</strong></td>
+      ${p.colKeys.map((c) => { const v = p.cell(r, c); return html`<td class="num ${v ? '' : 'muted'}" style="${raw(v ? `background:color-mix(in srgb, var(--st-blue) ${Math.round(8 + (v / p.max) * 30)}%, transparent)` : '')}">${v || '·'}</td>`; })}
+      <td class="num"><b>${p.rowTotal(r)}</b></td><td class="num muted">${Math.round((p.rowTotal(r) / p.total) * 100)}%</td></tr>`)}
+      ${resto.length ? html`<tr><td class="muted">Otros (${resto.length})</td>${p.colKeys.map((c) => html`<td class="num muted">${resto.reduce((s, r) => s + p.cell(r, c), 0) || '·'}</td>`)}<td class="num">${resto.reduce((s, r) => s + p.rowTotal(r), 0)}</td><td></td></tr>` : ''}
+    </tbody>
+    <tfoot><tr><td>Total</td>${p.colKeys.map((c) => html`<td class="num">${p.colTotal(c)}</td>`)}<td class="num">${p.total}</td><td class="num">100%</td></tr></tfoot>
+  </table></div>`;
+}
+
+export function pivotCSV(p, rowLabel) {
+  const q = (v) => { const s = String(v ?? ''); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const lines = [[rowLabel, ...p.colKeys, 'Total'].map(q).join(';')];
+  for (const r of p.rowKeys) lines.push([r, ...p.colKeys.map((c) => p.cell(r, c)), p.rowTotal(r)].map(q).join(';'));
+  lines.push(['Total', ...p.colKeys.map((c) => p.colTotal(c)), p.total].map(q).join(';'));
+  return lines.join('\r\n');
+}
+
+// Descarga un CSV que Excel abre bien (separador ; y BOM UTF-8).
+export function downloadCSV(nombre, texto) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + texto], { type: 'text/csv;charset=utf-8' }));
+  a.download = nombre;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+
+export function rowsToCSV(cols, rows) {
+  const q = (v) => { const s = v == null ? '' : String(v); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  return [cols.map(([, l]) => q(l)).join(';'), ...rows.map((r) => cols.map(([k]) => q(typeof k === 'function' ? k(r) : r[k])).join(';'))].join('\r\n');
+}
+
+// Selector simple para reportes (filas / columnas)
+export function dimSelect(id, label, dims, value) {
+  return html`<label class="fselect"><span>${label}</span><select id="${id}">
+    ${dims.map(([k, l]) => html`<option value="${k}" ${raw(k === value ? 'selected' : '')}>${l}</option>`)}</select></label>`;
 }
