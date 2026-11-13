@@ -1,0 +1,1552 @@
+[
+{
+"puesto": "Ingresante (sin experiencia)",
+"categoria": "A",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Bachero",
+"categoria": "B",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Maestranza",
+"categoria": "B",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Mucama/o",
+"categoria": "B",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ordenanza",
+"categoria": "B",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante de transporte de cargar y descargas",
+"categoria": "C",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante de tareas generales",
+"categoria": "C",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Banderillero",
+"categoria": "C",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Jardinero",
+"categoria": "C",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Lavador de flota liviana",
+"categoria": "C",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Sereno",
+"categoria": "C",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Guardabarreras",
+"categoria": "C",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante de oficio",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante especializado, dinamometría y econometría",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante de cocina",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante especializado en automatización",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante especializado en instrumentación",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante especializado en telemetría",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante de planta de compresión de gas",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante de planta de tratamiento de agua",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante de planta de tratamiento de gas",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante de planta de tratamiento de petróleo",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante de planta eléctrica",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante pañolero",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante playón",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Despachante de almacenes",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Despachante de combustible",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Lavador de flota pesada",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ayudante de recorredor nocturno",
+"categoria": "D",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Control de acceso sin portación de armas",
+"categoria": "E",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Mozo",
+"categoria": "E",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Gomero",
+"categoria": "E",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer flota liviana",
+"categoria": "F",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Medio oficial amolador",
+"categoria": "F",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Medio oficial chapista",
+"categoria": "F",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Medio oficial dinamometría",
+"categoria": "F",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Medio oficial econometría",
+"categoria": "F",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Medio oficial electricista",
+"categoria": "F",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Medio oficial mecánico",
+"categoria": "F",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Medio oficial soldador",
+"categoria": "F",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Medio oficial pintor",
+"categoria": "F",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Medio oficial revestidor",
+"categoria": "F",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Medio oficial recorredor",
+"categoria": "F",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Medio oficial de planta compresora de gas",
+"categoria": "F",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Medio oficial planta eléctrica",
+"categoria": "F",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Data Entry (yacimiento)",
+"categoria": "F",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Data Entry (base)",
+"categoria": "F",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de autoelevador y montacargas",
+"categoria": "G",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial principal de control de combustibles en playa",
+"categoria": "G",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Señalero DTM y montajes",
+"categoria": "G",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer y camillero de ambulancia",
+"categoria": "G",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer transporte de personal (doble cabina)",
+"categoria": "G",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Radio operador",
+"categoria": "G",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de planta compresora de gas",
+"categoria": "G",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de planta de tratamiento de gas",
+"categoria": "G",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de planta de tratamiento de agua",
+"categoria": "G",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de planta de tratamiento de petróleo",
+"categoria": "G",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de planta de tratamiento y distribución de petróleo",
+"categoria": "G",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de sistemas de monitoreo de baterías, plantas y yacimientos",
+"categoria": "G",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de telemetría y sistemas",
+"categoria": "G",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Auxiliar administrativo",
+"categoria": "H",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer camión porta contenedor",
+"categoria": "H",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer de camión volcador hasta 6 m",
+"categoria": "H",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Cocinero",
+"categoria": "H",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Enfermero",
+"categoria": "H",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial de protección catódica de reconversión",
+"categoria": "H",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial soldador de banco o herrero",
+"categoria": "H",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de entrega de productos en terminal",
+"categoria": "H",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Panadero",
+"categoria": "H",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Pañolero",
+"categoria": "H",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer camión pesado hasta 10 t",
+"categoria": "H",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Repostero",
+"categoria": "H",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de batería",
+"categoria": "H",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer Transporte de personal (Combi 9+1)",
+"categoria": "H",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer Transporte de personal (Combi 14+1)",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer operador de camión con hidro grúa más de 15 t",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer transporte de cargas liquidas (chupa, abastecedor, combustibles, agua) (chasis)",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer camión pesado hasta 20 t",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial amolador",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial arenador",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial calderista",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial cañista",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial chapista",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial de cuadrilla de enrosque",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial de mantenimiento en vehículos de campo",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial de oficios",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial electricista",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial en dinamometría",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial en montajes de cañerías y ductos de conducción",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial instrumentista",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial mecánico",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial mecánico en ajustes de motores",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial montador",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial montador de instalaciones",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial montador de líneas eléctricas",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial pintor epoxi",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial revestidor",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial tornero",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de pozos sumideros",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de banco, inspección y reparación (PCP)",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de banco, inspección y reparación (BES)",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de ensayo y reparación de cables (BES)",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de ensayos de componentes (BES)",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de hot tap",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de inspección y lavado de componentes (BES)",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Pintor de enduco",
+"categoria": "I",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Radio operador/coordinador",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Administrativo*",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer especializado de transporte de personal (colectivo 2 ejes)",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer operador de camión con semi e hidra grúa",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Laboratorista (muestreo y análisis)",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador Principal de batería",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de calderas/hornos/pirolíticos",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de planta eléctrica",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de equipo de vacío vactor",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de grúas hasta 35 t",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer camión pesado con guinche hasta 35 t",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de grúas de montajes en ductos (ceibo)",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de retroexcavadora sobre neumáticos",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Recorredor de instalaciones en yacimientos",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de ensayos no destructivos en producción",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chef",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador/Instalador Bombas (BES)",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador/Instalador Bombas (PCP)",
+"categoria": "J",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer especializado principal de transporte de personal (colectivo 3 o + ejes)",
+"categoria": "K",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer de camión carretonero hasta 45 t",
+"categoria": "K",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer de camión volcador de más de 6 m",
+"categoria": "K",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer de transporte de cargas sólidas",
+"categoria": "K",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer operador de motobomba",
+"categoria": "K",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de costa afuera",
+"categoria": "K",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de máquina cargadora",
+"categoria": "K",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de máquina moto niveladora",
+"categoria": "K",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de máquina topadora",
+"categoria": "K",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de retroexcavadora sobre oruga",
+"categoria": "K",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de Vibrocompactador",
+"categoria": "K",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de PO (Optimización Producto)",
+"categoria": "K",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de grúas hasta 70 t",
+"categoria": "K",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer camión con semi hasta 45 t",
+"categoria": "K",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer operador de hot oíl/hot wáter",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial/Operador especializado de calderas, hornos pirolíticos",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado, dinamometría y econometría",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado de enrosque",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado de ensayo no destructivo en radiografía industrial",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado de máquinas viales y flota pesada",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado mecánico de moto compresores",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado mecánico de turbos generadores",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado electricista",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado en ensayos no destructivos industriales",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado en montaje de cañerías y ductos de conducción",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado en telesupervisión",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado instrumentista",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado instrumentista BES (variador y tablero)",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado instrumentista de herramienta de peso",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado instrumentista de testeo de anclaje (caliper y pason)",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado mecánico",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado mecánico de hidráulico",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado mecánico en turbo expander",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado montador en A y B",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado laboratorista",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado soldador calificado",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Oficial especializado tablerista",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador calificado en equipos viales especiales y/o articulados",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de grúas más 70 t",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Chofer camión/carretón más de 45 t",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador especializado de bomba horizontal",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador especializado de calderas/hornos pirolíticos",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador especializado de plantas de tratamiento de petróleo, recuperación secundaria y gas",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador especializado de plantas de compresión de gas",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador especializado en telemetría y sistemas",
+"categoria": "L",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador especializado bombas PCP",
+"categoria": "M",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador especializado de PO (Optimización Producto)",
+"categoria": "M",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador de tct - tarea contención",
+"categoria": "M",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Operador principal de cuadrilla o grupo de trabajo",
+"categoria": "M",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Recorredor especializado principal de yacimiento",
+"categoria": "M",
+"convenio": "II - Mantenimiento y Producción"
+},
+{
+"puesto": "Ingresante (sin experiencia)",
+"categoria": "I",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Sereno",
+"categoria": "II",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Cadete*",
+"categoria": "II",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Portero",
+"categoria": "II",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Ayudante de tareas generales",
+"categoria": "III",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Ayudante despachante de depósito",
+"categoria": "III",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Administrativo júnior*",
+"categoria": "III",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Playero rondín en base",
+"categoria": "III",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Ayudante de mantenimiento",
+"categoria": "IV",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Ayudante práctico de ensayo no destructivo",
+"categoria": "IV",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Ayudante planta de cemento y ácido",
+"categoria": "IV",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Ayudante reparador valvulista",
+"categoria": "IV",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Ayudante Wire Line",
+"categoria": "IV",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Guardabarrera",
+"categoria": "IV",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Ayudante cementación",
+"categoria": "IV",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Ayudante estimulación",
+"categoria": "IV",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Ayudante slick line",
+"categoria": "IV",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Ayudante servicios especiales",
+"categoria": "IV",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Lavador flota",
+"categoria": "IV",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Gomero",
+"categoria": "IV",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Maestranza",
+"categoria": "IV",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Despachante de depósito",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Auxiliar de vaporizador de tubing y varillas",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Auxiliar de reparación de bombas y válvulas",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Auxiliar de wire line",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Auxiliar de slick line",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Auxiliar de ensayo no destructivo",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Auxiliar de cementación",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Auxiliar de estimulación",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Auxiliar de colied tubing",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Auxiliar de ensayo de pozo",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Auxiliar instrumentista",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Auxiliar de oficios",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer flota liviana",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Telefonista/Recepcionista*",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Auxiliar reparador de tpn y pkr (tool man)",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Auxiliar reparador de herramientas de servicios de pesca",
+"categoria": "V",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Radioperador telefonista",
+"categoria": "VI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer de Wire Line",
+"categoria": "VI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer flota pesada",
+"categoria": "VI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Administrativo semi sénior*",
+"categoria": "VI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Principal de servicios de maestranza",
+"categoria": "VI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador de mástil y pluma A",
+"categoria": "VI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador de autoelevador (Sky Truck)",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador de hidrogrúa",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador de cargas explosivas y polvorines",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador de pesca nivel 1*",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Trainee de operador direccional*",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador de areneros",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Receptor y despachante de materiales",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Radioperador coordinador telefonista nivel 1",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Medio oficial soldador",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Medio oficial electricista",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Medio oficial mecánico",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Medio oficial de mantenimiento",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Medio oficial reparación de bombas y válvulas",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Medio oficial tornero",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Medio oficial instrumentista",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Medio oficial reparador de herramientas de pesca",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Medio oficial reparador de tpn y pkr (tool man)",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador de Well Testing",
+"categoria": "VII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador de cisternas",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador de Bulk",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador de Frac Van o Cem Van",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer de guinchero Wire Line",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer de guinchero Slick Line",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer piletero",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador de Booster",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador de planta de cemento, ácidos y/o productos nivel 1",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Radioperador, coordinador nivel 2 base múlt",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador en ensayo no destructivo",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial reparador de tpn y pkr (tool man)",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial reparador de herramientas de pesca",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial de reparación de bombas y válvulas",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial de mantenimiento",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial mecánico",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial tornero",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial electricista",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial soldador",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial instrumentista",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial mecánico hidráulico",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer arenero con cinta transportadora",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Administrativo senior*",
+"categoria": "VIII",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Laboratorista electrónico",
+"categoria": "IX",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador de Batch Mixer",
+"categoria": "IX",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador fracturador",
+"categoria": "IX",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador de equipo de alta presión wire line Nivel 1",
+"categoria": "IX",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador de Preblender",
+"categoria": "IX",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador de Acid Master",
+"categoria": "IX",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador de grúa de Coiled Tubing",
+"categoria": "IX",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer guinchero experimentado",
+"categoria": "IX",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador cementador",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador de nitrógeno",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Laboratorista nivel 1",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Electrónico nivel 1",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador de pozo asistido",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador especializado en pesca nivel 2*",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador especializado en ensayo no destructivo",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador calderista especializado",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial especializado en reparación de bombas y válvulas",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial especializado de mantenimiento",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial especializado mecánico",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial Especializado tornero",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial especializado electricista",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial especializado soldador",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial especializado instrumentista",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Oficial especializado en hidráulica",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador especializado en wire line/LWD",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador especializado en bombas sand pump",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador especializado en coiled tubing",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador direccional drilling*",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador de herramientas de tapón y packer",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador especializado de Well Testing",
+"categoria": "X",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador de blender y equipos múltiples",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador cementador y equipos múltiples",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador de coiled tubing",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer güinchero principal",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Laboratorista nivel 2",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Electrónico nivel 2",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador de planta de cemento, ácidos y/o productos nivel 2",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Maestro en mantenimiento",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Maestro mecánico en hidráulica",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Maestro mecánico wire-line",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Maestro mecánico flota pesada y liviana",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Maestro electricista",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Maestro soldador",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Maestro tornero",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Maestro instrumentista",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador direccional (pesca, packer, LDM)*",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador especializado Tpn y Pkr",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador especializado de pesca y wis stok",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador especializado linners",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Sonda electrónica MWD, etc.",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Chofer operador en tránsito de fluidos",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Operador especializado en perfil CML-PCL",
+"categoria": "XI",
+"convenio": "III - Servicios Especiales"
+},
+{
+"puesto": "Maestro especializado (wire line - slick line - ensayo y pesca)",
+"categoria": "XII",
+"convenio": "III - Servicios Especiales"
+}
+]
