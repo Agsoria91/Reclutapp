@@ -4,7 +4,7 @@ import { sb } from '../lib/supabase.js';
 import { fmtMonth, fmtMoney, todayISO, norm, pct } from '../lib/format.js';
 import { applyFilters, countBy, positionKpis, pendingByTarget, isCovered, hasPerson, isLate } from '../lib/kpis.js';
 import {
-  stagePill, filterGroup, selectFilter, toggleFilter, kpi, openDrawer, closeDrawer, toast, formData, field,
+  stagePill, filterGroup, selectFilter, multiSelectFilter, toggleFilter, kpi, openDrawer, closeDrawer, toast, formData, field,
   confirmDialog, saveLocal, loadLocal, serializeFilters, restoreFilters, datalist,
   animateIn,
 } from '../components/ui.js';
@@ -57,6 +57,17 @@ export function presentHash() {
 }
 
 let openGroups = new Set(loadLocal('reclutapp.pos.open', []));
+let openMulti = null; // desplegable múltiple abierto (se mantiene abierto al re-dibujar)
+
+function stagePresets() {
+  // solo etapas que existen en el mapa, para no sumar opciones vacías
+  const present = new Set(state.positions.map((p) => p.stage));
+  const st = state.stages.filter((s) => present.has(s.code));
+  const labels = st.map((s) => s.label);
+  const ing = state.stageMap.ingresado?.label;
+  const enProceso = st.filter((s) => s.es_activa).map((s) => s.label);
+  return [['Todos menos Ingresado', labels.filter((l) => l !== ing)], ['Solo en proceso', enProceso]];
+}
 
 export function render(el) {
   if (state.loading && !state.positions.length) { el.innerHTML = String(mascot('loading')); return; }
@@ -95,7 +106,7 @@ export function render(el) {
     ${filterGroup({ dim: 'area', label: 'Área', options: optionsFor('area'), selected: posFilters.area })}
     ${filterGroup({ dim: 'sector', label: 'Sector', options: optionsFor('sector'), selected: posFilters.sector, allLabel: 'Todos' })}
     <div class="filters-row">
-      ${selectFilter({ dim: 'stage', label: 'Estado', options: optionsFor('stage'), selected: posFilters.stage })}
+      ${multiSelectFilter({ dim: 'stage', label: 'Estado', options: optionsFor('stage'), selected: posFilters.stage, presets: stagePresets(), open: openMulti === 'stage' })}
       ${selectFilter({ dim: 'cobertura', label: 'Cobertura', options: optionsFor('cobertura'), selected: posFilters.cobertura, allLabel: 'Todas' })}
       <label class="search"><span class="sr-only">Buscar</span>
         <input type="search" id="pos-search" placeholder="Buscar puesto, persona, POS SAP…" value="${search}">
@@ -193,11 +204,23 @@ function bind(el) {
     el.addEventListener('click', onClick);
     el.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('tr[data-id]')) openEditor(e.target.dataset.id); });
     el.addEventListener('change', (e) => {
+      const m = e.target.closest('[data-multi-opt]');
+      if (m) {
+        const dim = m.dataset.multiOpt;
+        if (m.checked) posFilters[dim].add(m.value); else posFilters[dim].delete(m.value);
+        openMulti = dim; persist(); render(el); return;
+      }
       const s = e.target.closest('[data-select-filter]');
       if (!s) return;
       const dim = s.dataset.selectFilter;
       posFilters[dim] = new Set(s.value ? [s.value] : []);
       persist(); render(el);
+    });
+    document.addEventListener('click', (e) => {
+      if (openMulti && el.isConnected && !e.target.closest('.fmulti-box')) {
+        openMulti = null;
+        el.querySelectorAll('.fmulti-box[open]').forEach((d) => { d.open = false; });
+      }
     });
     // recordar qué sectores quedaron abiertos
     el.addEventListener('toggle', (e) => {
@@ -221,6 +244,20 @@ function persist() { saveLocal(KEY, { ...serializeFilters(posFilters), soloPendi
 
 function onClick(e) {
   const el = e.currentTarget;
+  const pr = e.target.closest('[data-multi-preset]');
+  if (pr) {
+    const dim = pr.dataset.multiPreset;
+    posFilters[dim] = new Set(pr.dataset.values ? JSON.parse(pr.dataset.values) : []);
+    openMulti = dim; persist(); render(el); return;
+  }
+  const sm = e.target.closest('.fmulti-box > summary');
+  if (sm) {
+    e.preventDefault();
+    const box = sm.parentElement;
+    box.open = !box.open;
+    openMulti = box.open ? box.dataset.multi : null;
+    return;
+  }
   const f = e.target.closest('[data-filter]');
   if (f) { toggleFilter(posFilters, f.dataset.filter, f.dataset.value); persist(); render(el); return; }
   const act = e.target.closest('[data-act]')?.dataset.act;
