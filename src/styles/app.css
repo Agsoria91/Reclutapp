@@ -559,3 +559,23 @@ fieldset.sensitive { border-color: color-mix(in srgb, var(--tp-orange) 60%, var(
 .ing-progress .progress { flex: 1; max-width: none; margin: 0; }
 .ing-card p { margin: 0; }
 @media (max-width: 640px) { .ing-grid { grid-template-columns: 1fr; } }
+
+/* ======================= v4: entrevistas ======================= */
+.headline { margin: 0; font: 400 19px/1.35 var(--font-serif); padding: 12px 18px; border-left: 4px solid var(--tp-green);
+  background: color-mix(in srgb, var(--tp-green) 8%, var(--surface)); border-radius: 0 var(--radius) var(--radius) 0; }
+.headline b { color: var(--st-green); font-size: 22px; }
+.funnel { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.funnel li { display: grid; grid-template-columns: minmax(120px, 34%) 1fr 130px; gap: 10px; align-items: center; font-size: 13.5px; }
+.funnel-bar { height: 22px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.funnel-bar .bars-fill { border-radius: 6px; }
+.funnel-n { display: grid; text-align: right; font-variant-numeric: tabular-nums; }
+.funnel-n b { font-size: 16px; }
+.funnel-n small { color: var(--text-2); font-size: 11px; }
+.cols--dual .col-bar { position: relative; }
+.cols--dual .col-fill--ok { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 40%; background: var(--tp-green); }
+.legend i.lg-ent, .legend i.lg-ok { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 4px 0 8px; vertical-align: middle; }
+.lg-ent { background: var(--st-blue); } .lg-ok { background: var(--tp-green); }
+.efe { display: flex; align-items: center; gap: 8px; min-width: 140px; }
+.efe .minibar { flex: 1; }
+.efe .minibar span { background: var(--st-green); }
+@media (max-width: 640px) { .funnel li { grid-template-columns: 1fr 90px; } .funnel-bar { grid-column: 1 / -1; grid-row: 2; } }

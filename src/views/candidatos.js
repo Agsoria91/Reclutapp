@@ -285,6 +285,29 @@ export function openCandidate(id) {
   `, { title: c.id ? c.nombre : 'Nuevo candidato', wide: true });
 
   const form = root.querySelector('#cand-form');
+  // Fechas que mandan la etapa: se muestra al instante lo que la base va a aplicar.
+  const HITO_CAMPOS = ['en_entrevista', 'validacion_rrll', 'epo', 'aptitud_recibida', 'aptitud', 'fecha_ingreso'];
+  const hint = document.createElement('p');
+  hint.className = 'note small field--wide';
+  hint.hidden = true;
+  form.querySelector('[name=stage]').closest('label').after(hint);
+  form.addEventListener('change', (e) => {
+    if (!HITO_CAMPOS.includes(e.target.name)) return;
+    const sel = form.elements.stage;
+    if (sel.value === 'cancelado') return;
+    const v = (n) => form.elements[n]?.value || '';
+    const hoy = todayISO();
+    const sug = v('fecha_ingreso') ? (v('fecha_ingreso') <= hoy ? 'ingresado' : 'proximo_ingreso')
+      : v('aptitud_recibida') && !/^no apto/i.test(v('aptitud')) ? 'apto'
+      : v('epo') ? 'examen_medico'
+      : v('validacion_rrll') ? 'validacion_rrll'
+      : v('en_entrevista') ? 'entrevista' : null;
+    if (sug && stageOrder(sug) > stageOrder(sel.value)) {
+      sel.value = sug;
+      hint.textContent = `La etapa pasa a "${state.stageMap[sug].label}" por la fecha cargada.${c._silla ? ' Se refleja en su silla.' : ''}`;
+      hint.hidden = false;
+    }
+  });
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = formData(form);
