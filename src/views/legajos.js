@@ -7,6 +7,7 @@ import {
   filterGroup, toggleFilter, kpi, bars, animateIn, openDrawer, closeDrawer, toast, formData, field, confirmDialog,
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
+import { convenioFields, bindConvenio, preingresoFields } from '../components/ingreso.js';
 
 const filters = { area: new Set(), sector: new Set(), estado: new Set(['activo']) };
 const getters = { area: (h) => h.area || '—', sector: (h) => h.sector || '—', estado: (h) => h.estado };
@@ -96,21 +97,17 @@ function openHire(id) {
   if (!h) return;
   const root = openDrawer(html`<form id="hire-form" class="form-grid">
     ${field('Nombre completo', 'nombre', h.nombre, { required: true, span: 2 })}
-    ${field('DNI', 'dni', h.dni)}
     ${field('Fecha de ingreso', 'fecha_ingreso', h.fecha_ingreso, { type: 'date' })}
+    ${field('Estado', 'estado', h.estado, { options: [['activo', 'Activo'], ['baja', 'Baja']] })}
     ${field('Área', 'area', h.area)}
     ${field('Sector', 'sector', h.sector)}
     ${field('Puesto', 'puesto', h.puesto, { span: 2 })}
-    ${field('Puesto de convenio', 'puesto_convenio', h.puesto_convenio)}
-    ${field('Categoría', 'categoria', h.categoria)}
+    ${convenioFields(h)}
     ${field('Jefe directo', 'jefe_directo', h.jefe_directo)}
     ${field('Básico', 'basico', h.basico, { type: 'number', step: '0.01' })}
-    ${field('Localidad', 'localidad', h.localidad)}
     ${field('Procedencia', 'procedencia', h.procedencia)}
-    ${field('Teléfono', 'telefono', h.telefono, { type: 'tel' })}
-    ${field('Mail', 'mail', h.mail, { type: 'email' })}
     ${field('Tipo de cobertura', 'tipo_cobertura', h.tipo_cobertura, { options: [['', '—'], 'Búsqueda externa', 'Movimiento interno'] })}
-    ${field('Estado', 'estado', h.estado, { options: [['activo', 'Activo'], ['baja', 'Baja']] })}
+    ${preingresoFields(h)}
     ${field('Fecha de baja', 'fecha_baja', h.fecha_baja, { type: 'date' })}
     ${field('Motivo de baja', 'motivo_baja', h.motivo_baja)}
     ${field('Notas', 'notas', h.notas, { type: 'textarea', span: 2 })}
@@ -121,6 +118,7 @@ function openHire(id) {
       <button type="submit" class="btn btn--primary">Guardar</button>
     </div></form>`, { title: h.id ? `Legajo · ${h.nombre}` : 'Alta manual de legajo', wide: true });
 
+  bindConvenio(root.querySelector('#hire-form'));
   root.querySelector('#hire-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = formData(e.target);
@@ -141,8 +139,9 @@ function openHire(id) {
 
 // CSV para Excel (separador ; y BOM) generado en el navegador; no pasa por ningún servidor.
 function exportCSV(rows) {
-  const cols = ['nombre', 'dni', 'fecha_ingreso', 'area', 'sector', 'puesto', 'puesto_convenio', 'categoria', 'jefe_directo',
-    'basico', 'localidad', 'telefono', 'mail', 'procedencia', 'tipo_cobertura', 'estado', 'fecha_baja', 'motivo_baja', 'notas'];
+  const cols = ['nombre', 'dni', 'cuil', 'fecha_nacimiento', 'fecha_ingreso', 'area', 'sector', 'puesto', 'convenio',
+    'categoria', 'puesto_convenio', 'jefe_directo', 'basico', 'domicilio', 'localidad', 'provincia', 'telefono', 'mail',
+    'talle_mameluco', 'talle_botas', 'talle_campera', 'procedencia', 'tipo_cobertura', 'estado', 'fecha_baja', 'motivo_baja', 'notas'];
   const q = (v) => { const s = v == null ? '' : String(v); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
   const body = [cols.join(';'), ...rows.map((r) => cols.map((c) => q(c === 'basico' && r[c] != null ? String(r[c]).replace('.', ',') : r[c])).join(';'))].join('\r\n');
   const blob = new Blob(['﻿' + body], { type: 'text/csv;charset=utf-8' });

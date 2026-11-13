@@ -10,6 +10,12 @@ App web que une las tres patas del reclutamiento de la operación EFiS:
 
 Frontend: Vite + JavaScript con módulos ES (sin framework). Backend: Supabase (Postgres + Auth + Storage), consumido directo desde el navegador. Hosting: GitHub Pages.
 
+## Novedades
+
+* **Terna por silla**: varios candidatos en proceso para la misma silla. Uno es el *principal* (el que está sentado) y el resto espera; si el principal se cae, la silla queda libre y se promueve a otro con "Hacer principal". La vista pública muestra solo la cantidad ("+2 en terna").
+* **Próximos ingresos**: todo lo que pasa a *Próximo ingreso* se completa acá (DNI, CUIL, nacimiento, domicilio, localidad, provincia, contacto y talles de mameluco, botas y campera) y se confirma el ingreso. El legajo se crea con todo lo cargado.
+* **Puesto de convenio con buscador**: se elige el puesto y la categoría y el convenio se completan solos (`src/data/convenio.json`, de la planilla *Referencia Categorías*).
+
 ## Flujo
 
 ```
@@ -33,13 +39,15 @@ CSV Seguimiento ───┘   (etapa)     en silla  (etapa sincronizada)
 
 Las migraciones están en `supabase/migrations/`. La clave de `src/config.js` es la *publicable* de Supabase: está hecha para estar en el navegador.
 
+## Capacidad (plan gratuito de Supabase)
+
+* Archivos (CVs): 1 GB. Un CV en PDF pesa en general 100–500 KB, o sea entre 2.000 y 10.000 CVs. Límite por archivo en la app: 10 MB.
+* Base de datos: 500 MB. Las 128 sillas y 338 candidatos actuales ocupan menos de 5 MB.
+* Importante: un proyecto gratuito se **pausa tras 7 días sin uso**. Se reactiva desde el panel de Supabase (Restore). Con uso semanal normal no pasa.
+
 ## Administración
 
-**Dar acceso a alguien de RRHH** (hasta hoy: 3 personas):
-1. Supabase → Authentication → Users → *Invite user* (o *Add user* con contraseña).
-2. SQL Editor: `insert into public.staff (email, nombre) values ('persona@tecpetrol.com', 'Nombre');`
-
-Quitar acceso: `delete from public.staff where email = '...';`
+**Dar acceso a alguien de RRHH**: desde la app, pantalla *Usuarios* → email y nombre → *Dar acceso*. Se genera una contraseña temporal que la persona cambia en *Mi contraseña*. Desde la misma pantalla se genera una contraseña nueva o se quita el acceso.
 
 **Configuración recomendada en Supabase → Authentication**:
 * *Sign In / Providers → Email*: desactivar **Allow new users to sign up** (las cuentas se crean por invitación).

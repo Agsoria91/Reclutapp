@@ -40,16 +40,28 @@ export async function loadAll({ silent = false } = {}) {
   if (!silent) set({ loading: true, error: null });
   try {
     const staff = state.isStaff;
-    const [stages, positions, candidates, hires] = await Promise.all([
+    const [stages, positions, candidates, hires, terna] = await Promise.all([
       fetchAll('stages', '*', 'orden'),
       fetchAll(staff ? 'positions' : 'positions_public'),
       fetchAll(staff ? 'candidates' : 'candidates_public'),
       staff ? fetchAll('hires') : Promise.resolve([]),
+      staff ? fetchAll('position_candidates', '*', 'added_at') : Promise.resolve([]),
     ]);
     const stageMap = Object.fromEntries(stages.map((s) => [s.code, s]));
     if (staff) {
       const seat = new Map(positions.filter((p) => p.candidate_id).map((p) => [p.candidate_id, p]));
-      candidates.forEach((c) => { c._silla = seat.get(c.id) || null; });
+      candidates.forEach((c) => { c._silla = seat.get(c.id) || null; c._ternas = []; });
+      // terna: candidatos en proceso para cada silla (el principal incluido)
+      const cById = new Map(candidates.map((c) => [c.id, c]));
+      const pById = new Map(positions.map((p) => [p.id, p]));
+      positions.forEach((p) => { p._terna = []; });
+      for (const t of terna) {
+        const p = pById.get(t.position_id);
+        const c = cById.get(t.candidate_id);
+        if (!p || !c) continue;
+        p._terna.push(c);
+        c._ternas.push(p);
+      }
     }
     set({ stages, stageMap, positions, candidates, hires, loading: false, error: null, loadedAt: new Date() });
   } catch (e) {

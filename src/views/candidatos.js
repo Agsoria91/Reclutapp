@@ -11,6 +11,7 @@ import {
 import { mascot } from '../components/mascot.js';
 import { openAssignFromCandidate } from './asignar.js';
 import { celebrate } from './posiciones.js';
+import { preingresoFields } from '../components/ingreso.js';
 
 // Dimensiones de filtro cruzado: tocar una barra filtra por ese valor y todo
 // lo demás se recalcula. Cada gráfico se calcula con TODOS los filtros menos
@@ -235,8 +236,11 @@ export function openCandidate(id) {
         <div class="seat-name">${c._silla ? html`${c._silla.puesto} <small class="muted">· ${c._silla.yacimiento} · ${c._silla.sector || ''}</small>` : html`<span class="muted">Sin silla asignada</span>`}</div>
       </div>
       <div class="seat-actions">
-        ${c.stage !== 'cancelado' ? html`<button type="button" class="btn btn--primary" data-act="seat">${c._silla ? 'Cambiar de silla' : 'Sentar en una silla'}</button>` : ''}
+        ${c.stage !== 'cancelado' ? html`<button type="button" class="btn btn--primary" data-act="seat">${c._silla ? 'Cambiar de silla' : 'Sentar en una silla'}</button>
+          <button type="button" class="btn" data-act="terna">Sumar a una terna</button>` : ''}
       </div>
+      ${(c._ternas || []).filter((p) => p.candidate_id !== c.id).length ? html`<div class="field--wide small muted">También en la terna de:
+        ${(c._ternas || []).filter((p) => p.candidate_id !== c.id).map((p) => html`<span class="chip">${p.puesto} · ${p.yacimiento}${p.candidato_nombre ? ` (principal: ${p.candidato_nombre})` : ''}</span>`)}</div>` : ''}
     </div>
     <div class="cv-box">
       <span class="muted">CV</span>
@@ -253,15 +257,7 @@ export function openCandidate(id) {
       ${field('Servicio / Sector', 'servicio', c.servicio, { list: 'dlc-serv' })}
       ${field('Posición', 'posicion', c.posicion, { list: 'dlc-pos' })}
       ${field('Procedencia', 'procedencia', c.procedencia, { list: 'dlc-proc' })}
-      ${field('Localidad', 'localidad', c.localidad, { list: 'dlc-loc' })}
-      ${field('Provincia', 'provincia', c.provincia)}
-      <fieldset class="field--wide sensitive"><legend>Datos sensibles · solo RRHH</legend>
-        <div class="form-grid">
-          ${field('DNI', 'dni', c.dni)}
-          ${field('Teléfono', 'telefono', c.telefono, { type: 'tel' })}
-          ${field('Mail', 'mail', c.mail, { type: 'email', span: 2 })}
-        </div>
-      </fieldset>
+      ${preingresoFields(c)}
       ${field('CV recibido', 'cv_recibido', c.cv_recibido, { type: 'date' })}
       ${field('En entrevista', 'en_entrevista', c.en_entrevista, { type: 'date' })}
       ${field('Validación RRLL', 'validacion_rrll', c.validacion_rrll, { type: 'date' })}
@@ -313,6 +309,7 @@ export function openCandidate(id) {
   root.addEventListener('click', async (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'seat') { closeDrawer(); openAssignFromCandidate(c); }
+    if (act === 'terna') { closeDrawer(); openAssignFromCandidate(c, { mode: 'terna' }); }
     if (act === 'cv-open') {
       const { data, error } = await sb.storage.from('cvs').createSignedUrl(c.cv_path, 120);
       if (error) return toast(error.message, 'error');

@@ -10,6 +10,7 @@ import {
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 import { openAssignFromPosition } from './asignar.js';
+import { convenioFields, bindConvenio, convenioLabel } from '../components/ingreso.js';
 
 const DIMS = ['area', 'sector', 'stage', 'cobertura', 'mes'];
 const KEY = 'reclutapp.pos.filters';
@@ -180,20 +181,33 @@ function groupBlock(key, ps, today, staff) {
     </summary>
     <div class="table-wrap"><table class="tbl tbl--pos ${staff ? 'is-clickable' : ''}">
       <thead><tr>
-        <th>Puesto</th><th class="hide-sm">Diagrama</th><th>Persona asignada</th>
-        <th>Estado</th><th>Mes objetivo</th>${staff ? html`<th class="hide-sm">POS SAP</th><th class="hide-sm num">Básico</th>` : ''}
+        <th>Puesto</th><th>Persona asignada</th><th class="hide-sm">Procedencia</th><th class="hide-sm">Localidad</th>
+        <th>Estado</th><th>Mes obj.</th>${staff ? html`<th class="hide-sm num">Básico</th>` : ''}
       </tr></thead>
       <tbody>${ps.map((p) => html`<tr data-id="${p.id}" ${raw(staff ? 'tabindex="0"' : '')}>
-          <td data-th="Puesto"><strong>${p.puesto}</strong></td>
-          <td data-th="Diagrama" class="hide-sm">${[p.diagrama, p.turno].filter(Boolean).join(' · ')}</td>
+          <td data-th="Puesto"><strong>${p.puesto}</strong>
+            <small class="muted block">${[p.diagrama, p.turno, convenioLabel(p)].filter(Boolean).join(' · ')}</small></td>
           <td data-th="Persona">${hasPerson(p) ? html`${p.candidato_nombre}${(p.candidate_id || p.tiene_ficha) ? '' : html` <span class="tag" title="Sin ficha en Candidatos PP">sin ficha</span>`}` : html`<span class="muted">— vacante —</span>`}
-            ${p.tipo_cobertura === 'Movimiento interno' ? html` <span class="tag tag--int">interno</span>` : ''}</td>
+            ${p.tipo_cobertura === 'Movimiento interno' ? html` <span class="tag tag--int">interno</span>` : ''}
+            ${ternaChip(p)}</td>
+          <td data-th="Procedencia" class="hide-sm">${p.procedencia || ''}</td>
+          <td data-th="Localidad" class="hide-sm">${p.localidad || ''}</td>
           <td data-th="Estado">${stagePill(p.stage, { small: true })}</td>
           <td data-th="Objetivo" class="${isLate(p, today) ? 'is-late-txt' : ''}">${p.fecha_objetivo ? fmtMonth(p.fecha_objetivo, { short: true }) : ''}</td>
-          ${staff ? html`<td data-th="POS SAP" class="hide-sm mono">${p.pos_sap || ''}</td><td data-th="Básico" class="hide-sm num">${fmtMoney(p.basico)}</td>` : ''}
+          ${staff ? html`<td data-th="Básico" class="hide-sm num">${fmtMoney(p.basico)}</td>` : ''}
         </tr>`)}</tbody>
     </table></div>
   </details>`;
+}
+
+// "+2 en terna": hay más candidatos en proceso para esta silla además del principal.
+function ternaChip(p) {
+  const n = p.cand_activos || 0;
+  const extra = hasPerson(p) ? n - 1 : n;
+  if (extra < 1) return '';
+  const names = (p._terna || []).filter((c) => c.id !== p.candidate_id && c.stage !== 'cancelado').map((c) => c.nombre);
+  const title = names.length ? `También en proceso: ${names.join(', ')}` : `${extra} candidato(s) más en proceso`;
+  return html` <span class="tag tag--terna" title="${title}">+${extra} en terna</span>`;
 }
 
 function datalists() {
@@ -316,6 +330,7 @@ export function openEditor(id) {
         ${p.candidato_nombre ? html`<button type="button" class="btn btn--ghost" data-act="free">Liberar silla</button>` : ''}
       </div>` : ''}
     </div>
+    ${p.id ? ternaBox(p) : ''}
 
     <form id="pos-form" class="form-grid">
       ${field('Área (yacimiento)', 'yacimiento', p.yacimiento, { required: true, list: 'dl-area' })}
@@ -332,8 +347,7 @@ export function openEditor(id) {
       ${field('Fecha inicio búsqueda', 'fecha_inicio', p.fecha_inicio, { type: 'date' })}
       ${field('Mes objetivo', 'fecha_objetivo', p.fecha_objetivo ? p.fecha_objetivo.slice(0, 7) : '', { type: 'month', hint: 'Solo importa mes y año.' })}
       ${field('Fecha de ingreso', 'fecha_ingreso', p.fecha_ingreso, { type: 'date' })}
-      ${field('Categoría', 'categoria', p.categoria)}
-      ${field('Puesto de convenio', 'puesto_convenio', p.puesto_convenio, { list: 'dl-conv', span: 2 })}
+      ${convenioFields(p)}
       ${field('Básico (sensible)', 'basico', p.basico, { type: 'number', step: '0.01' })}
       ${field('Id SAP', 'id_sap', p.id_sap)}
       ${field('Adicional', 'adicional', p.adicional, { span: 2 })}
@@ -347,6 +361,7 @@ export function openEditor(id) {
       </div>
     </form>`, { title: p.id ? `${p.puesto} · ${p.yacimiento}` : 'Nueva silla', wide: true });
 
+  bindConvenio(root.querySelector('#pos-form'));
   root.querySelector('#pos-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = formData(e.target);
@@ -366,6 +381,22 @@ export function openEditor(id) {
   root.addEventListener('click', async (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'assign') { closeDrawer(); openAssignFromPosition(p); }
+    if (act === 'terna-add') { closeDrawer(); openAssignFromPosition(p, { mode: 'terna' }); }
+    const cid = e.target.closest('[data-cid]')?.dataset.cid;
+    if (act === 'terna-main' && cid) {
+      const c = state.candidates.find((x) => x.id === cid);
+      const ok = await confirmDialog(`¿Hacer a ${c.nombre} el candidato principal de "${p.puesto}"?${p.candidato_nombre ? ` ${p.candidato_nombre} sigue en la terna.` : ''}`, { ok: 'Hacer principal' });
+      if (!ok) return;
+      const { error } = await sb.rpc('assign_candidate', { p_candidate: cid, p_position: p.id, p_force: true });
+      if (error) return toast(error.message, 'error');
+      if (p.candidate_id) await sb.from('position_candidates').upsert({ position_id: p.id, candidate_id: p.candidate_id }, { ignoreDuplicates: true });
+      toast(`${c.nombre} es ahora el principal`, 'ok'); closeDrawer(); await loadAll({ silent: true }); openEditor(p.id);
+    }
+    if (act === 'terna-del' && cid) {
+      const { error } = await sb.from('position_candidates').delete().eq('position_id', p.id).eq('candidate_id', cid);
+      if (error) return toast(error.message, 'error');
+      toast('Quitado de la terna', 'ok'); closeDrawer(); await loadAll({ silent: true }); openEditor(p.id);
+    }
     if (act === 'free') {
       if (!(await confirmDialog(`¿Liberar la silla "${p.puesto}"? ${p.candidato_nombre} queda sin silla (su ficha no se borra).`, { ok: 'Liberar' }))) return;
       const { error } = await sb.rpc('unassign_position', { p_position: p.id });
@@ -379,6 +410,31 @@ export function openEditor(id) {
       toast('Silla eliminada', 'ok'); closeDrawer(); loadAll({ silent: true });
     }
   });
+}
+
+// Terna: todos los candidatos en proceso para la silla. El principal es el que
+// está "sentado"; si se cae, se promueve a otro con un clic.
+function ternaBox(p) {
+  const terna = (p._terna || []).slice().sort((a, b) =>
+    (b.id === p.candidate_id) - (a.id === p.candidate_id) || (a.stage === 'cancelado') - (b.stage === 'cancelado') ||
+    (state.stageMap[b.stage]?.orden ?? 0) - (state.stageMap[a.stage]?.orden ?? 0));
+  const vivos = terna.filter((c) => c.stage !== 'cancelado');
+  return html`<section class="terna-box">
+    <header><strong>Terna</strong> <span class="muted small">${vivos.length} en proceso para esta silla</span>
+      <span class="spacer"></span><button type="button" class="btn btn--sm" data-act="terna-add">+ Sumar candidato</button></header>
+    ${terna.length ? html`<ul class="terna-list">${terna.map((c) => {
+      const main = c.id === p.candidate_id;
+      const out = c.stage === 'cancelado';
+      return html`<li class="${main ? 'is-main' : ''} ${out ? 'is-out' : ''}">
+        <span class="terna-who"><strong>${c.nombre}</strong> ${main ? html`<span class="tag tag--match">principal</span>` : ''}
+          <small class="muted block">${[c.procedencia, c.localidad].filter(Boolean).join(' · ')}</small></span>
+        ${stagePill(c.stage, { small: true })}
+        <span class="terna-actions">
+          ${!main && !out ? html`<button type="button" class="btn btn--ghost btn--sm" data-act="terna-main" data-cid="${c.id}">Hacer principal</button>` : ''}
+          ${!main ? html`<button type="button" class="btn btn--danger-ghost btn--sm" data-act="terna-del" data-cid="${c.id}" aria-label="Quitar de la terna">Quitar</button>` : ''}
+        </span></li>`;
+    })}</ul>` : html`<p class="muted small">Todavía no hay candidatos en la terna. Sumá a los que estén en proceso para esta silla: cuando uno se cae, promovés al siguiente.</p>`}
+  </section>`;
 }
 
 export function celebrate() {
