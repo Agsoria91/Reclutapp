@@ -4,7 +4,7 @@ import { sb } from '../lib/supabase.js';
 import { fmtDate, fmtMoney, fmtInt, norm, fmtMonth } from '../lib/format.js';
 import { applyFilters, countBy } from '../lib/kpis.js';
 import {
-  filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, formData, field, confirmDialog,
+  filterGroup, toggleFilter, kpi, bars, animateIn, openDrawer, closeDrawer, toast, formData, field, confirmDialog,
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 
@@ -86,6 +86,7 @@ export function render(el) {
     });
     el.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('tr[data-id]')) openHire(e.target.dataset.id); });
   }
+  animateIn(el);
   const s = $('#hire-search', el);
   s?.addEventListener('input', () => { search = s.value; const p = s.selectionStart; render(el); const n = $('#hire-search', el); n.focus(); n.setSelectionRange(p, p); });
 }

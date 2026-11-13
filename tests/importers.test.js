@@ -60,10 +60,11 @@ test('KPIs de posiciones', () => {
   const P = [
     { stage: 'ingresado', candidato_nombre: 'A', fecha_objetivo: '2026-10-01', yacimiento: 'LT2E' },
     { stage: 'entrevista', candidato_nombre: 'B', fecha_objetivo: '2026-10-01', yacimiento: 'LT2E' },
+    { stage: 'entrevista', candidato_nombre: 'C', fecha_objetivo: '2026-11-01', yacimiento: 'LT2E' }, // mes en curso: no vencida
+    { stage: 'sin_candidato', candidato_nombre: null, fecha_objetivo: '2027-01-15', yacimiento: 'CDA' },
     { stage: 'sin_candidato', candidato_nombre: null, fecha_objetivo: '2027-01-01', yacimiento: 'CDA' },
   ];
-  assert.deepEqual(positionKpis(P, '2026-11-13'), { total: 3, cubiertas: 1, pendientes: 2, sinCandidato: 1, enProceso: 1, vencidas: 1 });
+  assert.deepEqual(positionKpis(P, '2026-11-13'), { total: 5, cubiertas: 1, pendientes: 4, sinCandidato: 2, enProceso: 2, vencidas: 1 });
   const g = pendingByTarget(P, '2026-11-13');
-  assert.equal(g.length, 2);
-  assert.equal(g[0].vencida, true);
+  assert.deepEqual(g.map((x) => [x.fecha, x.total, x.vencida]), [['2026-10', 1, true], ['2026-11', 1, false], ['2027-01', 2, false]]);
 });
