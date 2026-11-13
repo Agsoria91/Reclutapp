@@ -6,6 +6,7 @@ import { countBy, candidateKpis, sectorMatches } from '../lib/kpis.js';
 import {
   stagePill, filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, formData, field,
   confirmDialog, saveLocal, loadLocal, serializeFilters, restoreFilters, prevSize, pickField,
+  pivot, pivotTable, pivotCSV, downloadCSV, rowsToCSV, dimSelect,
   animateIn,
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
@@ -56,6 +57,35 @@ function positionsForFilters() {
 function persist() { saveLocal(KEY, serializeFilters(filters)); }
 const activeCount = () => DIMS.reduce((n, d) => n + filters[d].size, 0);
 
+// Cuadros clickeables: cada uno es un conjunto de etapas
+const GRUPOS = {
+  todos: () => [],
+  proceso: () => state.stages.filter((s) => s.es_activa).map((s) => s.label),
+  ingresados: () => [state.stageMap.ingresado?.label].filter(Boolean),
+  cancelados: () => [state.stageMap.cancelado?.label].filter(Boolean),
+};
+const grupoActivo = () => {
+  const cur = [...filters.stage].sort().join('|');
+  return Object.keys(GRUPOS).find((g) => GRUPOS[g]().sort().join('|') === cur) || null;
+};
+
+// Reporte cruzado
+const REP_DIMS = [['procedencia', 'Origen'], ['localidad', 'Localidad'], ['area', 'Área'], ['sector', 'Sector / Servicio'], ['posicion', 'Posición'], ['provincia', 'Provincia'], ['stage', 'Etapa'], ['mesIngreso', 'Mes de ingreso']];
+const repVal = {
+  procedencia: (c) => c.procedencia, localidad: (c) => c.localidad, area: (c) => c.area, sector: (c) => c.servicio,
+  posicion: (c) => c.posicion, provincia: (c) => c.provincia, stage: (c) => state.stageMap[c.stage]?.label,
+  mesIngreso: (c) => (c.fecha_ingreso ? fmtMonth(c.fecha_ingreso) : null),
+};
+let repFilas = loadLocal('reclutapp.cand.repFilas', 'procedencia');
+let repCols = loadLocal('reclutapp.cand.repCols', 'area');
+const dimLabel = (k) => REP_DIMS.find((d) => d[0] === k)?.[1] || k;
+const tituloSeleccion = () => {
+  const g = grupoActivo();
+  const base = g === 'ingresados' ? 'Ingresados' : g === 'proceso' ? 'En proceso' : g === 'cancelados' ? 'Cancelados' : 'Candidatos';
+  const extra = DIMS.filter((d) => d !== 'stage' || !g).flatMap((d) => [...filters[d]]).join(', ');
+  return extra ? `${base} · ${extra}` : base;
+};
+
 export function render(el) {
   if (state.loading && !state.candidates.length) { el.innerHTML = String(mascot('loading')); return; }
   if (state.error) { el.innerHTML = String(mascot('error', { text: state.error })); return; }
@@ -63,7 +93,11 @@ export function render(el) {
   const today = todayISO();
   const all = filterRows(null);
   const k = candidateKpis(all, state.stageMap, positionsForFilters(), today);
+  // los cuadros clickeables muestran sus totales sin el filtro de etapa
+  const kg = candidateKpis(filterRows('stage'), state.stageMap, positionsForFilters(), today);
+  const grupo = grupoActivo();
   const staff = state.isStaff;
+  const pv = pivot(all, repVal[repFilas], repVal[repCols]);
 
   // por etapa (en orden de pipeline)
   const byStage = new Map(counts(filterRows('stage'), 'stage'));
@@ -85,7 +119,7 @@ export function render(el) {
   <section class="page-head">
     <div>
       <h1>Candidatos PP</h1>
-      <p class="muted">Tocá cualquier barra para filtrar: todo lo demás se recalcula. ${staff ? 'Abajo, el listado con las fichas.' : 'El detalle por persona es solo para RRHH.'}</p>
+      <p class="muted">Tocá un cuadro (Candidatos, En proceso, Ingresados) o cualquier barra para filtrar: todo lo demás se recalcula. ${staff ? 'Abajo, el reporte y el listado con las fichas.' : 'El detalle por persona es solo para RRHH.'}</p>
     </div>
     ${staff ? html`<div class="head-actions"><button class="btn" data-act="new">+ Nuevo candidato</button></div>` : ''}
   </section>
@@ -95,16 +129,17 @@ export function render(el) {
     ${filterGroup({ dim: 'sector', label: 'Sector', options: pillOptions('sector'), selected: filters.sector, allLabel: 'Todos' })}
     <div class="active-filters ${chips.length ? '' : 'is-empty'}" aria-live="polite">
       ${chips.length ? html`<span class="muted small">Filtrando por:</span>
-        ${chips.map(([d, v]) => html`<button type="button" class="chip chip--on" data-filter="${d}" data-value="${v}" title="Quitar">${DIM_LABEL[d]}: <b>${d === 'mes' && v !== 'Sin fecha' ? fmtMonth(v) : v}</b> ✕</button>`)}
+        ${grupo && grupo !== 'todos' ? html`<button type="button" class="chip chip--on" data-kpi="todos" title="Quitar">Mostrando: <b>${grupo === 'proceso' ? 'En proceso' : grupo === 'ingresados' ? 'Ingresados' : 'Cancelados'}</b> ✕</button>` : ''}
+        ${chips.filter(([d]) => !(grupo && d === 'stage')).map(([d, v]) => html`<button type="button" class="chip chip--on" data-filter="${d}" data-value="${v}" title="Quitar">${DIM_LABEL[d]}: <b>${d === 'mes' && v !== 'Sin fecha' ? fmtMonth(v) : v}</b> ✕</button>`)}
         <button type="button" class="btn btn--ghost btn--sm" data-act="clear">Limpiar todo</button>`
       : html`<span class="muted small">Sin filtros: mostrando los ${fmtInt(state.candidates.length)} candidatos.</span>`}
     </div>
   </section>
 
   <section class="kpis kpis--6">
-    ${kpi('Candidatos', k.total, { id: 'c-total' })}
-    ${kpi('En proceso', k.activos, { tone: 'blue', big: true, id: 'c-act' })}
-    ${kpi('Ingresados', k.ingresados, { tone: 'green', sub: `${k.conversion}% de conversión`, id: 'c-ing' })}
+    ${kpi('Candidatos', kg.total, { id: 'c-total', act: 'todos', selected: grupo === 'todos', hint: 'Ver todos' })}
+    ${kpi('En proceso', kg.activos, { tone: 'blue', big: true, id: 'c-act', act: 'proceso', selected: grupo === 'proceso' })}
+    ${kpi('Ingresados', kg.ingresados, { tone: 'green', sub: `${kg.conversion}% de conversión`, id: 'c-ing', act: 'ingresados', selected: grupo === 'ingresados' })}
     ${kpi('Avance vs necesidad', pct(k.cubiertas, k.necesidad), { suffix: '%', tone: 'navy', sub: `${k.cubiertas} de ${k.necesidad} sillas cubiertas`, id: 'c-av' })}
     ${kpi('Días promedio postulado', k.diasPromedioActivos ?? '—', { sub: 'activos, desde CV recibido', id: 'c-dias' })}
     ${kpi('Días CV → ingreso', k.diasPromedioIngreso ?? '—', { sub: 'promedio ingresados', id: 'c-ding' })}
@@ -145,6 +180,20 @@ export function render(el) {
       ${bars(avancePorArea(), { color: 'green', max: 100, fmt: (n) => n + '%', dim: 'area', selected: filters.area, chart: 'c-av' })}
       <p class="muted small">Sillas cubiertas (Ingresado) sobre el total del mapa de posiciones. Tocá un área para filtrar.</p>
     </article>
+  </section>
+
+  <section class="card" id="reporte">
+    <header class="report-head">
+      <div><h2 class="card-title" style="margin:0">Reporte: ${tituloSeleccion()}</h2>
+        <p class="muted small" style="margin:4px 0 0">${fmtInt(all.length)} personas · ${dimLabel(repFilas)} × ${dimLabel(repCols)}</p></div>
+      <div class="controls report-actions">
+        ${dimSelect('rep-filas', 'Filas', REP_DIMS, repFilas)}
+        ${dimSelect('rep-cols', 'Columnas', REP_DIMS, repCols)}
+        <button class="btn btn--sm" data-act="rep-csv">Exportar reporte</button>
+        ${staff ? html`<button class="btn btn--sm" data-act="rep-personas">Exportar personas</button>` : ''}
+      </div>
+    </header>
+    ${pivotTable(pv, { rowLabel: dimLabel(repFilas) })}
   </section>
 
   ${staff ? listSection(today, all) : ''}
@@ -204,12 +253,29 @@ function bind(el) {
       if (f) { toggleFilter(filters, f.dataset.filter, f.dataset.value); page = 1; persist(); render(el); return; }
       const act = e.target.closest('[data-act]')?.dataset.act;
       if (act === 'clear') { DIMS.forEach((d) => filters[d].clear()); page = 1; persist(); render(el); return; }
+      const kc = e.target.closest('[data-kpi]');
+      if (kc) { filters.stage = new Set(GRUPOS[kc.dataset.kpi]()); page = 1; persist(); render(el); return; }
+      if (act === 'rep-csv') {
+        downloadCSV(`reporte_${repFilas}_x_${repCols}_${todayISO()}.csv`, `Reporte: ${tituloSeleccion()}\r\n` + pivotCSV(pivot(filterRows(null), repVal[repFilas], repVal[repCols]), dimLabel(repFilas)));
+        return;
+      }
+      if (act === 'rep-personas') {
+        const cols = [['nombre', 'Nombre'], [(c) => state.stageMap[c.stage]?.label, 'Etapa'], ['procedencia', 'Origen'], ['localidad', 'Localidad'],
+          ['provincia', 'Provincia'], ['area', 'Área'], ['servicio', 'Servicio'], ['posicion', 'Posición'], [(c) => c._silla?.puesto, 'Silla'],
+          ['cv_recibido', 'CV recibido'], ['fecha_ingreso', 'Fecha de ingreso']];
+        downloadCSV(`personas_${tituloSeleccion().replace(/[^\wáéíóúñ]+/gi, '_')}_${todayISO()}.csv`, rowsToCSV(cols, filterRows(null)));
+        return;
+      }
       if (act === 'more') { page++; render(el); return; }
       if (act === 'new') { openCandidate(null); return; }
       const tr = e.target.closest('tr[data-id]');
       if (tr) openCandidate(tr.dataset.id);
     });
     el.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('tr[data-id]')) openCandidate(e.target.dataset.id); });
+    el.addEventListener('change', (e) => {
+      if (e.target.id === 'rep-filas') { repFilas = e.target.value; saveLocal('reclutapp.cand.repFilas', repFilas); render(el); }
+      if (e.target.id === 'rep-cols') { repCols = e.target.value; saveLocal('reclutapp.cand.repCols', repCols); render(el); }
+    });
   }
   const s = $('#cand-search', el);
   s?.addEventListener('input', () => {

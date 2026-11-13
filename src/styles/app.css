@@ -585,3 +585,23 @@ fieldset.sensitive { border-color: color-mix(in srgb, var(--tp-orange) 60%, var(
 .backup-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; padding: 6px 24px;
   background: color-mix(in srgb, var(--tp-orange) 14%, var(--surface)); border-bottom: 1px solid var(--line); }
 @media (max-width: 640px) { .backup-banner { padding: 6px 16px; } }
+
+/* ======================= v5: KPIs clickeables y reportes ======================= */
+.kpi--click { cursor: pointer; text-align: left; font: inherit; color: inherit; width: 100%; }
+.kpi--click:hover { border-color: var(--accent); }
+.kpi--click:focus-visible { outline: 2px solid var(--focus); }
+.kpi--click.is-sel { box-shadow: 0 0 0 2px var(--accent), var(--shadow); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.kpi--click .kpi-hint { font-size: 11px; color: var(--accent); font-weight: 700; }
+.tbl--pivot th, .tbl--pivot td { white-space: nowrap; }
+.tbl--pivot td.num, .tbl--pivot th.num { min-width: 56px; }
+.report-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.report-head .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+@media print {
+  .report-actions, .filters, .head-actions, .backup-banner { display: none !important; }
+  .tbl--pivot td { background: none !important; }
+}
+/* Imprimir solo el reporte de nómina */
+@media print {
+  body.print-reporte #view > *:not(#reporte-nomina) { display: none !important; }
+  body.print-reporte #reporte-nomina { border: 0; box-shadow: none; }
+}
