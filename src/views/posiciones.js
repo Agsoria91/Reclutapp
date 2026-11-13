@@ -2,7 +2,7 @@ import { html, raw, $ } from '../lib/html.js';
 import { state, loadAll } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
 import { fmtMonth, fmtMoney, todayISO, norm, pct } from '../lib/format.js';
-import { applyFilters, countBy, positionKpis, pendingByTarget, isCovered, hasPerson, isLate, inMonthRange, monthKey } from '../lib/kpis.js';
+import { applyFilters, countBy, positionKpis, pendingByTarget, isCovered, hasPerson, isLate, monthKey } from '../lib/kpis.js';
 import {
   stagePill, filterGroup, selectFilter, multiSelectFilter, toggleFilter, kpi, openDrawer, closeDrawer, toast, formData, field,
   confirmDialog, saveLocal, loadLocal, serializeFilters, restoreFilters, datalist,
@@ -11,26 +11,25 @@ import {
 import { mascot } from '../components/mascot.js';
 import { openAssignFromPosition } from './asignar.js';
 
-const DIMS = ['area', 'sector', 'stage', 'cobertura'];
+const DIMS = ['area', 'sector', 'stage', 'cobertura', 'mes'];
 const KEY = 'reclutapp.pos.filters';
 const saved = loadLocal(KEY, {});
 export const posFilters = restoreFilters(saved, DIMS);
 let search = '';
 let soloPendientes = !!saved.soloPendientes;
-let mesDesde = saved.mesDesde || '';
-let mesHasta = saved.mesHasta || '';
 
 export const posGetters = {
   area: (p) => p.yacimiento,
   sector: (p) => p.sector || '—',
   stage: (p) => state.stageMap[p.stage]?.label || p.stage,
   cobertura: (p) => p.tipo_cobertura || '—',
+  // la fecha objetivo cuenta por mes/año
+  mes: (p) => monthKey(p.fecha_objetivo) || 'sin-fecha',
 };
 
 export function filteredPositions({ ignoreSearch = false } = {}) {
   let rows = applyFilters(state.positions, posFilters, posGetters);
   if (soloPendientes) rows = rows.filter((p) => !isCovered(p));
-  rows = rows.filter((p) => inMonthRange(p, mesDesde, mesHasta));
   if (!ignoreSearch && search) {
     const q = norm(search);
     rows = rows.filter((p) => norm([p.puesto, p.candidato_nombre, p.pos_sap, p.sector].join(' ')).includes(q));
@@ -42,11 +41,13 @@ export function filteredPositions({ ignoreSearch = false } = {}) {
 // así los conteos de cada pill reflejan la combinación actual.
 function optionsFor(dim) {
   const others = { ...posFilters, [dim]: new Set() };
-  const rows = applyFilters(state.positions, others, posGetters).filter((p) => inMonthRange(p, mesDesde, mesHasta));
+  const rows = applyFilters(state.positions, others, posGetters);
   const counts = countBy(rows, posGetters[dim]);
   if (dim === 'stage') {
     const order = (label) => state.stages.find((s) => s.label === label)?.orden ?? 999;
     counts.sort((a, b) => order(a[0]) - order(b[0]));
+  } else if (dim === 'mes') {
+    counts.sort((a, b) => (a[0] === 'sin-fecha') - (b[0] === 'sin-fecha') || a[0].localeCompare(b[0]));
   } else counts.sort((a, b) => String(a[0]).localeCompare(String(b[0]), 'es'));
   for (const v of posFilters[dim]) if (!counts.some(([k]) => k === v)) counts.push([v, 0]);
   return counts;
@@ -56,8 +57,6 @@ export function presentHash() {
   const q = new URLSearchParams();
   for (const d of DIMS) if (posFilters[d].size) q.set(d, [...posFilters[d]].join('|'));
   if (soloPendientes) q.set('pend', '1');
-  if (mesDesde) q.set('desde', mesDesde);
-  if (mesHasta) q.set('hasta', mesHasta);
   return '#/presentar' + (q.toString() ? '?' + q : '');
 }
 
@@ -116,7 +115,7 @@ export function render(el) {
       <label class="search"><span class="sr-only">Buscar</span>
         <input type="search" id="pos-search" placeholder="Buscar puesto, persona, POS SAP…" value="${search}">
       </label>
-      ${monthRange()}
+      ${multiSelectFilter({ dim: 'mes', label: 'Mes objetivo', options: optionsFor('mes'), selected: posFilters.mes, presets: monthPresets(), open: openMulti === 'mes', labelOf: mesLabel })}
       <label class="check"><input type="checkbox" id="pos-pend" ${raw(soloPendientes ? 'checked' : '')}> Solo pendientes</label>
     </div>
   </section>
@@ -244,23 +243,23 @@ function bind(el) {
     const n = $('#pos-search', el); n.focus(); n.setSelectionRange(pos, pos);
   });
   $('#pos-pend', el)?.addEventListener('change', (e) => { soloPendientes = e.target.checked; persist(); render(el); });
-  $('#mes-desde', el)?.addEventListener('change', (e) => { mesDesde = e.target.value; persist(); render(el); });
-  $('#mes-hasta', el)?.addEventListener('change', (e) => { mesHasta = e.target.value; persist(); render(el); });
 }
 
-function persist() { saveLocal(KEY, { ...serializeFilters(posFilters), soloPendientes, mesDesde, mesHasta }); }
+function persist() { saveLocal(KEY, { ...serializeFilters(posFilters), soloPendientes }); }
 
-// Desde / Hasta mes objetivo (opciones = meses presentes en el mapa)
-function monthRange() {
+export const mesLabel = (m) => (m === 'sin-fecha' ? 'Sin fecha' : fmtMonth(m));
+
+// Atajos del filtro de meses, calculados sobre los meses que existen en el mapa.
+function monthPresets() {
+  const cur = monthKey(todayISO());
+  const year = cur.slice(0, 4);
   const months = [...new Set(state.positions.map((p) => monthKey(p.fecha_objetivo)).filter(Boolean))].sort();
-  const opt = (sel, filterFn) => months.filter(filterFn).map((m) => html`<option value="${m}" ${raw(m === sel ? 'selected' : '')}>${fmtMonth(m)}</option>`);
-  return html`<div class="fmonth ${mesDesde || mesHasta ? 'is-active' : ''}">
-    <span class="fmulti-label">Mes objetivo</span>
-    <select id="mes-desde" aria-label="Desde"><option value="">desde el inicio</option>${opt(mesDesde, (m) => !mesHasta || m <= mesHasta)}</select>
-    <span class="muted">a</span>
-    <select id="mes-hasta" aria-label="Hasta"><option value="">hasta el final</option>${opt(mesHasta, (m) => !mesDesde || m >= mesDesde)}</select>
-    ${mesDesde || mesHasta ? html`<button type="button" class="icon-btn icon-btn--sm" data-act="mes-clear" aria-label="Quitar filtro de mes" title="Quitar">✕</button>` : ''}
-  </div>`;
+  const out = [];
+  const venc = months.filter((m) => m < cur);
+  if (venc.length) out.push(['Vencidos', venc]);
+  out.push(['Desde este mes', months.filter((m) => m >= cur)]);
+  out.push([`Hasta Dic ${year}`, months.filter((m) => m <= `${year}-12`)]);
+  return out.filter(([, v]) => v.length);
 }
 
 function onClick(e) {
@@ -275,6 +274,7 @@ function onClick(e) {
   if (sm) {
     e.preventDefault();
     const box = sm.parentElement;
+    el.querySelectorAll('.fmulti-box[open]').forEach((d) => { if (d !== box) d.open = false; });
     box.open = !box.open;
     openMulti = box.open ? box.dataset.multi : null;
     return;
@@ -283,7 +283,6 @@ function onClick(e) {
   if (f) { toggleFilter(posFilters, f.dataset.filter, f.dataset.value); persist(); render(el); return; }
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'new') { openEditor(null); return; }
-  if (act === 'mes-clear') { mesDesde = ''; mesHasta = ''; persist(); render(el); return; }
   if (act === 'toggle-all') {
     const keys = [...el.querySelectorAll('details[data-g]')].map((d) => d.dataset.g);
     const allOpen = keys.every((k) => openGroups.has(k));
