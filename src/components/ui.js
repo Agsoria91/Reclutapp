@@ -69,6 +69,28 @@ export function selectFilter({ dim, label, options, selected, allLabel = 'Todos'
     </select></label>`;
 }
 
+// Desplegable de selección MÚLTIPLE con casillas. `presets` son atajos
+// ([etiqueta, [valores]]), p. ej. "Todos menos Ingresado".
+export function multiSelectFilter({ dim, label, options, selected, allLabel = 'Todos', presets = [], open = false }) {
+  const sel = selected || new Set();
+  const summary = !sel.size ? allLabel
+    : sel.size === 1 ? [...sel][0]
+    : `${sel.size} seleccionados`;
+  return html`<div class="fmulti"><span class="fmulti-label">${label}</span>
+    <details class="fmulti-box" data-multi="${dim}" ${raw(open ? 'open' : '')}>
+      <summary class="${sel.size ? 'is-active' : ''}">${summary}</summary>
+      <div class="fmulti-pop" role="group" aria-label="${label}">
+        <div class="fmulti-presets">
+          <button type="button" class="btn btn--ghost btn--sm" data-multi-preset="${dim}" data-values="">${allLabel}</button>
+          ${presets.map(([l, vals]) => html`<button type="button" class="btn btn--ghost btn--sm" data-multi-preset="${dim}" data-values="${JSON.stringify(vals)}">${l}</button>`)}
+        </div>
+        ${options.map(([v, n]) => html`<label class="check fmulti-opt">
+          <input type="checkbox" data-multi-opt="${dim}" value="${v}" ${raw(sel.has(v) ? 'checked' : '')}>
+          <span>${v}</span>${n != null ? html`<small>${n}</small>` : ''}</label>`)}
+      </div>
+    </details></div>`;
+}
+
 // Barras horizontales (sin librería). Con `dim`, cada barra es un botón que
 // filtra esa dimensión: el resto de la pantalla se recalcula y las barras se
 // animan desde su ancho anterior.
