@@ -38,12 +38,14 @@ create table if not exists respaldo.nomina_pre_unificacion as select * from publ
 create table if not exists respaldo.hires_pre_unificacion as select * from public.hires;
 
 -- 3) Movimientos internos sin DNI en el legajo: vincular con su registro de nómina
+--    (Castillo de Instrumentos 5 = Castillo Guillermo Marcos, confirmado por RRHH)
 update public.nomina n set hire_id = h.id
   from public.hires h
  where n.hire_id is null and h.dni is null
    and ((public.norm_txt(h.nombre) = 'galera' and public.norm_txt(n.nombre) = 'galera carla debora')
      or (public.norm_txt(h.nombre) = 'dipp emir' and public.norm_txt(n.nombre) = 'dip emir abdul')
-     or (public.norm_txt(h.nombre) = 'cabeza lautaro' and public.norm_txt(n.nombre) = 'cabeza lautaro sebastian'));
+     or (public.norm_txt(h.nombre) = 'cabeza lautaro' and public.norm_txt(n.nombre) = 'cabeza lautaro sebastian')
+     or (public.norm_txt(h.nombre) = 'castillo' and public.norm_txt(n.nombre) = 'castillo guillermo marcos'));
 
 -- 4) Pasar los datos de cada legajo a su registro de nómina
 --    (reclutamiento: se copia; datos personales: solo completa vacíos)
