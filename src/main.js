@@ -62,9 +62,9 @@ function shell(name) {
   <a href="#view" class="skip">Saltar al contenido</a>
   <header class="topbar">
     <a class="brand" href="#/posiciones" aria-label="Inicio">
-      <img src="./brand/tecpetrol-isologo.svg" alt="Tecpetrol" class="brand-logo brand-logo--color">
-      <img src="./brand/tecpetrol-isologo-mono.svg" alt="" aria-hidden="true" class="brand-logo brand-logo--mono">
-      <span class="brand-app">Reclutamiento <b>EFiS</b></span>
+      <img src="./brand/efis-isologo.svg" alt="EFiS Energy Field Services" class="brand-logo brand-logo--color">
+      <img src="./brand/efis-isologo-negativo.svg" alt="" aria-hidden="true" class="brand-logo brand-logo--mono">
+      <span class="brand-app"><b>Reclutamiento</b></span>
     </a>
     <nav class="nav" aria-label="Secciones">
       ${navItems.map(([k, v]) => html`<a href="#/${k}" class="${k === name ? 'is-active' : ''}" ${k === name ? html`aria-current="page"` : ''}>${v.label}</a>`)}
@@ -85,7 +85,7 @@ function shell(name) {
     Conviene guardar uno por semana en el OneDrive/Drive de RRHH.
     <button class="btn btn--sm" data-act="respaldo">Descargar respaldo</button></div>` : ''}
   <main id="view" class="view" tabindex="-1"></main>
-  <footer class="foot">Tecpetrol · Operación EFiS · Recursos Humanos</footer>`;
+  <footer class="foot">EFiS · Energy Field Services · Recursos Humanos</footer>`;
 }
 
 function route() {

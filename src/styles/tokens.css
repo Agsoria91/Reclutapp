@@ -1,13 +1,13 @@
 /* ==========================================================================
-   Tokens de marca · Manual de Marca Tecpetrol, Edición 3.0 (feb 2026)
-   Primarios (web RGB):  Pantone 3015 / 348 / 369 / Cool Gray 10
-   Secundarios:          292, 513, 716, 7406, 582, 541, 490, 519
-   Tipografía en pantalla: Arial (palo seco) y Georgia (serif), según manual.
+   Tokens de marca · Manual de Marca EFiS (Energy Field Services)
+   Colores primarios: Pantone 348 #008750 · Pantone 369 #78B450 · Cool Gray 10 #666666
+   Tipografía en pantalla: Arial y Georgia. Logo: mínimo 40 px de alto en pantalla.
+   (Los demás colores se usan solo como colores funcionales de estados y gráficos.)
    Para cambiar la identidad, tocar SOLO este archivo.
    ========================================================================== */
 :root {
   /* paleta primaria */
-  --tp-blue: #0073B4;      /* Pantone 3015 */
+  --tp-blue: #0073B4;      /* funcional: gráficos y estados */
   --tp-green: #008750;     /* Pantone 348  */
   --tp-lime: #78B450;      /* Pantone 369  */
   --tp-gray: #666666;      /* Cool Gray 10 */
@@ -39,9 +39,9 @@
   --line: #DCE2E8;
   --text: #22272B;
   --text-2: #5C6670;
-  --accent: var(--tp-blue);
+  --accent: var(--tp-green);
   --accent-ink: #FFFFFF;
-  --focus: var(--tp-blue);
+  --focus: var(--tp-green);
   --logo-mono: none;
   --logo-color: block;
   color-scheme: light;
@@ -56,9 +56,9 @@
     --line: #23415C;
     --text: #E6EEF5;
     --text-2: #93A9BD;
-    --accent: var(--tp-sky);
+    --accent: var(--tp-lime);
     --accent-ink: #0B1622;
-    --focus: var(--tp-sky);
+    --focus: var(--tp-lime);
     --shadow: 0 0 0 1px rgb(120 190 230 / .06), 0 8px 24px rgb(0 0 0 / .35);
     --logo-mono: block;
     --logo-color: none;
@@ -72,9 +72,9 @@
   --line: #23415C;
   --text: #E6EEF5;
   --text-2: #93A9BD;
-  --accent: var(--tp-sky);
+  --accent: var(--tp-lime);
   --accent-ink: #0B1622;
-  --focus: var(--tp-sky);
+  --focus: var(--tp-lime);
   --shadow: 0 0 0 1px rgb(120 190 230 / .06), 0 8px 24px rgb(0 0 0 / .35);
   --logo-mono: block;
   --logo-color: none;

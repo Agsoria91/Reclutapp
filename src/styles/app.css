@@ -27,9 +27,9 @@ small { font-size: 12px; }
   padding: 10px 24px; background: var(--surface); border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text); }
-.brand-logo { height: 34px; width: auto; }
+.brand-logo { height: 40px; width: auto; } /* mínimo del manual EFiS: 40 px */
 .brand-logo--color { display: var(--logo-color); }
-.brand-logo--mono { display: var(--logo-mono); color: #fff; }
+.brand-logo--mono { display: var(--logo-mono); }
 .brand-app { font-size: 14px; color: var(--text-2); border-left: 1px solid var(--line); padding-left: 12px; white-space: nowrap; }
 .brand-app b { color: var(--text); }
 .nav { display: flex; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none; }
@@ -279,10 +279,10 @@ fieldset.sensitive { border-color: color-mix(in srgb, var(--tp-orange) 60%, var(
 .cig-hub { fill: var(--tp-navy); }
 .cig-legs path { stroke: var(--tp-navy); stroke-width: 3.5; stroke-linecap: round; fill: none; }
 .cig-legs .cig-knee { stroke-width: 2.5; opacity: .7; }
-.cig-bar { stroke: var(--tp-blue); stroke-width: 6; stroke-linecap: round; fill: none; }
+.cig-bar { stroke: var(--tp-green); stroke-width: 6; stroke-linecap: round; fill: none; }
 .cig-pitman, .cig-cable { stroke: var(--tp-gray); stroke-width: 2.5; stroke-linecap: round; fill: none; }
 .cig-tail { stroke: var(--tp-green); stroke-width: 3; stroke-linecap: round; fill: none; }
-.cig-head { fill: var(--tp-blue); }
+.cig-head { fill: var(--tp-green); }
 .cig-beak { fill: var(--tp-orange); }
 .cig-eye { fill: #fff; }
 .cig-pupil { fill: #1b1b1b; }
@@ -331,10 +331,10 @@ fieldset.sensitive { border-color: color-mix(in srgb, var(--tp-orange) 60%, var(
 .present { display: grid; gap: 18px; }
 .present-tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .present-tools .muted { flex: 1; font-size: 13px; }
-.present-head { display: flex; align-items: center; gap: 22px; padding-bottom: 14px; border-bottom: 3px solid var(--tp-blue); }
+.present-head { display: flex; align-items: center; gap: 22px; padding-bottom: 14px; border-bottom: 3px solid var(--tp-green); }
 .present-logo { height: 56px; }
-:root[data-theme="dark"] .present-logo { filter: brightness(0) invert(1); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .present-logo { filter: brightness(0) invert(1); } }
+
+
 .present-head h1 { font-size: 30px; }
 .present-head p { margin: 4px 0 0; color: var(--text-2); }
 .kpis--present { grid-template-columns: repeat(6, 1fr); }
@@ -355,7 +355,7 @@ fieldset.sensitive { border-color: color-mix(in srgb, var(--tp-orange) 60%, var(
   .view { padding: 16px; }
   .topbar { padding: 8px 16px; gap: 10px; flex-wrap: wrap; }
   .nav { order: 3; flex-basis: 100%; }
-  .brand-logo { height: 28px; }
+  .brand-logo { height: 40px; }
   .user { display: none; }
   .public-banner { padding: 6px 16px; }
   h1 { font-size: 22px; }
@@ -391,6 +391,8 @@ fieldset.sensitive { border-color: color-mix(in srgb, var(--tp-orange) 60%, var(
   .no-print, .topbar, .public-banner, .foot, #toasts { display: none !important; }
   .view { padding: 0; max-width: none; }
   .present-logo { filter: none !important; height: 40px; }
+  .present-logo.brand-logo--mono { display: none !important; }
+  .present-logo.brand-logo--color { display: block !important; }
   .present-head h1 { font-size: 22px; }
   .kpis--present { grid-template-columns: repeat(6, 1fr); }
   .kpi { padding: 8px 10px; } .kpi-value { font-size: 22px; } .kpi--big .kpi-value { font-size: 24px; }
@@ -599,9 +601,4 @@ fieldset.sensitive { border-color: color-mix(in srgb, var(--tp-orange) 60%, var(
 @media print {
   .report-actions, .filters, .head-actions, .backup-banner { display: none !important; }
   .tbl--pivot td { background: none !important; }
-}
-/* Imprimir solo el reporte de nómina */
-@media print {
-  body.print-reporte #view > *:not(#reporte-nomina) { display: none !important; }
-  body.print-reporte #reporte-nomina { border: 0; box-shadow: none; }
 }

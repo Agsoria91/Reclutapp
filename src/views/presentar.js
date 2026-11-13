@@ -41,7 +41,8 @@ export function render(el, params) {
       <button class="btn btn--primary" onclick="window.print()">Imprimir / PDF</button>
     </div>
     <header class="present-head">
-      <img src="./brand/tecpetrol-isologo.svg" alt="Tecpetrol" class="present-logo">
+      <img src="./brand/efis-isologo.svg" alt="EFiS Energy Field Services" class="present-logo brand-logo--color">
+      <img src="./brand/efis-isologo-negativo.svg" alt="" aria-hidden="true" class="present-logo brand-logo--mono">
       <div>
         <h1>Mapa de posiciones · EFiS</h1>
         <p>${filtro}${soloPend ? ' · solo pendientes' : ''}${rango} — al ${fmtDate(today)}</p>
@@ -71,6 +72,6 @@ export function render(el, params) {
         </article>`;
       })}
     </section>
-    <footer class="present-foot">Reclutamiento EFiS · Tecpetrol ${raw('&middot;')} generado ${new Date().toLocaleString('es-AR')}</footer>
+    <footer class="present-foot">Reclutamiento · EFiS Energy Field Services ${raw('&middot;')} generado ${new Date().toLocaleString('es-AR')}</footer>
   </div>`);
 }

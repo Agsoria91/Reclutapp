@@ -1,4 +1,4 @@
-# Reclutamiento EFiS · Tecpetrol
+# Reclutamiento EFiS · Energy Field Services
 
 App web que une las tres patas del reclutamiento de la operación EFiS:
 
@@ -75,6 +75,6 @@ Deploy: cada push a `main` publica en GitHub Pages (`.github/workflows/deploy.ym
 
 ## Identidad visual
 
-Tokens en `src/styles/tokens.css`, tomados del Manual de Marca Tecpetrol 3.0 (feb 2026): primarios Pantone 3015 `#0073B4`, 348 `#008750`, 369 `#78B450`, Cool Gray 10 `#666666`, y la paleta secundaria. Tipografía de pantalla Arial + Georgia, como indica el manual. El isologo (`public/brand/`) es el arte del manual, sin redibujar. Tema claro y oscuro "HUD".
+Tokens en `src/styles/tokens.css`, según el **Manual de Marca EFiS**: verde Pantone 348 `#008750` (color principal), verde Pantone 369 `#78B450` (acento en tema oscuro) y Cool Gray 10 `#666666`. Tipografía de pantalla Arial + Georgia. El logo (`public/brand/efis-isologo*.svg`) es el arte del manual sin redibujar, a 40 px de alto (mínimo digital); en tema oscuro se usa el negativo (blanco con la "i" verde claro). Los demás colores se usan solo como colores funcionales de estados y gráficos.
 
 La mascota es **la Cigüeña**: un balancín con cara de ave que bombea mientras carga, mira un pozo seco cuando no hay resultados, festeja cuando se confirma un ingreso y queda con un bulón suelto si algo falla (`src/components/mascot.js`).

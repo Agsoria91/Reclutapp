@@ -1,6 +1,6 @@
 // "La Cigüeña": balancín (bomba de varillas) con cara de ave, mascota de la app.
 // Estados: loading (bombea), empty (mira un pozo seco), success (festeja),
-// error (se le soltó un bulón). Línea simple, paleta Tecpetrol, sin texto.
+// error (se le soltó un bulón). Línea simple, paleta EFiS, sin texto.
 import { html, raw } from '../lib/html.js';
 
 const MSG = {
