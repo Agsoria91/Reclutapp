@@ -605,3 +605,6 @@ fieldset.sensitive { border-color: color-mix(in srgb, var(--tp-orange) 60%, var(
 .btn--excel { color: var(--tp-green); border-color: color-mix(in srgb, var(--tp-green) 50%, var(--line)); }
 :root[data-theme="dark"] .btn--excel { color: var(--tp-lime); }
 @media (max-width: 640px) { .btn--excel { display: none; } }
+.list-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex: 1; justify-content: flex-end; }
+.list-actions .search { max-width: 380px; }
+@media (max-width: 640px) { .list-actions .btn--excel { display: inline-flex; } }
