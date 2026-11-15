@@ -122,7 +122,7 @@ export function armarLibro() {
   }
   sheets.push({
     name: 'Resumen', title: `Reclutamiento EFiS — Resumen al ${fmtDate(hoy)}`,
-    note: staff ? 'Incluye datos personales: uso interno de RRHH.' : 'Vista pública: sin datos personales.',
+    note: staff ? 'Incluye datos personales: uso interno de RRHH.' : 'Vista de lectura: sin datos personales.',
     columns: [{ header: 'Indicador', width: 44 }, { header: 'Valor', width: 14 }],
     rows: resumen.map(([k, v]) => [k, v]),
   });
