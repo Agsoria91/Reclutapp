@@ -69,7 +69,7 @@ let current = { name: null, container: null };
 function shell(name) {
   const r = ROUTES[name];
   if (r.bare) return html`<main id="view" class="view view--bare"></main>`;
-  const navItems = Object.entries(ROUTES).filter(([, v]) => v.label && (!v.staff || state.isStaff));
+  const navItems = state.canRead ? Object.entries(ROUTES).filter(([, v]) => v.label && (!v.staff || state.isStaff)) : [];
   return html`
   <a href="#view" class="skip">Saltar al contenido</a>
   <header class="topbar">
@@ -82,17 +82,17 @@ function shell(name) {
       ${navItems.map(([k, v]) => html`<a href="#/${k}" class="${k === name ? 'is-active' : ''}" ${k === name ? html`aria-current="page"` : ''}>${v.label}</a>`)}
     </nav>
     <div class="topbar-right">
-      <button class="btn btn--sm btn--excel" id="btn-excel" title="${state.isStaff ? 'Descargar todo en Excel (incluye nómina y datos personales)' : 'Descargar resumen en Excel (sin datos personales)'}">${ICON.descarga} Excel</button>
-      <button class="icon-btn" id="btn-refresh" title="Actualizar datos" aria-label="Actualizar datos">${ICON.actualizar}</button>
+      ${state.canRead ? html`<button class="btn btn--sm btn--excel" id="btn-excel" title="${state.isStaff ? 'Descargar todo en Excel (incluye nómina y datos personales)' : 'Descargar resumen en Excel (sin datos personales)'}">${ICON.descarga} Excel</button>
+      <button class="icon-btn" id="btn-refresh" title="Actualizar datos" aria-label="Actualizar datos">${ICON.actualizar}</button>` : ''}
       <button class="icon-btn" id="btn-theme" title="Tema claro / oscuro" aria-label="Cambiar tema">${ICON.tema}</button>
       ${state.session
-        ? html`<span class="user ${state.isStaff ? '' : 'user--warn'}" title="${state.session.user.email}">${state.isStaff ? 'RRHH' : 'Sin permisos'} · ${state.session.user.email.split('@')[0]}</span>
-               ${state.isStaff ? html`<button class="btn btn--ghost btn--sm" id="btn-pass">Mi contraseña</button>` : ''}
+        ? html`<span class="user ${state.canRead ? '' : 'user--warn'}" title="${state.session.user.email}">${state.isStaff ? 'RRHH' : state.canRead ? 'Lectura' : 'Sin permisos'} · ${state.session.user.email.split('@')[0]}</span>
+               ${state.canRead ? html`<button class="btn btn--ghost btn--sm" id="btn-pass">Mi contraseña</button>` : ''}
                <button class="btn btn--ghost btn--sm" id="btn-logout">Salir</button>`
-        : html`<a class="btn btn--sm" href="#/login">Ingresar RRHH</a>`}
+        : ''}
     </div>
   </header>
-  ${!state.isStaff && name !== 'login' ? html`<div class="public-banner">Vista pública · solo lectura, sin datos personales ni sueldos.</div>` : ''}
+  ${state.canRead && !state.isStaff && name !== 'login' ? html`<div class="public-banner">Vista de lectura · sin datos personales ni sueldos. Uso interno EFiS / Tecpetrol.</div>` : ''}
   ${state.isStaff && (diasDesdeRespaldo() == null || diasDesdeRespaldo() >= 7) ? html`<div class="backup-banner">
     ${diasDesdeRespaldo() == null ? 'Todavía no descargaste un respaldo desde esta computadora.' : `Hace ${diasDesdeRespaldo()} días que no descargás un respaldo.`}
     Conviene guardar uno por semana en el OneDrive/Drive de RRHH.
@@ -104,7 +104,8 @@ function shell(name) {
 function route() {
   const { name, params } = parseHash();
   const r = ROUTES[name];
-  if (r.staff && state.authChecked && !state.isStaff) { location.hash = '#/login'; return; }
+  // Todo requiere cuenta corporativa habilitada; las pantallas de RRHH, además, rol RRHH.
+  if (state.authChecked && name !== 'login' && (!state.canRead || (r.staff && !state.isStaff))) { location.hash = '#/login'; return; }
   closeDrawer();
   app.innerHTML = String(shell(name));
   const container = $('#view');
@@ -168,10 +169,10 @@ async function boot() {
     await refreshAuth();
     set({ positions: [], candidates: [], hires: [], nomina: [], loading: true }); // nunca mezclar datos de sesiones distintas
     if (event === 'SIGNED_IN') {
-      toast(state.isStaff ? `Hola, ${session.user.email}` : 'Tu usuario no está habilitado como RRHH', state.isStaff ? 'ok' : 'error', 5000);
-      if (state.isStaff && parseHash().name === 'login') location.hash = '#/posiciones';
+      toast(state.canRead ? `Hola, ${session.user.email}` : 'Tu cuenta no está habilitada. Pedile acceso a RRHH.', state.canRead ? 'ok' : 'error', 5000);
+      if (state.canRead && parseHash().name === 'login') location.hash = '#/posiciones';
     }
-    if (event === 'SIGNED_OUT' && ROUTES[parseHash().name].staff) location.hash = '#/posiciones';
+    if (event === 'SIGNED_OUT') location.hash = '#/login';
     route();
     await loadAll();
   });

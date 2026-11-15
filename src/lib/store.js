@@ -8,6 +8,7 @@ const listeners = new Set();
 export const state = {
   session: null,
   isStaff: false,
+  canRead: false,  // RRHH o lector corporativo habilitado (sin esto no se carga ningún dato)
   authChecked: false,
   loading: true,
   error: null,
@@ -29,16 +30,24 @@ export async function refreshAuth() {
   const { data } = await sb.auth.getSession();
   const session = data.session;
   let isStaff = false;
+  let canRead = false;
   if (session) {
-    const { data: ok, error } = await sb.rpc('is_staff');
-    isStaff = !error && ok === true;
+    const [st, rd] = await Promise.all([sb.rpc('is_staff'), sb.rpc('puede_leer')]);
+    isStaff = !st.error && st.data === true;
+    canRead = isStaff || (!rd.error && rd.data === true);
   }
   state.session = session;
   state.isStaff = isStaff;
+  state.canRead = canRead;
   state.authChecked = true;
 }
 
 export async function loadAll({ silent = false } = {}) {
+  // Sin cuenta habilitada no se pide NADA a la base (y la base tampoco lo daría).
+  if (!state.canRead) {
+    set({ stages: [], stageMap: {}, positions: [], candidates: [], hires: [], nomina: [], historial: [], loading: false, error: null });
+    return;
+  }
   if (!silent) set({ loading: true, error: null });
   try {
     const staff = state.isStaff;
