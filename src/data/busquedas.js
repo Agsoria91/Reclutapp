@@ -4,13 +4,15 @@
 //
 // Reglas (confirmadas por RRHH):
 //   - Siempre dentro de la MISMA ÁREA (Almacén LT2E no se mezcla con Almacén FDP).
-//   - Instrumentista solo con instrumentistas; Eléctrico solo con eléctricos.
+//   - Instrumentista, Electroinstrumentista y Eléctrico son tres búsquedas distintas.
+//   - Mecánico genérico va a válvulas y general.
 //   - Mecánicos de compresión y de válvulas son búsquedas distintas.
 //   - Mecánico de flota va aparte (Serge).
 // El orden importa: gana la primera regla que coincide (las específicas primero).
 // `cand` se prueba contra la Posición del candidato; `silla` contra
 // "puesto | sector" de la silla. Todo en minúsculas y sin acentos.
 export const BUSQUEDAS = [
+  { id: 'electroinstrumentista', label: 'Electroinstrumentista', cand: /electro ?instrument|electric\w* instrument/, silla: /electro ?instrument|electric\w* instrument/ },
   { id: 'instrumentista', label: 'Instrumentista', cand: /instrument/, silla: /instrument/ },
   { id: 'electrico', label: 'Eléctrico', cand: /electric/, silla: /^electric/ },
   { id: 'mec_compresion', label: 'Mecánico de compresión', cand: /compres/, silla: /compres/ },
