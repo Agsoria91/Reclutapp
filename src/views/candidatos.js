@@ -344,6 +344,7 @@ export function openCandidate(id) {
       ${field('Aptitud recibida', 'aptitud_recibida', c.aptitud_recibida, { type: 'date' })}
       ${field('Aptitud', 'aptitud', c.aptitud, { options: [['', '—'], 'Apto', 'Apto Con Preexistencia', 'No Apto Temporal', 'No Apto'] })}
       ${field('Fecha de ingreso', 'fecha_ingreso', c.fecha_ingreso, { type: 'date' })}
+      ${state.candidates.some((x) => 'fecha_baja' in x) ? field('Fecha de baja', 'fecha_baja', c.fecha_baja, { type: 'date', hint: 'Se completa sola al cancelar; corregila si la baja fue otro día.' }) : ''}
       <fieldset class="field--wide"><legend>Motivos de baja (si se cancela)</legend>
         <div class="checks">${MOTIVOS.map((m) => html`<label class="check"><input type="checkbox" name="motivo" value="${m}" ${raw(c.motivos_baja?.includes(m) ? 'checked' : '')}> ${m}</label>`)}</div>
       </fieldset>
