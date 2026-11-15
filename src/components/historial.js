@@ -28,14 +28,18 @@ function trayecto(c, tramo) {
   const cayo = c.stage === 'cancelado';
   const ingreso = c.stage === 'ingresado';
   const inicio = hitos[0]?.fecha || iso(tramo?.desde) || iso(c.created_at);
-  let fin = ingreso ? (iso(c.fecha_ingreso) || hitos.at(-1)?.fecha) : cayo ? (iso(tramo?.hasta) || iso(c.updated_at)) : hoy;
+  // Fin del proceso: ingreso, o baja (fecha registrada; si es una baja vieja sin
+  // fecha, el último hito alcanzado como aproximación), o hoy si sigue en curso.
+  // Nunca "hasta que se cubrió la silla" ni la fecha de importación.
+  const bajaReal = iso(c.fecha_baja) || (tramo?.origen === 'app' ? iso(tramo?.hasta) : null);
+  let fin = ingreso ? (iso(c.fecha_ingreso) || hitos.at(-1)?.fecha) : cayo ? (bajaReal || hitos.at(-1)?.fecha || inicio) : hoy;
   if (fin && inicio && fin < inicio) fin = inicio;
   const ultimo = hitos.at(-1);
   return {
     c, hitos, inicio, fin, cayo, ingreso, enCurso: !cayo && !ingreso,
     dias: inicio && fin ? daysBetween(inicio, fin) : null,
     llego: ultimo ? ultimo.label : 'CV',
-    finAprox: cayo && !tramo?.hasta,
+    finAprox: cayo && !bajaReal,
   };
 }
 

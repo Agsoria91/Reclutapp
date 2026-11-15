@@ -34,6 +34,28 @@ create policy historial_staff on public.position_history for select to authentic
   using (public.is_staff());
 -- (sin insert/update/delete para nadie: solo escriben los triggers)
 
+-- ---------------------------------------------------------------------------
+-- Fecha de baja del candidato: se completa sola el día que pasa a Cancelado
+-- (editable por RRHH). Las bajas anteriores no tienen fecha registrada: la app
+-- usa la fecha del último hito alcanzado como aproximación (marcada con ~).
+-- ---------------------------------------------------------------------------
+alter table public.candidates add column if not exists fecha_baja date;
+
+create or replace function public.tg_candidates_fecha_baja()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  if new.stage = 'cancelado' and old.stage is distinct from 'cancelado' and new.fecha_baja is null
+     and coalesce(current_setting('reclutapp.importando', true), '') <> '1' then
+    new.fecha_baja := public.hoy_ar();
+  elsif new.stage <> 'cancelado' and old.stage = 'cancelado' then
+    new.fecha_baja := null;
+  end if;
+  return new;
+end $$;
+drop trigger if exists candidates_fecha_baja on public.candidates;
+create trigger candidates_fecha_baja before update of stage on public.candidates
+  for each row execute function public.tg_candidates_fecha_baja();
+
 -- motivo de salida según cómo quedó la persona
 create or replace function public.motivo_salida(p_candidate uuid, p_default text)
 returns text language sql stable security definer set search_path = '' as $$
@@ -103,7 +125,7 @@ begin
   insert into public.position_history (position_id, candidate_id, rol, desde, hasta, motivo, origen)
   select t.position_id, t.candidate_id, 'terna',
          least(coalesce(c.cv_recibido::timestamptz, t.added_at), t.added_at),
-         case when c.stage = 'cancelado' then c.updated_at end,
+         case when c.stage = 'cancelado' then coalesce(greatest(c.cv_recibido, c.en_entrevista, c.validacion_rrll, c.epo, c.aptitud_recibida)::timestamptz, t.added_at) end,
          case when c.stage = 'cancelado' then 'baja' end,
          'carga_inicial'
     from public.position_candidates t join public.candidates c on c.id = t.candidate_id;
@@ -113,7 +135,7 @@ begin
     insert into public.position_history (position_id, candidate_id, rol, desde, hasta, motivo, origen)
     select r.id, r.candidate_id, 'titular',
            coalesce(c.en_entrevista, c.cv_recibido, r.created_at::date)::timestamptz,
-           greatest(c.updated_at, r.updated_at),
+           coalesce(case when c.stage = 'cancelado' then greatest(c.cv_recibido, c.en_entrevista, c.validacion_rrll, c.epo, c.aptitud_recibida)::timestamptz end, r.updated_at),
            case when c.stage = 'cancelado' then 'baja' else 'reemplazado' end,
            'respaldo'
       from respaldo.positions_20261113 r
@@ -125,7 +147,7 @@ begin
     insert into public.position_history (position_id, candidate_id, rol, desde, hasta, motivo, origen)
     select r.position_id, r.candidate_id, 'terna',
            least(coalesce(c.cv_recibido::timestamptz, r.added_at), r.added_at),
-           c.updated_at,
+           coalesce(case when c.stage = 'cancelado' then greatest(c.cv_recibido, c.en_entrevista, c.validacion_rrll, c.epo, c.aptitud_recibida)::timestamptz end, r.added_at),
            case when c.stage = 'cancelado' then 'baja' else 'quitado de la terna' end,
            'respaldo'
       from respaldo.position_candidates_20261113 r
