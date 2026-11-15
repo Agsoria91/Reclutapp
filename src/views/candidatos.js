@@ -9,6 +9,7 @@ import {
   pivot, pivotTable, pivotCSV, downloadCSV, rowsToCSV, dimSelect,
   animateIn,
 } from '../components/ui.js';
+import { avisoBox, bindAvisos, pendientesCard, openAvisoDrawer, openPlantillas, tipoSugerido } from '../components/avisos.js';
 import { mascot } from '../components/mascot.js';
 import { openAssignFromCandidate } from './asignar.js';
 import { celebrate } from './posiciones.js';
@@ -124,6 +125,7 @@ export function render(el) {
     ${staff ? html`<div class="head-actions"><button class="btn" data-act="new">+ Nuevo candidato</button></div>` : ''}
   </section>
 
+  ${staff ? pendientesCard() : ''}
   <section class="filters card">
     ${filterGroup({ dim: 'area', label: 'Área', options: pillOptions('area'), selected: filters.area })}
     ${filterGroup({ dim: 'sector', label: 'Sector', options: pillOptions('sector'), selected: filters.sector, allLabel: 'Todos' })}
@@ -280,6 +282,8 @@ function bind(el) {
       }
       if (act === 'more') { page++; render(el); return; }
       if (act === 'new') { openCandidate(null); return; }
+      if (act === 'avisar') { openAvisoDrawer(e.target.closest('[data-cid]').dataset.cid); return; }
+      if (act === 'plantillas') { openPlantillas(); return; }
       const tr = e.target.closest('tr[data-id]');
       if (tr) openCandidate(tr.dataset.id);
     });
@@ -328,6 +332,7 @@ export function openCandidate(id) {
       <small class="muted">PDF, Word o imagen · hasta 10 MB · solo visible para RRHH</small>
     </div>` : ''}
 
+    ${c.id && (tipoSugerido(c) || (state.avisos || []).some((a) => a.candidate_id === c.id)) ? avisoBox(c) : ''}
     <form id="cand-form" class="form-grid">
       ${field('Nombre y apellido', 'nombre', c.nombre, { required: true, span: 2 })}
       ${field('Etapa', 'stage', c.stage, { options: stageOpts, hint: c._silla ? 'Se refleja en su silla.' : '' })}
@@ -401,8 +406,12 @@ export function openCandidate(id) {
     closeDrawer();
     await loadAll({ silent: true });
     if (ingreso) celebrate();
+    // Pasó a Cancelado o Entrevista aprobada: ofrecer avisarle en el momento
+    const nuevo = c.id && state.candidates.find((x) => x.id === c.id);
+    if (nuevo && data.stage !== c.stage && tipoSugerido(nuevo)) openAvisoDrawer(nuevo.id);
   });
 
+  if (c.id) bindAvisos(root, () => state.candidates.find((x) => x.id === c.id) || c, { onDone: () => { closeDrawer(); openCandidate(c.id); } });
   root.addEventListener('click', async (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'seat') { closeDrawer(); openAssignFromCandidate(c); }

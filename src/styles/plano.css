@@ -369,3 +369,14 @@ fieldset.sensitive { border: 1px dotted var(--st-orange); }
   .tl-row { break-inside: avoid; }
   .tl { --who: 220px; }
 }
+
+/* ======================= v8: avisos a candidatos ======================= */
+.aviso-box { border: 1px dotted var(--rule); padding: 12px 14px; display: grid; gap: 10px; }
+.aviso-box > header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.aviso-box textarea { width: 100%; min-height: 160px; padding: 10px; font: 13.5px/1.5 var(--font-sans); background: var(--field); color: var(--text); border: 1px solid var(--rule-solid); border-radius: 0; resize: vertical; }
+.aviso-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.aviso-hist { margin: 0; padding: 0; list-style: none; font: 400 11px var(--font-mono); font-stretch: 87.5%; color: var(--text-2); display: grid; gap: 2px; }
+.aviso-hist li::before { content: "✓ "; color: var(--accent-text); }
+.aviso-pend { list-style: none; margin: 0; padding: 0; }
+.aviso-pend li { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px dotted var(--rule); }
+@media (max-width: 640px) { .aviso-pend li { grid-template-columns: 1fr auto; } .aviso-pend .tag { display: none; } }
