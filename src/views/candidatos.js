@@ -227,7 +227,7 @@ function listSection(today, all) {
       <h2 class="card-title">Listado <small class="muted">${rows.length} candidatos</small></h2>
       <div class="list-actions">
         <label class="search"><input type="search" id="cand-search" placeholder="Buscar nombre, DNI, mail, teléfono…" value="${search}"></label>
-        <button class="btn btn--sm btn--excel" data-act="fichas" title="Una fila por persona con silla, datos personales, talles, etapas y nómina">⬇ Excel fichas completas (${rows.length})</button>
+        <button class="btn btn--sm btn--excel" data-act="fichas" title="Una fila por persona con silla, datos personales, talles, etapas y nómina">Excel fichas completas ↓ (${rows.length})</button>
       </div>
     </header>
     ${rows.length ? html`<div class="table-wrap"><table class="tbl tbl--cand is-clickable">
