@@ -63,11 +63,16 @@ export function render(el, params) {
         ps.sort((a, b) => a.puesto.localeCompare(b.puesto, 'es', { numeric: true }));
         return html`<article class="present-group">
           <h3>${g} <small>${cub}/${ps.length}</small></h3>
-          <table class="tbl tbl--compact"><tbody>${ps.map((p) => html`<tr>
-            <td>${p.puesto}</td>
-            <td>${hasPerson(p) ? p.candidato_nombre : html`<span class="muted">— vacante —</span>`}</td>
-            <td>${stagePill(p.stage, { small: true })}</td>
-            <td class="${isLate(p, today) ? 'is-late-txt' : 'muted'}">${p.fecha_objetivo ? fmtMonth(p.fecha_objetivo, { short: true }) : ''}</td>
+          <table class="tbl tbl--compact tbl--present">
+          <thead><tr><th>Puesto</th><th>Persona</th><th>Procedencia</th><th>Localidad</th><th>Estado</th><th>Obj.</th></tr></thead>
+          <tbody>${ps.map((p) => html`<tr>
+            <td class="pt-puesto">${p.puesto}</td>
+            <td class="pt-persona">${hasPerson(p) ? p.candidato_nombre : html`<span class="muted">— vacante —</span>`}
+              ${p.diagrama || p.turno ? html`<small class="present-sub">${[p.diagrama, p.turno].filter(Boolean).join(' · ')}</small>` : ''}</td>
+            <td class="present-meta pt-proc">${p.procedencia || ''}</td>
+            <td class="present-meta pt-loc">${p.localidad || ''}</td>
+            <td class="pt-estado">${stagePill(p.stage, { small: true })}</td>
+            <td class="pt-obj ${isLate(p, today) ? 'is-late-txt' : 'muted'}">${p.fecha_objetivo ? fmtMonth(p.fecha_objetivo, { short: true }) : ''}</td>
           </tr>`)}</tbody></table>
         </article>`;
       })}
