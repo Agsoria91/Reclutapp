@@ -17,6 +17,7 @@ export const state = {
   candidates: [],
   hires: [],
   nomina: [],
+  historial: [],   // solo RRHH: quién pasó por cada silla
   loadedAt: null,
 };
 
@@ -41,12 +42,14 @@ export async function loadAll({ silent = false } = {}) {
   if (!silent) set({ loading: true, error: null });
   try {
     const staff = state.isStaff;
-    const [stages, positions, candidates, terna, nomina] = await Promise.all([
+    const [stages, positions, candidates, terna, nomina, historial] = await Promise.all([
       fetchAll('stages', '*', 'orden'),
       fetchAll(staff ? 'positions' : 'positions_public'),
       fetchAll(staff ? 'candidates' : 'candidates_public'),
       staff ? fetchAll('position_candidates', '*', 'added_at') : Promise.resolve([]),
       staff ? fetchAll('nomina', '*', 'nombre') : Promise.resolve([]),
+      // tabla nueva: si todavía no existe en la base, la app sigue funcionando sin historial
+      staff ? fetchAll('position_history', '*', 'desde').catch((e) => { console.warn('historial', e); return []; }) : Promise.resolve([]),
     ]);
     const stageMap = Object.fromEntries(stages.map((s) => [s.code, s]));
     // Legajos = la nómina filtrada a quienes ingresaron por una silla (mismo registro)
@@ -66,7 +69,7 @@ export async function loadAll({ silent = false } = {}) {
         c._ternas.push(p);
       }
     }
-    set({ stages, stageMap, positions, candidates, hires, nomina, loading: false, error: null, loadedAt: new Date() });
+    set({ stages, stageMap, positions, candidates, hires, nomina, historial, loading: false, error: null, loadedAt: new Date() });
   } catch (e) {
     console.error(e);
     set({ loading: false, error: e.message || String(e) });

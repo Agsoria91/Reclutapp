@@ -314,3 +314,58 @@ fieldset.sensitive { border: 1px dotted var(--st-orange); }
 .view--bare > * { border-top: 0; }
 .view--bare > *::before { display: none; }
 .present-group h3 { font-family: var(--font-sans); font-weight: 700; text-transform: uppercase; letter-spacing: -.01em; }
+
+/* ======================= v7: historial de silla (línea de tiempo) ======================= */
+.hist-box { border: 1px dotted var(--rule); padding: 12px 14px; display: grid; gap: 10px; }
+.hist-box > header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tl { display: grid; gap: 10px; --who: 230px; --days: 52px; }
+.tl--compact { --who: 170px; --days: 44px; }
+.tl-sum { margin: 0; font-size: 14px; line-height: 1.6; }
+.tl-sum b { font-variant-numeric: tabular-nums; }
+.tl-axis, .tl-row { display: grid; grid-template-columns: var(--who) 1fr var(--days); gap: 12px; align-items: center; }
+.tl-ticks { position: relative; height: 18px; border-bottom: 1px solid var(--text); }
+.tl-ticks span {
+  position: absolute; bottom: 3px; transform: translateX(-1px); white-space: nowrap; padding-left: 4px;
+  font: 400 10px var(--font-mono); font-stretch: 87.5%; color: var(--text-2); border-left: 1px solid var(--rule-solid);
+}
+.tl-ticks .tl-today { color: var(--accent-text); border-left: 1px solid var(--accent); font-weight: 600; }
+.tl-rows { list-style: none; margin: 0; padding: 0; }
+.tl-row { padding: 8px 0; border-bottom: 1px dotted var(--rule); }
+.tl-who { display: grid; gap: 1px; min-width: 0; }
+.tl-who strong { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tl-meta { font: 400 10.5px var(--font-mono); font-stretch: 87.5%; color: var(--text-2); }
+.tl-out { font-size: 12px; color: var(--text-2); }
+.tl-row.is-out .tl-out { color: var(--st-red); }
+.tl-row.is-in .tl-out { color: var(--accent-text); font-weight: 700; }
+.tl-row.is-est { opacity: .78; }
+.tl-row.is-est .tl-meta::after { content: " · estimado"; }
+.tl-track { position: relative; height: 22px; background: linear-gradient(color-mix(in srgb, var(--text) 18%, transparent), color-mix(in srgb, var(--text) 18%, transparent)) 0 50% / 100% 1px no-repeat; }
+.tl-seg { position: absolute; top: 6px; height: 10px; background: var(--st-neutral); }
+.tl-row.is-out .tl-seg { opacity: .55; }
+.tl-row.is-est .tl-seg { background-image: var(--hatch); color: color-mix(in srgb, var(--bg) 60%, transparent); }
+.tl-dot { position: absolute; top: 4px; width: 2px; height: 14px; margin-left: -1px; background: var(--text); }
+.tl-end { position: absolute; top: 1px; transform: translateX(-50%); font: 700 14px/20px var(--font-mono); color: var(--text-2); background: var(--surface); padding: 0 2px; }
+.drawer .tl-end { background: var(--surface); }
+.view--bare .tl-end { background: var(--bg); }
+.tl-end--out { color: var(--st-red); }
+.tl-end--in { color: var(--st-green); }
+.tl-days { text-align: right; display: grid; line-height: 1.1; }
+.tl-days b { font-size: 17px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.tl-days small { font: 400 10px var(--font-mono); color: var(--text-2); }
+.tl-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.tl-legend i { width: 12px; height: 8px; }
+.tl-empty { padding: 6px 0; }
+.tl-seg--neutral { background: var(--st-neutral); } .tl-seg--sky { background-color: var(--st-sky); } .tl-seg--blue { background-color: var(--st-blue); }
+.tl-seg--navy { background-color: var(--st-navy); } .tl-seg--plum { background-color: var(--st-plum); } .tl-seg--violet { background-color: var(--st-violet); }
+.tl-seg--orange { background-color: var(--st-orange); } .tl-seg--yellow { background-color: var(--st-yellow); } .tl-seg--lime { background-color: var(--st-lime); }
+.tl-seg--green { background-color: var(--st-green); } .tl-seg--red { background-color: var(--st-red); }
+.legend i.tl-seg--sky, .legend i[class^="tl-seg--"] { display: inline-block; margin-left: 0; margin-right: 6px; vertical-align: 0; }
+@media (max-width: 640px) {
+  .tl-axis { display: none; }
+  .tl-row { grid-template-columns: 1fr auto; }
+  .tl-track { grid-column: 1 / -1; grid-row: 2; }
+}
+@media print {
+  .tl-row { break-inside: avoid; }
+  .tl { --who: 220px; }
+}
