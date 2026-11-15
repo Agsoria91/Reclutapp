@@ -5,7 +5,7 @@
 import { html } from '../lib/html.js';
 import { state } from '../lib/store.js';
 import { norm, todayISO, fmtDate, fmtMonth, daysBetween } from '../lib/format.js';
-import { sectorMatches } from '../lib/kpis.js';
+import { mismaBusqueda, busquedaDeSilla } from '../data/busquedas.js';
 import { stagePill } from './ui.js';
 
 // Hitos con fecha en la ficha del candidato -> etapa (para el color del tramo)
@@ -20,19 +20,6 @@ const HITOS = [
 const iso = (v) => (v ? String(v).slice(0, 10) : null);
 const colorOf = (stage) => state.stageMap[stage]?.color || 'neutral';
 
-// Coincidencia "misma búsqueda" para el historial estimado (antes de que
-// existiera el registro automático): misma área, sector compatible y el
-// nombre de la búsqueda contenido en el puesto de la silla.
-function mismaBusqueda(c, p) {
-  if (norm(c.area) !== norm(p.yacimiento)) return false;
-  if (!sectorMatches(c.servicio, p.sector)) return false;
-  const raiz = (w) => w.replace(/(os|as|es|o|a|s)$/, '');
-  const palabras = (t) => norm(t).replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter((w) => w.length > 2 && !['del', 'de', 'los', 'las'].includes(w)).map(raiz);
-  const buscadas = palabras(c.posicion);
-  if (!buscadas.length) return false;
-  const delPuesto = palabras(p.puesto);
-  return buscadas.every((w) => delPuesto.some((x) => x.startsWith(w) || w.startsWith(x) && x.length > 3));
-}
 
 function trayecto(c, tramo) {
   const hoy = todayISO();
@@ -165,9 +152,9 @@ export function historialSilla(p, { conEstimados = false, compacto = false } = {
     </div><span></span></div>
     <ol class="tl-rows">${filas.map((f) => fila(f, x0, span))}</ol>
     <div class="tl-legend">${leyenda}<span class="legend">✓ ingresó · ✕ baja · ▸ en curso</span></div>
-    ${!conEstimados && estimados.length ? html`<p class="small muted">Antes de que existiera el registro automático: <b>${estimados.length}</b> personas se cayeron en la misma búsqueda (${p.yacimiento} · ${p.sector || ''}).
+    ${!conEstimados && estimados.length ? html`<p class="small muted">Antes de que existiera el registro automático: <b>${estimados.length}</b> personas se cayeron en la misma búsqueda (${busquedaDeSilla(p)?.label || p.puesto} · ${p.yacimiento}).
       <button type="button" class="btn btn--sm" data-act="hist-est">Sumar estimado</button></p>` : ''}
-    ${conEstimados && estimados.length ? html`<p class="small muted">“Misma búsqueda” = cancelados del mismo área, sector y puesto buscado; no quedaron vinculados a esta silla puntual, por eso son estimados.
+    ${conEstimados && estimados.length ? html`<p class="small muted">“Misma búsqueda” = cancelados que se postularon a ${busquedaDeSilla(p)?.label || p.puesto} en ${p.yacimiento} (nunca otra área); no quedaron vinculados a esta silla puntual, por eso son estimados.
       <button type="button" class="btn btn--sm" data-act="hist-real">Ver solo esta silla</button></p>` : ''}
   </div>`;
 }
