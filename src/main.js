@@ -1,6 +1,8 @@
+import '@fontsource-variable/martian-mono/standard.css';
 import './styles/tokens.css';
 import './styles/app.css';
-import { html, $ } from './lib/html.js';
+import './styles/plano.css';
+import { html, raw, $ } from './lib/html.js';
 import { sb } from './lib/supabase.js';
 import { state, subscribe, refreshAuth, loadAll, set } from './lib/store.js';
 import { loadLocal, saveLocal, closeDrawer, toast, animateIn } from './components/ui.js';
@@ -52,6 +54,13 @@ function parseHash() {
   return { name: ROUTES[path] ? path : 'posiciones', params: new URLSearchParams(qs || '') };
 }
 
+// Íconos de trazo (no emojis): descarga, actualizar, tema.
+const ICON = {
+  descarga: raw('<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 13.5h11"/></svg>'),
+  actualizar: raw('<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v3h-3"/></svg>'),
+  tema: raw('<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><path d="M8 2.5v11A5.5 5.5 0 0 0 8 2.5z" fill="currentColor" stroke="none"/></svg>'),
+};
+
 const app = $('#app');
 let current = { name: null, container: null };
 
@@ -71,9 +80,9 @@ function shell(name) {
       ${navItems.map(([k, v]) => html`<a href="#/${k}" class="${k === name ? 'is-active' : ''}" ${k === name ? html`aria-current="page"` : ''}>${v.label}</a>`)}
     </nav>
     <div class="topbar-right">
-      <button class="btn btn--sm btn--excel" id="btn-excel" title="${state.isStaff ? 'Descargar todo en Excel (incluye nómina y datos personales)' : 'Descargar resumen en Excel (sin datos personales)'}">⬇ Excel</button>
-      <button class="icon-btn" id="btn-refresh" title="Actualizar datos" aria-label="Actualizar datos">⟳</button>
-      <button class="icon-btn" id="btn-theme" title="Tema claro / oscuro" aria-label="Cambiar tema">◐</button>
+      <button class="btn btn--sm btn--excel" id="btn-excel" title="${state.isStaff ? 'Descargar todo en Excel (incluye nómina y datos personales)' : 'Descargar resumen en Excel (sin datos personales)'}">${ICON.descarga} Excel</button>
+      <button class="icon-btn" id="btn-refresh" title="Actualizar datos" aria-label="Actualizar datos">${ICON.actualizar}</button>
+      <button class="icon-btn" id="btn-theme" title="Tema claro / oscuro" aria-label="Cambiar tema">${ICON.tema}</button>
       ${state.session
         ? html`<span class="user ${state.isStaff ? '' : 'user--warn'}" title="${state.session.user.email}">${state.isStaff ? 'RRHH' : 'Sin permisos'} · ${state.session.user.email.split('@')[0]}</span>
                ${state.isStaff ? html`<button class="btn btn--ghost btn--sm" id="btn-pass">Mi contraseña</button>` : ''}
@@ -87,7 +96,7 @@ function shell(name) {
     Conviene guardar uno por semana en el OneDrive/Drive de RRHH.
     <button class="btn btn--sm" data-act="respaldo">Descargar respaldo</button></div>` : ''}
   <main id="view" class="view" tabindex="-1"></main>
-  <footer class="foot">EFiS · Energy Field Services · Recursos Humanos</footer>`;
+  <footer class="foot"><span>EFiS · Energy Field Services — Recursos Humanos</span><span>Cuenca Neuquina · 38°57′S 68°04′O</span></footer>`;
 }
 
 function route() {
@@ -108,7 +117,7 @@ function route() {
     const b = e.currentTarget; b.disabled = true; b.textContent = 'Armando…';
     try { const n = await descargarExcel(); toast(`Excel descargado: ${n} hojas`, 'ok'); }
     catch (err) { console.error(err); toast('No se pudo armar el Excel: ' + err.message, 'error', 6000); }
-    b.disabled = false; b.textContent = '⬇ Excel';
+    b.disabled = false; b.innerHTML = `${ICON.descarga} Excel`;
   });
   document.querySelectorAll('[data-act="respaldo"]').forEach((b) => b.addEventListener('click', async () => {
     b.disabled = true; b.textContent = 'Preparando…';

@@ -25,21 +25,29 @@
 
   --font-sans: Arial, "Helvetica Neue", Helvetica, sans-serif;
   --font-serif: Georgia, "Times New Roman", serif;
-  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  /* rótulos técnicos (fuera del manual: solo etiquetas chicas, nunca títulos ni textos) */
+  --font-mono: "Martian Mono Variable", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
-  --radius: 10px;
-  --radius-sm: 6px;
+  --radius: 0px;
+  --radius-sm: 0px;
   --gap: 16px;
-  --shadow: 0 1px 2px rgb(0 0 0 / .06), 0 4px 16px rgb(0 0 0 / .05);
+  --shadow: none;
 
   /* tema claro (por defecto) */
-  --bg: #F4F6F8;
-  --surface: #FFFFFF;
-  --surface-2: #EEF2F5;
-  --line: #DCE2E8;
-  --text: #22272B;
-  --text-2: #5C6670;
+  /* "papel de plano": gris acero claro, apenas verdoso */
+  --bg: #DFE4E2;
+  --bg-deep: #121514;
+  --surface: #ECEFEE;
+  --surface-2: #D3D9D7;
+  --field: #ECEFEE;
+  --line: #C3CBC8;
+  --rule: #69726E;          /* líneas punteadas de grilla */
+  --rule-strong: #121514;   /* marcas + */
+  --rule-solid: #8E9894;
+  --text: #121514;
+  --text-2: #49524E;
   --accent: var(--tp-green);
+  --accent-text: #00663C;   /* verde 348 oscurecido para texto chico sobre gris */
   --accent-ink: #FFFFFF;
   --focus: var(--tp-green);
   --logo-mono: none;
@@ -47,35 +55,47 @@
   color-scheme: light;
 }
 
-/* Tema oscuro "HUD": fondo azul noche, líneas finas, acentos de marca brillantes */
+/* Tema oscuro: "sala de control", casi negro con acento lima 369 */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0B1622;
-    --surface: #102030;
-    --surface-2: #15293C;
-    --line: #23415C;
-    --text: #E6EEF5;
-    --text-2: #93A9BD;
+    --bg: #121514;
+    --bg-deep: #000;
+    --surface: #181C1B;
+    --surface-2: #202625;
+    --field: #181C1B;
+    --line: #2C3432;
+    --rule: #5D6764;
+    --rule-strong: #B9C2BF;
+    --rule-solid: #4C5552;
+    --text: #D4DAD8;
+    --text-2: #8F9A96;
     --accent: var(--tp-lime);
-    --accent-ink: #0B1622;
+    --accent-text: var(--tp-lime);
+    --accent-ink: #121514;
     --focus: var(--tp-lime);
-    --shadow: 0 0 0 1px rgb(120 190 230 / .06), 0 8px 24px rgb(0 0 0 / .35);
+    --shadow: none;
     --logo-mono: block;
     --logo-color: none;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0B1622;
-  --surface: #102030;
-  --surface-2: #15293C;
-  --line: #23415C;
-  --text: #E6EEF5;
-  --text-2: #93A9BD;
+  --bg: #121514;
+  --bg-deep: #000;
+  --surface: #181C1B;
+  --surface-2: #202625;
+  --field: #181C1B;
+  --line: #2C3432;
+  --rule: #5D6764;
+  --rule-strong: #B9C2BF;
+  --rule-solid: #4C5552;
+  --text: #D4DAD8;
+  --text-2: #8F9A96;
   --accent: var(--tp-lime);
-  --accent-ink: #0B1622;
+  --accent-text: var(--tp-lime);
+  --accent-ink: #121514;
   --focus: var(--tp-lime);
-  --shadow: 0 0 0 1px rgb(120 190 230 / .06), 0 8px 24px rgb(0 0 0 / .35);
+  --shadow: none;
   --logo-mono: block;
   --logo-color: none;
   color-scheme: dark;
