@@ -8,6 +8,7 @@ import {
   confirmDialog, saveLocal, loadLocal, serializeFilters, restoreFilters, datalist,
   animateIn,
 } from '../components/ui.js';
+import { historialSilla } from '../components/historial.js';
 import { mascot } from '../components/mascot.js';
 import { openAssignFromPosition } from './asignar.js';
 import { convenioFields, bindConvenio, convenioLabel } from '../components/ingreso.js';
@@ -331,6 +332,11 @@ export function openEditor(id) {
       </div>` : ''}
     </div>
     ${p.id ? ternaBox(p) : ''}
+    ${p.id ? html`<section class="hist-box">
+      <header><strong>Historial de la silla</strong> <span class="muted small">quién pasó, hasta dónde llegó y cuánto tardó</span>
+        <span class="spacer"></span><a class="btn btn--sm" href="#/historial?id=${p.id}">Pantalla completa / reunión</a></header>
+      <div class="hist-body">${historialSilla(p, { compacto: true })}</div>
+    </section>` : ''}
 
     <form id="pos-form" class="form-grid">
       ${pickField('Área (yacimiento)', 'yacimiento', p.yacimiento, state.positions.map((x) => x.yacimiento), { required: true })}
@@ -381,6 +387,10 @@ export function openEditor(id) {
   root.addEventListener('click', async (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'assign') { closeDrawer(); openAssignFromPosition(p); }
+    if (act === 'hist-est' || act === 'hist-real') {
+      root.querySelector('.hist-body').innerHTML = String(historialSilla(p, { compacto: true, conEstimados: act === 'hist-est' }));
+      return;
+    }
     if (act === 'terna-add') { closeDrawer(); openAssignFromPosition(p, { mode: 'terna' }); }
     const cid = e.target.closest('[data-cid]')?.dataset.cid;
     if (act === 'terna-main' && cid) {
