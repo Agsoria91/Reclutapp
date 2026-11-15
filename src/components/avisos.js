@@ -17,14 +17,22 @@ const DEFAULTS = [
     cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\nQueremos agradecerte por tu interés y por el tiempo que dedicaste al proceso de selección. En esta oportunidad no vamos a continuar con tu postulación.\n\nGuardamos tus datos por si surge una nueva búsqueda acorde a tu perfil. Te deseamos mucho éxito.\n\nSaludos,\nRecursos Humanos · EFiS' },
   { tipo: 'entrevista_ok', titulo: 'Entrevista aprobada', asunto: 'Próximos pasos de tu postulación en EFiS', orden: 2,
     cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\n¡Buenas noticias! Avanzás a la siguiente etapa del proceso para {posicion}. En los próximos días te vamos a llamar para coordinar los pasos que siguen.\n\nPara ir adelantando, por favor respondé este mensaje con:\n• DNI y CUIL\n• Domicilio completo y localidad\n• Fecha de nacimiento\n• Talle de mameluco, botas y campera\n\n¡Gracias!\nRecursos Humanos · EFiS' },
+  { tipo: 'proximo_ingreso', titulo: 'Seleccionado para ingreso', asunto: 'Fuiste seleccionado/a · EFiS', orden: 3,
+    cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\n¡Felicitaciones! Fuiste seleccionado/a para la próxima etapa de ingresos como {posicion}.\n\nEn los próximos días nos vamos a poner en contacto para comentarte las novedades: fecha de ingreso, documentación y todo lo necesario para tu incorporación.\n\n¡Bienvenido/a!\nRecursos Humanos · EFiS' },
 ];
 
-export const plantillas = () => (state.plantillas?.length ? state.plantillas : DEFAULTS).slice().sort((a, b) => a.orden - b.orden);
+// Las de la base pisan a las por defecto (por tipo); si falta alguna, se usa la por defecto.
+export const plantillas = () => {
+  const porTipo = new Map(DEFAULTS.map((p) => [p.tipo, p]));
+  for (const p of state.plantillas || []) porTipo.set(p.tipo, p);
+  return [...porTipo.values()].sort((a, b) => a.orden - b.orden);
+};
 const plantilla = (tipo) => plantillas().find((p) => p.tipo === tipo) || plantillas()[0];
 
 export function tipoSugerido(c) {
   if (c.stage === 'cancelado') return 'baja';
   if (c.stage === 'entrevista_aprobada') return 'entrevista_ok';
+  if (c.stage === 'proximo_ingreso') return 'proximo_ingreso';
   return null;
 }
 export const avisosDe = (c) => (state.avisos || []).filter((a) => a.candidate_id === c.id);

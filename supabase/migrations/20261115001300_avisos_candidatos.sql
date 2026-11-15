@@ -5,7 +5,7 @@
 -- ============================================================================
 
 create table if not exists public.plantillas_aviso (
-  tipo        text primary key,                 -- baja / entrevista_ok / ...
+  tipo        text primary key,                 -- baja / entrevista_ok / proximo_ingreso
   titulo      text not null,
   asunto      text not null,                    -- asunto del mail
   cuerpo      text not null,                    -- admite {nombre} {nombre_completo} {posicion} {area}
@@ -58,5 +58,14 @@ Para ir adelantando, por favor respondé este mensaje con:
 • Talle de mameluco, botas y campera
 
 ¡Gracias!
-Recursos Humanos · EFiS', 2)
+Recursos Humanos · EFiS', 2),
+('proximo_ingreso', 'Seleccionado para ingreso', 'Fuiste seleccionado/a · EFiS',
+'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.
+
+¡Felicitaciones! Fuiste seleccionado/a para la próxima etapa de ingresos como {posicion}.
+
+En los próximos días nos vamos a poner en contacto para comentarte las novedades: fecha de ingreso, documentación y todo lo necesario para tu incorporación.
+
+¡Bienvenido/a!
+Recursos Humanos · EFiS', 3)
 on conflict (tipo) do nothing;
