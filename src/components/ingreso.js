@@ -89,6 +89,7 @@ export function preingresoFields(c) {
         ${field('Mail', 'mail', c.mail, { type: 'email', span: 2 })}
         ${field('Domicilio', 'domicilio', c.domicilio, { span: 2 })}
         ${pickField('Localidad', 'localidad', c.localidad, [state.candidates.map((x) => x.localidad), state.nomina.map((x) => x.localidad), state.positions.map((x) => x.localidad)])}
+        ${field('Código postal', 'codigo_postal', c.codigo_postal)}
         ${pickField('Provincia', 'provincia', c.provincia, [PROVINCIAS, state.candidates.map((x) => x.provincia), state.nomina.map((x) => x.provincia)])}
       </div>
     </fieldset>

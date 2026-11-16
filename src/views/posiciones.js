@@ -9,6 +9,7 @@ import {
   animateIn,
 } from '../components/ui.js';
 import { historialSilla } from '../components/historial.js';
+import { avisarCambioDeEtapa } from '../components/avisos.js';
 import { mascot } from '../components/mascot.js';
 import { openAssignFromPosition } from './asignar.js';
 import { convenioFields, bindConvenio, convenioLabel } from '../components/ingreso.js';
@@ -386,6 +387,8 @@ export function openEditor(id) {
     closeDrawer();
     await loadAll({ silent: true });
     if (wasIngreso) celebrate();
+    // la etapa de la silla se refleja en la ficha del candidato: ofrecer avisarle
+    if (linked && data.stage && data.stage !== linked.stage) avisarCambioDeEtapa(linked.id, linked.stage);
   });
   root.addEventListener('click', async (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
