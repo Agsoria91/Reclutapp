@@ -403,3 +403,17 @@ fieldset.sensitive { border: 1px dotted var(--st-orange); }
 .present-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 620px), 1fr)); }
 .present-group { min-width: 0; overflow-x: auto; }
 .tbl--present .pt-persona { min-width: 140px; }
+
+/* historial: procedencia por persona y resumen por procedencia */
+.tl-proc { font-size: 11.5px; color: var(--text-2); }
+.tl-proc b { color: var(--text); font-weight: 700; }
+.tl-h { margin: 6px 0 0; font: 500 11.5px var(--font-mono); font-stretch: 87.5%; color: var(--text-2); }
+.tl-proc-tbl .tbl th, .tl-proc-tbl .tbl td { white-space: nowrap; }
+.tl-proc-tbl td.small { white-space: normal; }
+
+/* barra superior: si no entran todas las pestañas, la navegación baja a su propia fila */
+@media (max-width: 1700px) {
+  .topbar { flex-wrap: wrap; row-gap: 4px; }
+  .topbar .nav { order: 3; flex-basis: 100%; margin: 0 -10px; }
+  .topbar-right { margin-left: auto; }
+}
