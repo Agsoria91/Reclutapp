@@ -125,8 +125,11 @@ export const HITOS = [
 ];
 
 export function reached(c, code, stageMap) {
-  const h = HITOS.find((x) => x[0] === code);
-  if (h && h[2](c)) return true;
+  // Por descarte: si llegó a un hito posterior, pasó también por los anteriores
+  // (p. ej. con EPO hecho, la entrevista se hizo y se aprobó aunque falte la fecha).
+  const i = HITOS.findIndex((x) => x[0] === code);
+  if (i >= 0 && HITOS.slice(i).some((h) => h[2](c))) return true;
+  if (i >= 0 && i <= 1 && (c.validacion_rrll || c.ok_rrll)) return true;
   if (c.stage === 'cancelado' || !stageMap[c.stage] || !stageMap[code]) return false;
   return stageMap[c.stage].orden >= stageMap[code].orden;
 }
