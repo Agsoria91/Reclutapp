@@ -8,7 +8,7 @@ import { decodeBytes } from '../lib/csv.js';
 import { parseVacantesCSV, estadoInfo, esVacante } from '../lib/vacantesPj.js';
 import {
   filterGroup, toggleFilter, kpi, bars, saveLocal, loadLocal, serializeFilters, restoreFilters,
-  pivot, pivotTable, confirmDialog, toast, prevSize, animateIn,
+  pivot, pivotTable, confirmDialog, toast, prevSize, animateIn, multiSelectFilter,
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 
@@ -19,6 +19,8 @@ let grupo = loadLocal('reclutapp.pj.grupo', 'todas');
 let search = '';
 let datos = null; // { rows, ultima }
 let cargando = false;
+let openMulti = null; // desplegable abierto (filtro de meses)
+let abiertas = new Set(loadLocal('reclutapp.pj.dirAbiertas', [])); // direcciones desplegadas
 let ultimoEl = null; // contenedor actual (la pantalla se puede redibujar mientras carga)
 
 const GRUPOS = {
@@ -68,6 +70,25 @@ const contar = (rows, dim) => {
   return [...m.entries()].sort((a, b) => b[1] - a[1]);
 };
 const persist = () => saveLocal(KEY, serializeFilters(filters));
+const mesLabel = (m) => (m === 'Sin fecha' ? m : fmtMonth(m));
+// Opciones y atajos del filtro de meses (igual que "Mes objetivo" en Posiciones)
+function opcionesMes() {
+  const o = contar(filtrar('mes'), 'mes').sort((a, b) => (a[0] === 'Sin fecha') - (b[0] === 'Sin fecha') || a[0].localeCompare(b[0]));
+  for (const v of filters.mes) if (!o.some(([k]) => k === v)) o.push([v, 0]);
+  return o;
+}
+function presetsMes() {
+  const cur = todayISO().slice(0, 7);
+  const year = cur.slice(0, 4);
+  const months = [...new Set((datos?.rows || []).map((v) => v.fecha_solicitud?.slice(0, 7)).filter(Boolean))].sort();
+  const out = [];
+  const venc = months.filter((m) => m < cur);
+  if (venc.length) out.push(['Vencidos', venc]);
+  out.push(['Desde este mes', months.filter((m) => m >= cur)]);
+  out.push([`Hasta Dic ${year}`, months.filter((m) => m <= `${year}-12`)]);
+  out.push([`Año ${+year + 1}`, months.filter((m) => m.startsWith(String(+year + 1)))]);
+  return out.filter(([, v]) => v.length);
+}
 
 export function render(el) {
   if (!state.isStaff) { el.innerHTML = String(mascot('empty', { title: 'Solo RRHH', text: 'Ingresá con un usuario de RRHH.' })); return; }
@@ -93,7 +114,6 @@ export function render(el) {
     .sort((a, b) => a[4] - b[4]);
   const porProceso = contar(filtrar('proceso'), 'proceso');
   const porDireccion = contar(filtrar('direccion'), 'direccion');
-  const porReclutador = contar(filtrar('reclutador'), 'reclutador');
   const rMes = filtrar('mes').filter((v) => v.fecha_solicitud);
   const meses = contar(rMes, 'mes').sort((a, b) => a[0].localeCompare(b[0]));
   const mesMax = Math.max(1, ...meses.map((m) => m[1]));
@@ -125,6 +145,9 @@ export function render(el) {
     ${filterGroup({ dim: 'proceso', label: 'Proceso', options: contar(filtrar('proceso'), 'proceso'), selected: filters.proceso, allLabel: 'Todos' })}
     ${filterGroup({ dim: 'direccion', label: 'Dirección', options: contar(filtrar('direccion'), 'direccion'), selected: filters.direccion })}
     ${filterGroup({ dim: 'reclutador', label: 'Reclutador/a', options: contar(filtrar('reclutador'), 'reclutador'), selected: filters.reclutador, allLabel: 'Todos' })}
+    <div class="filters-row">
+      ${multiSelectFilter({ dim: 'mes', label: 'Mes de solicitud de línea', options: opcionesMes(), selected: filters.mes, presets: presetsMes(), open: openMulti === 'mes', labelOf: mesLabel })}
+    </div>
     ${chips.length || grupo !== 'todas' ? html`<div class="active-filters"><span class="muted small">Filtrando por:</span>
       ${grupo !== 'todas' ? html`<button type="button" class="chip chip--on" data-pj-grupo="todas">${GRUPOS[grupo][0]} ✕</button>` : ''}
       ${chips.map(([d, v]) => html`<button type="button" class="chip chip--on" data-filter="${d}" data-value="${v}">${d === 'mes' && v !== 'Sin fecha' ? fmtMonth(v) : v} ✕</button>`)}
@@ -151,8 +174,7 @@ export function render(el) {
 
   <section class="grid-2">
     <article class="card"><h2 class="card-title">Por estado</h2>${bars(porEstado, { dim: 'estado', selected: filters.estado, total: filtrar('estado').length, limit: 12, chart: 'pj-estado' })}</article>
-    <article class="card"><h2 class="card-title">Por proceso</h2>${bars(porProceso, { dim: 'proceso', selected: filters.proceso, color: 'navy', total: filtrar('proceso').length, chart: 'pj-proceso' })}
-      <h2 class="card-title mt">Por reclutador/a</h2>${bars(porReclutador, { dim: 'reclutador', selected: filters.reclutador, color: 'violet', total: filtrar('reclutador').length, chart: 'pj-recl' })}</article>
+    <article class="card"><h2 class="card-title">Por proceso</h2>${bars(porProceso, { dim: 'proceso', selected: filters.proceso, color: 'navy', total: filtrar('proceso').length, chart: 'pj-proceso' })}</article>
     <article class="card"><h2 class="card-title">Por dirección</h2>${bars(porDireccion, { dim: 'direccion', selected: filters.direccion, color: 'blue', total: filtrar('direccion').length, limit: 12, chart: 'pj-dir' })}</article>
     <article class="card"><h2 class="card-title">Búsquedas por mes de solicitud de línea</h2>
       <div class="cols" role="group" aria-label="Búsquedas por mes de solicitud">
@@ -166,6 +188,8 @@ export function render(el) {
       </div>
       <p class="small muted">Tocá un mes para filtrar. Los meses futuros son pedidos de la línea para más adelante.</p></article>
   </section>
+
+  ${porDireccionPosicion(rows)}
 
   <section class="card"><h2 class="card-title">Dirección × estado</h2>
     ${pivotTable(pivot(rows, (v) => canon(v.direccion), (v) => estadoInfo(v.estado).label), { rowLabel: 'Dirección' })}</section>
@@ -214,11 +238,41 @@ function bind(el) {
     if (k && GRUPOS[k.dataset.kpi]) { grupo = grupo === k.dataset.kpi ? 'todas' : k.dataset.kpi; saveLocal('reclutapp.pj.grupo', grupo); render(el); return; }
     const g = e.target.closest('[data-pj-grupo]');
     if (g) { grupo = 'todas'; saveLocal('reclutapp.pj.grupo', grupo); render(el); return; }
+    const pr = e.target.closest('[data-multi-preset]');
+    if (pr) { filters[pr.dataset.multiPreset] = new Set(pr.dataset.values ? JSON.parse(pr.dataset.values) : []); openMulti = pr.dataset.multiPreset; persist(); render(el); return; }
+    const sm = e.target.closest('.fmulti-box > summary');
+    if (sm) { e.preventDefault(); const box = sm.parentElement; box.open = !box.open; openMulti = box.open ? box.dataset.multi : null; return; }
+    const ds = e.target.closest('details[data-dir] > summary');
+    if (ds) {
+      e.preventDefault();
+      const d = ds.parentElement.dataset.dir;
+      if (abiertas.has(d)) abiertas.delete(d); else abiertas.add(d);
+      ds.parentElement.open = abiertas.has(d);
+      saveLocal('reclutapp.pj.dirAbiertas', [...abiertas]);
+      return;
+    }
     const act = e.target.closest('[data-act]')?.dataset.act;
+    if (act === 'pj-dir-all') {
+      const ds2 = [...el.querySelectorAll('details[data-dir]')].map((x) => x.dataset.dir);
+      abiertas = ds2.every((d) => abiertas.has(d)) ? new Set() : new Set(ds2);
+      saveLocal('reclutapp.pj.dirAbiertas', [...abiertas]); render(el); return;
+    }
     if (act === 'pj-clear') { DIMS.forEach((d) => filters[d].clear()); grupo = 'todas'; saveLocal('reclutapp.pj.grupo', grupo); persist(); render(el); }
     if (act === 'pj-excel') excel();
   });
+  document.addEventListener('click', (e) => {
+    if (openMulti && el.isConnected && !e.target.closest('.fmulti-box')) {
+      openMulti = null;
+      el.querySelectorAll('.fmulti-box[open]').forEach((d) => { d.open = false; });
+    }
+  });
   el.addEventListener('change', async (e) => {
+    const m = e.target.closest('[data-multi-opt]');
+    if (m) {
+      const dim = m.dataset.multiOpt;
+      if (m.checked) filters[dim].add(m.value); else filters[dim].delete(m.value);
+      openMulti = dim; persist(); render(el); return;
+    }
     if (e.target.id !== 'pj-file') return;
     const file = e.target.files[0];
     e.target.value = '';
@@ -258,4 +312,50 @@ async function excel() {
     rows: rows.map((v) => [v.s, v.posicion, v.descripcion, v.diagrama, v.persona, estadoInfo(v.estado).label, v.proceso, v.direccion,
       v.gerencia, v.jefe, v.reclutador, v.fecha_solicitud, v.fecha_potencial_ingreso, v.pendientes]),
   }]);
+}
+
+// Posiciones agrupadas por dirección (desplegables): cuántas búsquedas tiene
+// cada posición y en qué estado están.
+function porDireccionPosicion(rows) {
+  const dirs = new Map();
+  for (const v of rows) {
+    const d = canon(v.direccion);
+    if (!dirs.has(d)) dirs.set(d, new Map());
+    const pm = dirs.get(d);
+    const k = canon(v.posicion);
+    if (!pm.has(k)) pm.set(k, []);
+    pm.get(k).push(v);
+  }
+  if (!dirs.size) return '';
+  const g = (vs, grp) => vs.filter((v) => estadoInfo(v.estado).grupo === grp).length;
+  const orden = [...dirs.entries()].sort((a, b) => [...b[1].values()].flat().length - [...a[1].values()].flat().length);
+  const todasAbiertas = orden.every(([d]) => abiertas.has(d));
+  return html`<section class="card groups-card">
+    <div class="list-head"><h2 class="card-title">Posiciones por dirección</h2>
+      <button type="button" class="btn btn--sm btn--ghost" data-act="pj-dir-all">${todasAbiertas ? 'Contraer todo' : 'Expandir todo'}</button></div>
+    <div class="groups">${orden.map(([d, pm]) => {
+      const vs = [...pm.values()].flat();
+      const cer = g(vs, 'cerrada');
+      return html`<details class="group" data-dir="${d}" ${raw(abiertas.has(d) ? 'open' : '')}>
+        <summary class="group-head pj-dir-head">
+          <span class="group-title">${d}</span>
+          <span class="progress" title="${cer} de ${vs.length} cerradas"><span style="width:${pct(cer, vs.length)}%"></span></span>
+          <span class="group-meta"><b>${cer}</b>/${vs.length} cerradas</span>
+          <span class="group-meta">${vs.length - cer} abiertas</span>
+          <span class="group-meta">${pm.size} posiciones</span>
+        </summary>
+        <div class="table-wrap"><table class="tbl tbl--compact">
+          <thead><tr><th>Posición</th><th class="num">Búsquedas</th><th class="num">En proceso</th><th class="num">En espera</th><th class="num">Sin estado</th><th class="num">Cerradas</th><th>Personas</th></tr></thead>
+          <tbody>${[...pm.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], 'es')).map(([pos, ps]) => html`<tr>
+            <td><b>${pos}</b>${ps.length === 1 && ps[0].descripcion ? html`<small class="muted block">${ps[0].descripcion}</small>` : ''}</td>
+            <td class="num"><b>${ps.length}</b></td>
+            <td class="num">${g(ps, 'proceso') || '·'}</td>
+            <td class="num">${g(ps, 'espera') || '·'}</td>
+            <td class="num ${g(ps, 'sin') ? 'is-late-txt' : ''}">${g(ps, 'sin') || '·'}</td>
+            <td class="num ${g(ps, 'cerrada') ? 'ok-txt' : ''}">${g(ps, 'cerrada') || '·'}</td>
+            <td class="small">${ps.map((v) => (esVacante(v) ? 'Vacante' : v.persona)).join(' · ')}</td>
+          </tr>`)}</tbody></table></div>
+      </details>`;
+    })}</div>
+  </section>`;
 }
