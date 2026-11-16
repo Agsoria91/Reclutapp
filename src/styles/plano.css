@@ -431,3 +431,10 @@ fieldset.sensitive { border: 1px dotted var(--st-orange); }
 .view > .internos-dato { margin: 0; padding: 10px var(--pad); font: 500 12px var(--font-mono); font-stretch: 87.5%; color: var(--text-2); }
 .internos-dato b { font: 700 18px var(--font-sans); color: var(--text); margin: 0 6px; letter-spacing: -.02em; }
 .internos-dato span { font-size: 11px; }
+
+/* Dashboard PJ */
+.view > .pj-kpis2 { border-top: 1px dotted var(--rule); }
+.pj-kpis2 .kpi-value { font-size: clamp(24px, 2.4vw, 32px); }
+.tbl--pj td { vertical-align: top; }
+.tbl--pj .pj-pend { max-width: 280px; white-space: normal; color: var(--text-2); }
+.tbl--pj small.block { max-width: 320px; }

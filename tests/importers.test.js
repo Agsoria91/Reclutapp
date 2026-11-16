@@ -106,3 +106,22 @@ test('reached: con EPO cuenta como entrevistado y aprobado aunque falte la fecha
   assert.equal(reached(c, 'examen_medico', sm), true);
   assert.equal(reached(c, 'apto', sm), false);
 });
+
+// Dashboard PJ: planilla Status_Vacantes (datos sintéticos)
+import { parseVacantesCSV, fechaISO, estadoInfo } from '../src/lib/vacantesPj.js';
+test('parseVacantesCSV: solo EFiS, fechas y columnas por nombre', () => {
+  const csv = 'EMPRESA;S;Posición;Descripción Posición;Diagrama;Persona;Fecha Solicitud de linea;Fecha Potencial ingreso.;Proceso;Estado;Jefe Nombre;Gerencia /Jefatura;AgrupadorGerencia;Dirección;Reclutador/a;Pendientes\r\n'
+    + 'TECPETROL;1;Analista;;;Persona A;01/07/2025;;Busqueda externa;Cerrado;;;;Finanzas;X;\r\n'
+    + 'EFiS;2;Supervisor;Desc;7x7 12;Vacante;01/01/2027;;Insourcing;;;;;Operations;ANI;nota\r\n'
+    + 'EFIS;3;Analista Calidad;;L a V;Persona B;01/09/2026;15/11/2026;Movimiento interno;Oferta;;;;Quality;SEDE;\r\n';
+  const r = parseVacantesCSV(csv);
+  assert.equal(r.rows.length, 2);
+  assert.equal(r.otrasEmpresas, 1);
+  assert.equal(r.rows[0].s, '2');
+  assert.equal(r.rows[0].fecha_solicitud, '2027-01-01');
+  assert.equal(r.rows[1].fecha_potencial_ingreso, '2026-11-15');
+  assert.equal(r.rows[1].direccion, 'Quality');
+  assert.equal(fechaISO('31/02/2026'), '2026-02-31'.replace('31', '31')); // formato válido; el día lo valida la base
+  assert.equal(estadoInfo('').grupo, 'sin');
+  assert.equal(estadoInfo('Examen medico').label, 'Examen médico');
+});
