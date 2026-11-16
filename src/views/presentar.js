@@ -14,7 +14,7 @@ export function render(el, params) {
   if (state.error) { el.innerHTML = String(mascot('error', { text: state.error })); return; }
 
   const f = {};
-  for (const d of ['area', 'sector', 'stage', 'cobertura', 'mes']) f[d] = new Set((params.get(d) || '').split('|').filter(Boolean));
+  for (const d of ['area', 'sector', 'stage', 'cobertura', 'procedencia', 'mes']) f[d] = new Set((params.get(d) || '').split('|').filter(Boolean));
   let rows = applyFilters(state.positions, f, posGetters);
   const soloPend = params.get('pend') === '1';
   if (soloPend) rows = rows.filter((p) => !isCovered(p));
@@ -30,7 +30,7 @@ export function render(el, params) {
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(p);
   }
-  const filtro = [...f.area, ...f.sector, ...f.stage, ...f.cobertura].join(' · ') || 'Todas las áreas';
+  const filtro = [...f.area, ...f.sector, ...f.stage, ...f.cobertura, ...f.procedencia].join(' · ') || 'Todas las áreas';
   const back = '#/posiciones';
 
   el.innerHTML = String(html`

@@ -73,6 +73,42 @@ export function historialDe(p) {
   return { reales: reales.sort(orden), estimados: estimados.sort(orden) };
 }
 
+const procedenciaDe = (c) => {
+  const t = String(c.procedencia || '').trim().replace(/\s+/g, ' ');
+  return t ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : 'Sin dato';
+};
+
+// Cómo le fue a cada procedencia en esta silla
+function porProcedencia(filas) {
+  const m = new Map();
+  for (const f of filas) {
+    const k = procedenciaDe(f.c);
+    if (!m.has(k)) m.set(k, { n: 0, ingresaron: 0, cayeron: 0, enCurso: 0, dias: [], llego: new Map() });
+    const g = m.get(k);
+    g.n++;
+    if (f.ingreso) g.ingresaron++;
+    else if (f.cayo) { g.cayeron++; g.llego.set(f.llego, (g.llego.get(f.llego) || 0) + 1); }
+    else g.enCurso++;
+    if (!f.enCurso && f.dias != null) g.dias.push(f.dias);
+  }
+  return [...m.entries()].sort((a, b) => b[1].n - a[1].n);
+}
+
+function tablaProcedencia(filas) {
+  const rows = porProcedencia(filas);
+  if (!rows.length) return '';
+  return html`<div class="tl-proc-tbl table-wrap"><table class="tbl tbl--compact">
+    <thead><tr><th>Procedencia</th><th class="num">Pasaron</th><th class="num">Ingresaron</th><th class="num">Se cayeron</th><th class="num">En curso</th><th>Dónde se cayeron</th><th class="num">Días prom.</th></tr></thead>
+    <tbody>${rows.map(([k, g]) => html`<tr>
+      <td><b>${k}</b></td><td class="num">${g.n}</td>
+      <td class="num ${g.ingresaron ? 'ok-txt' : ''}">${g.ingresaron}</td>
+      <td class="num ${g.cayeron ? 'is-late-txt' : ''}">${g.cayeron}</td>
+      <td class="num">${g.enCurso}</td>
+      <td class="small">${[...g.llego.entries()].sort((a, b) => b[1] - a[1]).map(([e, n]) => `${e} (${n})`).join(', ') || '—'}</td>
+      <td class="num">${g.dias.length ? Math.round(g.dias.reduce((a, b) => a + b, 0) / g.dias.length) : '—'}</td>
+    </tr>`)}</tbody></table></div>`;
+}
+
 function resumen(filas) {
   const cerradas = filas.filter((f) => !f.enCurso && f.dias != null);
   const cayeron = filas.filter((f) => f.cayo);
@@ -111,7 +147,8 @@ function fila(f, x0, span) {
   return html`<li class="tl-row ${f.cayo ? 'is-out' : ''} ${f.ingreso ? 'is-in' : ''} ${f.estimado ? 'is-est' : ''}">
     <div class="tl-who">
       <strong>${f.c.nombre}</strong>
-      <span class="tl-meta">${f.rol}${f.c.procedencia ? ' · ' + f.c.procedencia : ''}</span>
+      <span class="tl-meta">${f.rol}</span>
+      <span class="tl-proc">Procedencia: <b>${procedenciaDe(f.c)}</b></span>
       <span class="tl-out">${f.ingreso ? `Ingresó el ${fmtDate(f.c.fecha_ingreso)}`
         : f.cayo ? `Se cayó en ${f.llego}${motivos ? ' — ' + motivos : ''}`
         : html`Hoy: ${stagePill(f.c.stage, { small: true })}`}</span>
@@ -156,6 +193,8 @@ export function historialSilla(p, { conEstimados = false, compacto = false } = {
     </div><span></span></div>
     <ol class="tl-rows">${filas.map((f) => fila(f, x0, span))}</ol>
     <div class="tl-legend">${leyenda}<span class="legend">✓ ingresó · ✕ baja · ▸ en curso</span></div>
+    <h4 class="tl-h">Por procedencia</h4>
+    ${tablaProcedencia(filas)}
     ${!conEstimados && estimados.length ? html`<p class="small muted">Antes de que existiera el registro automático: <b>${estimados.length}</b> personas se cayeron en la misma búsqueda (${busquedaDeSilla(p)?.label || p.puesto} · ${p.yacimiento}).
       <button type="button" class="btn btn--sm" data-act="hist-est">Sumar estimado</button></p>` : ''}
     ${conEstimados && estimados.length ? html`<p class="small muted">“Misma búsqueda” = cancelados que se postularon a ${busquedaDeSilla(p)?.label || p.puesto} en ${p.yacimiento} (nunca otra área); no quedaron vinculados a esta silla puntual, por eso son estimados.

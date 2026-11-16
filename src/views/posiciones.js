@@ -13,7 +13,7 @@ import { mascot } from '../components/mascot.js';
 import { openAssignFromPosition } from './asignar.js';
 import { convenioFields, bindConvenio, convenioLabel } from '../components/ingreso.js';
 
-const DIMS = ['area', 'sector', 'stage', 'cobertura', 'mes'];
+const DIMS = ['area', 'sector', 'stage', 'cobertura', 'procedencia', 'mes'];
 const KEY = 'reclutapp.pos.filters';
 const saved = loadLocal(KEY, {});
 export const posFilters = restoreFilters(saved, DIMS);
@@ -25,6 +25,8 @@ export const posGetters = {
   sector: (p) => p.sector || '—',
   stage: (p) => state.stageMap[p.stage]?.label || p.stage,
   cobertura: (p) => p.tipo_cobertura || '—',
+  // misma procedencia aunque venga escrita distinto (mayúsculas, espacios)
+  procedencia: (p) => { const t = String(p.procedencia || '').trim().replace(/\s+/g, ' '); return t ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : 'Sin dato'; },
   // la fecha objetivo cuenta por mes/año
   mes: (p) => monthKey(p.fecha_objetivo) || 'sin-fecha',
 };
@@ -114,6 +116,7 @@ export function render(el) {
     <div class="filters-row">
       ${multiSelectFilter({ dim: 'stage', label: 'Estado', options: optionsFor('stage'), selected: posFilters.stage, presets: stagePresets(), open: openMulti === 'stage' })}
       ${selectFilter({ dim: 'cobertura', label: 'Cobertura', options: optionsFor('cobertura'), selected: posFilters.cobertura, allLabel: 'Todas' })}
+      ${multiSelectFilter({ dim: 'procedencia', label: 'Procedencia', options: optionsFor('procedencia'), selected: posFilters.procedencia, allLabel: 'Todas', open: openMulti === 'procedencia' })}
       <label class="search"><span class="sr-only">Buscar</span>
         <input type="search" id="pos-search" placeholder="Buscar puesto, persona, POS SAP…" value="${search}">
       </label>
