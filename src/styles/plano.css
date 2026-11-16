@@ -427,3 +427,4 @@ fieldset.sensitive { border: 1px dotted var(--st-orange); }
 @media (max-width: 640px) { .brand-app { display: none; } .topbar .nav { margin: 0 -8px; } .nav a { padding: 8px; } }
 .aviso-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
 .aviso-box textarea { min-height: 260px; }
+.view > .note { margin: 0; padding: 14px var(--pad); border-left: 3px solid var(--st-orange); border-right: 0; border-bottom: 0; }

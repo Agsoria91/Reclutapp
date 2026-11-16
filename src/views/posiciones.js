@@ -85,6 +85,7 @@ export function render(el) {
   const today = todayISO();
   const rows = filteredPositions();
   const base = filteredPositions({ ignoreSearch: true });
+  const cubInternos = base.filter((p) => isCovered(p) && p.tipo_cobertura === 'Movimiento interno').length;
   const k = positionKpis(base, today);
   const pend = pendingByTarget(base, today);
   const staff = state.isStaff;
@@ -128,7 +129,7 @@ export function render(el) {
 
   <section class="kpis kpis--6">
     ${kpi('Sillas', k.total, { id: 'pos-total' })}
-    ${kpi('Cubiertas', k.cubiertas, { sub: `${pct(k.cubiertas, k.total)}% del total`, tone: 'green', id: 'pos-cub' })}
+    ${kpi('Cubiertas', k.cubiertas, { sub: `${pct(k.cubiertas, k.total)}% · ${cubInternos} por mov. interno, ${k.cubiertas - cubInternos} por búsqueda`, tone: 'green', id: 'pos-cub' })}
     ${kpi('Faltan cubrir', k.pendientes, { tone: 'blue', big: true, id: 'pos-pend' })}
     ${kpi('En proceso', k.enProceso, { tone: 'navy', sub: 'con candidato', id: 'pos-proc' })}
     ${kpi('Sin candidato', k.sinCandidato, { tone: 'orange', id: 'pos-sin' })}
