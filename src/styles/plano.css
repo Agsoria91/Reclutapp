@@ -428,3 +428,6 @@ fieldset.sensitive { border: 1px dotted var(--st-orange); }
 .aviso-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
 .aviso-box textarea { min-height: 260px; }
 .view > .note { margin: 0; padding: 14px var(--pad); border-left: 3px solid var(--st-orange); border-right: 0; border-bottom: 0; }
+.view > .internos-dato { margin: 0; padding: 10px var(--pad); font: 500 12px var(--font-mono); font-stretch: 87.5%; color: var(--text-2); }
+.internos-dato b { font: 700 18px var(--font-sans); color: var(--text); margin: 0 6px; letter-spacing: -.02em; }
+.internos-dato span { font-size: 11px; }

@@ -178,5 +178,5 @@ function internosNota() {
   const ps = state.positions.filter((p) => (!areas.size || areas.has(p.yacimiento)) && isCovered(p));
   const internos = ps.filter((p) => p.tipo_cobertura === 'Movimiento interno').length;
   if (!internos) return '';
-  return html`<p class="note">Además, <b>${internos}</b> de las <b>${ps.length}</b> sillas cubiertas${areas.size ? ` en ${[...areas].join(', ')}` : ''} fueron por <b>movimiento interno</b> (traslados): no pasan por entrevista, por eso no suman en estos números.</p>`;
+  return html`<p class="internos-dato">Movimientos internos <b>${internos}</b> <span>sin entrevista</span></p>`;
 }
