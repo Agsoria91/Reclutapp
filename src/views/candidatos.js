@@ -9,7 +9,7 @@ import {
   pivot, pivotTable, pivotCSV, downloadCSV, rowsToCSV, dimSelect,
   animateIn,
 } from '../components/ui.js';
-import { avisoBox, bindAvisos, pendientesCard, openAvisoDrawer, openPlantillas, tipoSugerido } from '../components/avisos.js';
+import { avisoBar, pendientesCard, openAvisoDrawer, openPlantillas, avisarCambioDeEtapa } from '../components/avisos.js';
 import { mascot } from '../components/mascot.js';
 import { openAssignFromCandidate } from './asignar.js';
 import { celebrate } from './posiciones.js';
@@ -313,6 +313,7 @@ export function openCandidate(id) {
   const u = (f) => [...new Set(state.candidates.map(f).filter(Boolean))].sort();
 
   const root = openDrawer(html`
+    ${c.id ? avisoBar(c) : ''}
     ${c.id ? html`<div class="seat-box">
       <div><span class="muted">Silla</span>
         <div class="seat-name">${c._silla ? html`${c._silla.puesto} <small class="muted">· ${c._silla.yacimiento} · ${c._silla.sector || ''}</small>` : html`<span class="muted">Sin silla asignada</span>`}</div>
@@ -332,7 +333,6 @@ export function openCandidate(id) {
       <small class="muted">PDF, Word o imagen · hasta 10 MB · solo visible para RRHH</small>
     </div>` : ''}
 
-    ${c.id && (tipoSugerido(c) || (state.avisos || []).some((a) => a.candidate_id === c.id)) ? avisoBox(c) : ''}
     <form id="cand-form" class="form-grid">
       ${field('Nombre y apellido', 'nombre', c.nombre, { required: true, span: 2 })}
       ${field('Etapa', 'stage', c.stage, { options: stageOpts, hint: c._silla ? 'Se refleja en su silla.' : '' })}
@@ -406,12 +406,11 @@ export function openCandidate(id) {
     closeDrawer();
     await loadAll({ silent: true });
     if (ingreso) celebrate();
-    // Pasó a Cancelado o Entrevista aprobada: ofrecer avisarle en el momento
-    const nuevo = c.id && state.candidates.find((x) => x.id === c.id);
-    if (nuevo && data.stage !== c.stage && tipoSugerido(nuevo)) openAvisoDrawer(nuevo.id);
+    // Cambió de etapa: ofrecer avisarle en el momento (mensaje según la etapa)
+    if (c.id && data.stage !== c.stage) avisarCambioDeEtapa(c.id, c.stage);
   });
 
-  if (c.id) bindAvisos(root, () => state.candidates.find((x) => x.id === c.id) || c, { onDone: () => { closeDrawer(); openCandidate(c.id); } });
+  root.addEventListener('click', (e) => { const b = e.target.closest('[data-aviso-open]'); if (b) openAvisoDrawer(b.dataset.avisoOpen); });
   root.addEventListener('click', async (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'seat') { closeDrawer(); openAssignFromCandidate(c); }

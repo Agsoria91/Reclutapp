@@ -38,7 +38,7 @@ const FICHA_COLS = [
   ['Diagrama', 9], ['Turno', 7], ['Encuadre', 8], ['Tipo de cobertura', 17], ['Categoría', 9], ['Puesto de convenio', 28], ['Convenio', 26],
   ['Básico', 12], ['Mes objetivo', 11], ['Estado de la silla', 17], ['Candidatos en terna', 9], ['También en terna de', 24],
   // datos personales
-  ['DNI', 11], ['CUIL', 14], ['Fecha de nacimiento', 12], ['Edad', 6], ['Domicilio', 32], ['Localidad', 20], ['Provincia', 11],
+  ['DNI', 11], ['CUIL', 14], ['Fecha de nacimiento', 12], ['Edad', 6], ['Domicilio', 32], ['Localidad', 20], ['Código postal', 9], ['Provincia', 11],
   ['Teléfono', 14], ['Mail', 28],
   // talles
   ['Talle mameluco', 9], ['Talle botas', 8], ['Talle campera', 9],
@@ -63,7 +63,7 @@ export function fichaCompletaSheet(cands, { incluirSinFicha = true, titulo = 'Fi
     p ? lbl(p.stage) : '', p?.cand_activos || null,
     (c?._ternas || []).filter((t) => t.candidate_id !== c.id).map((t) => `${t.puesto} (${t.yacimiento})`).join(', '),
     c?.dni || n?.dni, c?.cuil || n?.cuil, c?.fecha_nacimiento || n?.fecha_nacimiento, edadDe(c?.fecha_nacimiento || n?.fecha_nacimiento),
-    c?.domicilio || n?.domicilio, c?.localidad || n?.localidad || p?.localidad, c?.provincia || n?.provincia, c?.telefono || n?.telefono, c?.mail || n?.mail,
+    c?.domicilio || n?.domicilio, c?.localidad || n?.localidad || p?.localidad, c?.codigo_postal || n?.codigo_postal, c?.provincia || n?.provincia, c?.telefono || n?.telefono, c?.mail || n?.mail,
     c?.talle_mameluco || n?.talle_mameluco, c?.talle_botas || n?.talle_botas, c?.talle_campera || n?.talle_campera,
     c?.cv_recibido, c?.en_entrevista, c ? (c.entrevista_ok ? 'Sí' : 'No') : '', c?.validacion_rrll, c?.epo, c?.clinica, c?.aptitud_recibida, c?.aptitud,
     c?.fecha_ingreso || p?.fecha_ingreso || n?.fecha_ingreso, days(c?.cv_recibido, c?.fecha_ingreso), (c?.motivos_baja || []).join(', '), c?.comentarios,

@@ -13,12 +13,16 @@ const LANZAMIENTO = '2026-11-15';
 // Plantillas por defecto (las mismas que carga la base); se usan si la tabla
 // todavía no existe o está vacía.
 const DEFAULTS = [
-  { tipo: 'baja', titulo: 'No continuamos', asunto: 'Tu postulación en EFiS', orden: 1,
+  { tipo: 'entrevista', titulo: 'Coordinar entrevista virtual', asunto: 'Entrevista · EFiS', orden: 1,
+    cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\nRecibimos tu postulación para {posicion} y queremos coordinar una entrevista virtual (videollamada, unos 30 minutos).\n\n¿Nos indicás qué días y horarios tenés disponibles en los próximos días?\n\n¡Gracias!\nRecursos Humanos · EFiS' },
+  { tipo: 'entrevista_ok', titulo: 'Entrevista aprobada · examen médico', asunto: 'Examen médico preocupacional · EFiS', orden: 2,
+    cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\n¡Buenas noticias! Aprobaste la entrevista para {posicion}. El próximo paso es el examen médico preocupacional y vamos a coordinar el turno.\n\nPara gestionarlo, por favor respondé este mensaje con:\nApellido y nombre completo:\nDNI:\nFecha de nac.:\nDirección:\nLocalidad:\nCódigo Postal:\n\n¡Gracias!\nRecursos Humanos · EFiS' },
+  { tipo: 'proximo_ingreso', titulo: 'Seleccionado · próximo ingreso', asunto: 'Fuiste seleccionado/a · EFiS', orden: 3,
+    cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\n¡Felicitaciones! Fuiste seleccionado/a para la próxima etapa de ingresos como {posicion}. En los próximos días nos vamos a poner en contacto para comentarte las novedades.\n\nPara preparar tu ingreso, por favor respondé con:\n{datos_faltantes}\n\n¡Bienvenido/a!\nRecursos Humanos · EFiS' },
+  { tipo: 'baja', titulo: 'No continuamos', asunto: 'Tu postulación en EFiS', orden: 4,
     cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\nQueremos agradecerte por tu interés y por el tiempo que dedicaste al proceso de selección. En esta oportunidad no vamos a continuar con tu postulación.\n\nGuardamos tus datos por si surge una nueva búsqueda acorde a tu perfil. Te deseamos mucho éxito.\n\nSaludos,\nRecursos Humanos · EFiS' },
-  { tipo: 'entrevista_ok', titulo: 'Entrevista aprobada', asunto: 'Próximos pasos de tu postulación en EFiS', orden: 2,
-    cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\n¡Buenas noticias! Avanzás a la siguiente etapa del proceso para {posicion}. En los próximos días te vamos a llamar para coordinar los pasos que siguen.\n\nPara ir adelantando, por favor respondé este mensaje con:\n• DNI y CUIL\n• Domicilio completo y localidad\n• Fecha de nacimiento\n• Talle de mameluco, botas y campera\n\n¡Gracias!\nRecursos Humanos · EFiS' },
-  { tipo: 'proximo_ingreso', titulo: 'Seleccionado para ingreso', asunto: 'Fuiste seleccionado/a · EFiS', orden: 3,
-    cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\n¡Felicitaciones! Fuiste seleccionado/a para la próxima etapa de ingresos como {posicion}.\n\nEn los próximos días nos vamos a poner en contacto para comentarte las novedades: fecha de ingreso, documentación y todo lo necesario para tu incorporación.\n\n¡Bienvenido/a!\nRecursos Humanos · EFiS' },
+  { tipo: 'novedad', titulo: 'Novedad de la postulación', asunto: 'Tu postulación en EFiS', orden: 5,
+    cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\nTe contamos que tu postulación para {posicion} avanzó a la etapa: {etapa}. Ante cualquier novedad te volvemos a escribir.\n\n¡Gracias!\nRecursos Humanos · EFiS' },
 ];
 
 // Las de la base pisan a las por defecto (por tipo); si falta alguna, se usa la por defecto.
@@ -29,12 +33,9 @@ export const plantillas = () => {
 };
 const plantilla = (tipo) => plantillas().find((p) => p.tipo === tipo) || plantillas()[0];
 
-export function tipoSugerido(c) {
-  if (c.stage === 'cancelado') return 'baja';
-  if (c.stage === 'entrevista_aprobada') return 'entrevista_ok';
-  if (c.stage === 'proximo_ingreso') return 'proximo_ingreso';
-  return null;
-}
+// Etapas principales con mensaje propio; cualquier otro cambio usa "novedad".
+const POR_ETAPA = { entrevista: 'entrevista', entrevista_aprobada: 'entrevista_ok', proximo_ingreso: 'proximo_ingreso', cancelado: 'baja' };
+export function tipoSugerido(c) { return POR_ETAPA[c.stage] || null; }
 export const avisosDe = (c) => (state.avisos || []).filter((a) => a.candidate_id === c.id);
 
 // Celular argentino -> formato internacional de WhatsApp (549 + área + número).
@@ -59,8 +60,20 @@ const primerNombre = (c) => {
   return p.length === 2 ? cap(p[1]) : p.map(cap).join(' ');
 };
 
+// Lo que falta en la ficha para el ingreso (talles siempre que no estén cargados)
+export function datosFaltantes(c) {
+  const f = [
+    ['talle_mameluco', 'Talle de mameluco'], ['talle_botas', 'Talle de botas'], ['talle_campera', 'Talle de campera'],
+    ['dni', 'DNI'], ['cuil', 'CUIL'], ['fecha_nacimiento', 'Fecha de nacimiento'], ['domicilio', 'Dirección'],
+    ['localidad', 'Localidad'], ['codigo_postal', 'Código Postal'], ['provincia', 'Provincia'], ['mail', 'Mail'],
+  ].filter(([k]) => !String(c[k] ?? '').trim()).map(([, l]) => `${l}:`);
+  return f.length ? f.join('\n') : '(Ya tenemos todos tus datos, ¡gracias!)';
+}
+
 export function armarTexto(tpl, c) {
   const vals = {
+    etapa: state.stageMap[c.stage]?.label || c.stage || '',
+    datos_faltantes: datosFaltantes(c),
     nombre: primerNombre(c),
     nombre_completo: c.nombre || '',
     posicion: c._silla?.puesto || c.posicion || 'el puesto',
@@ -88,7 +101,7 @@ function historialAvisos(c) {
 
 // Bloque para la ficha del candidato
 export function avisoBox(c, tipo = tipoSugerido(c)) {
-  const pl = plantilla(tipo || 'baja');
+  const pl = plantilla(tipo || 'novedad');
   const wa = telWhatsApp(c.telefono);
   const yaAvisado = avisosDe(c).some((a) => a.tipo === pl.tipo);
   return html`<section class="aviso-box" data-cid="${c.id}">
@@ -137,13 +150,35 @@ export function bindAvisos(root, getC, { onDone } = {}) {
   });
 }
 
-export function openAvisoDrawer(id) {
+export function openAvisoDrawer(id, { tipo, cambio } = {}) {
   const getC = () => state.candidates.find((x) => x.id === id);
   const c = getC();
   if (!c) return;
-  const root = openDrawer(html`<p class="muted small">Revisá el mensaje antes de enviarlo. Se abre WhatsApp o tu correo con todo escrito; el envío lo hacés vos.</p>
-    ${avisoBox(c)}`, { title: c.nombre });
+  const intro = cambio
+    ? html`<p class="note">Cambió de etapa: <b>${cambio.de}</b> → <b>${cambio.a}</b>. ¿Le avisás? Revisá el mensaje y elegí WhatsApp o Mail, o tocá “No avisar”.</p>`
+    : html`<p class="muted small">Revisá el mensaje antes de enviarlo. Se abre WhatsApp o tu correo con todo escrito; el envío lo hacés vos.</p>`;
+  const root = openDrawer(html`${intro}${avisoBox(c, tipo || tipoSugerido(c) || 'novedad')}`, { title: c.nombre });
   bindAvisos(root, getC, { onDone: () => closeDrawer() });
+}
+
+// Barra de la ficha del candidato: enviar WhatsApp / mail en cualquier momento
+export function avisoBar(c) {
+  const ult = avisosDe(c).sort((a, b) => b.enviado_at.localeCompare(a.enviado_at))[0];
+  const pend = tipoSugerido(c) && !avisosDe(c).some((a) => a.tipo === tipoSugerido(c));
+  return html`<div class="aviso-bar">
+    <button type="button" class="btn btn--primary btn--sm" data-aviso-open="${c.id}" ${raw(telWhatsApp(c.telefono) ? '' : 'title="Sin celular válido: igual podés mandar mail"')}>Enviar WhatsApp</button>
+    <button type="button" class="btn btn--sm" data-aviso-open="${c.id}">Enviar mail</button>
+    ${pend ? html`<span class="tag tag--late">aviso pendiente</span>` : ''}
+    <span class="small muted">${ult ? `Último aviso: ${ult.canal === 'omitido' ? 'marcado sin aviso' : ult.canal === 'whatsapp' ? 'WhatsApp' : 'mail'} · ${fmtDate(ult.enviado_at)}` : 'Todavía no se le envió ningún aviso.'}</span>
+  </div>`;
+}
+
+// Después de cambiar la etapa en cualquier pantalla: ofrecer avisar
+export function avisarCambioDeEtapa(id, etapaAnterior) {
+  const c = state.candidates.find((x) => x.id === id);
+  if (!c || !etapaAnterior || c.stage === etapaAnterior) return;
+  const lab = (s) => state.stageMap[s]?.label || s;
+  openAvisoDrawer(id, { tipo: tipoSugerido(c) || 'novedad', cambio: { de: lab(etapaAnterior), a: lab(c.stage) } });
 }
 
 // Tarjeta "Pendientes de avisar" (vista Candidatos, solo RRHH)
@@ -162,7 +197,7 @@ export function pendientesCard() {
 }
 
 export function openPlantillas() {
-  const root = openDrawer(html`<p class="muted small">Podés usar {nombre} (primer nombre), {nombre_completo}, {posicion} y {area}: se reemplazan por los datos de cada candidato.</p>
+  const root = openDrawer(html`<p class="muted small">Podés usar {nombre} (primer nombre), {nombre_completo}, {posicion}, {area}, {etapa} y {datos_faltantes} (lista de lo que falta en su ficha: talles, DNI, CUIL, dirección, CP…): se reemplazan por los datos de cada candidato.</p>
     <form id="pl-form" class="form-grid">${plantillas().map((p) => html`<fieldset class="field--wide"><legend>${p.titulo}</legend>
       <label class="field field--wide"><span>Asunto del mail</span><input name="asunto_${p.tipo}" value="${p.asunto}"></label>
       <label class="field field--wide"><span>Mensaje</span><textarea name="cuerpo_${p.tipo}" rows="10">${p.cuerpo}</textarea></label>
@@ -172,7 +207,7 @@ export function openPlantillas() {
   root.querySelector('#pl-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = e.target;
-    const rows = plantillas().map((p) => ({ tipo: p.tipo, titulo: p.titulo, orden: p.orden, asunto: f[`asunto_${p.tipo}`].value, cuerpo: f[`cuerpo_${p.tipo}`].value, updated_at: new Date().toISOString() }));
+    const rows = plantillas().map((p) => ({ tipo: p.tipo, titulo: p.titulo, orden: p.orden, asunto: f[`asunto_${p.tipo}`].value, cuerpo: f[`cuerpo_${p.tipo}`].value, updated_at: new Date().toISOString(), updated_by: state.session?.user?.id }));
     const { error } = await sb.from('plantillas_aviso').upsert(rows);
     if (error) return toast('No se pudo guardar (falta aplicar el cambio en Supabase).', 'error', 6000);
     toast('Mensajes guardados', 'ok'); closeDrawer(); loadAll({ silent: true });
