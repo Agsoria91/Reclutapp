@@ -11,8 +11,9 @@ import {
   pivot, pivotTable, confirmDialog, toast, prevSize, animateIn, multiSelectFilter,
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
+import { generoDe } from '../lib/genero.js';
 
-const DIMS = ['estado', 'proceso', 'direccion', 'reclutador', 'mes'];
+const DIMS = ['estado', 'proceso', 'direccion', 'mes'];
 const KEY = 'reclutapp.pj.filters';
 const filters = restoreFilters(loadLocal(KEY, {}), DIMS);
 let grupo = loadLocal('reclutapp.pj.grupo', 'todas');
@@ -144,7 +145,7 @@ export function render(el) {
     <div class="fgroup"><span class="fgroup-label">Empresa</span><div class="fgroup-pills"><span class="fpill is-on" title="Filtro fijo: solo se importan búsquedas de EFiS">EFiS</span></div></div>
     ${filterGroup({ dim: 'proceso', label: 'Proceso', options: contar(filtrar('proceso'), 'proceso'), selected: filters.proceso, allLabel: 'Todos' })}
     ${filterGroup({ dim: 'direccion', label: 'Dirección', options: contar(filtrar('direccion'), 'direccion'), selected: filters.direccion })}
-    ${filterGroup({ dim: 'reclutador', label: 'Reclutador/a', options: contar(filtrar('reclutador'), 'reclutador'), selected: filters.reclutador, allLabel: 'Todos' })}
+    ${filterGroup({ dim: 'estado', label: 'Estado', options: contar(filtrar('estado'), 'estado').sort((a, b) => estadoInfo(a[0] === 'Sin estado' ? '' : a[0]).orden - estadoInfo(b[0] === 'Sin estado' ? '' : b[0]).orden), selected: filters.estado, allLabel: 'Todos' })}
     <div class="filters-row">
       ${multiSelectFilter({ dim: 'mes', label: 'Mes de solicitud de línea', options: opcionesMes(), selected: filters.mes, presets: presetsMes(), open: openMulti === 'mes', labelOf: mesLabel })}
     </div>
@@ -157,7 +158,7 @@ export function render(el) {
   <section class="kpis kpis--6">
     ${kpi('Búsquedas', n('todas'), { act: 'todas', selected: grupo === 'todas', big: true, id: 'pj-tot' })}
     ${kpi('Abiertas', n('abiertas'), { act: 'abiertas', selected: grupo === 'abiertas', tone: 'blue', sub: `${pct(n('abiertas'), n('todas'))}% del total`, id: 'pj-ab' })}
-    ${kpi('En proceso', n('proceso'), { act: 'proceso', selected: grupo === 'proceso', tone: 'navy', sub: 'apertura, entrevistas, examen, oferta', id: 'pj-pro' })}
+    ${kpi('En proceso', n('proceso'), { act: 'proceso', selected: grupo === 'proceso', tone: 'navy', sub: generoTexto(sinGrupo.filter(GRUPOS.proceso[1])), id: 'pj-pro' })}
     ${kpi('En espera', n('espera'), { act: 'espera', selected: grupo === 'espera', tone: 'orange', sub: 'on hold / pend. definición', id: 'pj-esp' })}
     ${kpi('Cerradas', n('cerradas'), { act: 'cerradas', selected: grupo === 'cerradas', tone: 'green', sub: `${pct(n('cerradas'), n('todas'))}% cubiertas`, id: 'pj-cer' })}
     ${kpi('Sin estado', n('sin'), { act: 'sin', selected: grupo === 'sin', tone: n('sin') ? 'red' : '', sub: 'completar en la planilla', id: 'pj-sin' })}
@@ -202,7 +203,7 @@ export function render(el) {
     <div class="list-head"><h2 class="card-title">Búsquedas <small class="muted">${lista.length}</small></h2>
       <label class="search"><span class="sr-only">Buscar</span><input type="search" id="pj-search" placeholder="Buscar posición, persona, jefe, S, pendientes…" value="${search}"></label></div>
     <div class="table-wrap"><table class="tbl tbl--compact tbl--pj">
-      <thead><tr><th>S</th><th>Posición</th><th>Persona</th><th>Estado</th><th>Proceso</th><th>Dirección</th><th>Reclutador/a</th><th>Solicitud</th><th>Pot. ingreso</th><th>Pendientes</th></tr></thead>
+      <thead><tr><th>S</th><th>Posición</th><th>Persona</th><th>Estado</th><th>Proceso</th><th>Dirección</th><th>Solicitud</th><th>Pot. ingreso</th><th>Pendientes</th></tr></thead>
       <tbody>${lista.map((v) => html`<tr class="${atrasada(v) ? 'is-late' : ''}">
         <td class="mono">${v.s}</td>
         <td><b>${v.posicion || ''}</b><small class="muted block">${[v.descripcion, v.diagrama].filter(Boolean).join(' · ')}</small></td>
@@ -210,7 +211,6 @@ export function render(el) {
         <td>${pillEstado(v)}</td>
         <td class="small">${v.proceso || ''}</td>
         <td class="small">${v.direccion || ''}<small class="muted block">${v.gerencia || ''}</small></td>
-        <td class="small">${v.reclutador || ''}</td>
         <td class="${atrasada(v) ? 'is-late-txt' : ''}">${fmtMonth(v.fecha_solicitud, { short: true })}</td>
         <td>${v.fecha_potencial_ingreso ? fmtDate(v.fecha_potencial_ingreso) : ''}</td>
         <td class="small pj-pend">${v.pendientes || ''}</td></tr>`)}</tbody>
@@ -307,10 +307,10 @@ async function excel() {
   downloadXlsx(`Dashboard_PJ_EFiS_${todayISO()}.xlsx`, [{
     name: 'Búsquedas EFiS', title: 'Búsquedas EFiS — Dashboard PJ', note: `Generado ${fmtDate(todayISO())} · ${rows.length} búsquedas · uso interno RRHH`,
     columns: [['S', 10], ['Posición', 34], ['Descripción', 40], ['Diagrama', 12], ['Persona', 26], ['Estado', 16], ['Proceso', 18], ['Dirección', 24],
-      ['Gerencia / Jefatura', 34], ['Jefe', 26], ['Reclutador/a', 12], ['Fecha solicitud de línea', 12], ['Fecha potencial ingreso', 12], ['Pendientes', 50]]
+      ['Gerencia / Jefatura', 34], ['Jefe', 26], ['Sexo', 8], ['Reclutador/a', 12], ['Fecha solicitud de línea', 12], ['Fecha potencial ingreso', 12], ['Pendientes', 50]]
       .map(([header, width]) => ({ header, width })),
     rows: rows.map((v) => [v.s, v.posicion, v.descripcion, v.diagrama, v.persona, estadoInfo(v.estado).label, v.proceso, v.direccion,
-      v.gerencia, v.jefe, v.reclutador, v.fecha_solicitud, v.fecha_potencial_ingreso, v.pendientes]),
+      v.gerencia, v.jefe, (({ g, estimado }) => (g ? g + (estimado ? ' (est.)' : '') : ''))(generoDe(v)), v.reclutador, v.fecha_solicitud, v.fecha_potencial_ingreso, v.pendientes]),
   }]);
 }
 
@@ -358,4 +358,17 @@ function porDireccionPosicion(rows) {
       </details>`;
     })}</div>
   </section>`;
+}
+
+// "12 masc. · 3 fem." de las personas (no vacantes) de un conjunto de búsquedas
+function generoTexto(rows) {
+  const c = { M: 0, F: 0, sd: 0 }; let est = false;
+  for (const v of rows) {
+    if (esVacante(v)) continue;
+    const g = generoDe(v);
+    if (g.g) c[g.g]++; else c.sd++;
+    if (g.estimado) est = true;
+  }
+  if (!c.M && !c.F && !c.sd) return 'sin personas asignadas';
+  return `${c.M} masc. · ${c.F} fem.${c.sd ? ` · ${c.sd} s/d` : ''}${est ? ' (estimado por nombre)' : ''}`;
 }

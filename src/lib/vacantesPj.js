@@ -2,6 +2,7 @@
 // Se reconocen las columnas por nombre (sin importar mayúsculas, acentos ni
 // el orden), y se descartan las filas de otras empresas (Tecpetrol, etc.).
 import { parseCSV, guessSeparator } from './csv.js';
+import { generoDeTexto } from './genero.js';
 
 const norm = (v) => String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
@@ -23,6 +24,7 @@ const COLS = {
   direccion: ['direccion'],
   reclutador: ['reclutador a', 'reclutador', 'reclutadora'],
   pendientes: ['pendientes'],
+  genero: ['sexo', 'genero', 'genero sexo', 'sexo genero'],
 };
 
 // dd/mm/aaaa (o d/m/aa) -> aaaa-mm-dd
@@ -71,6 +73,7 @@ export function parseVacantesCSV(text) {
       proceso: val(r, 'proceso'), estado: val(r, 'estado'), jefe: val(r, 'jefe'), gerencia: val(r, 'gerencia'),
       agrupador: val(r, 'agrupador'), direccion: val(r, 'direccion'), reclutador: val(r, 'reclutador'),
       pendientes: val(r, 'pendientes'),
+      genero: generoDeTexto(val(r, 'genero')),
     };
     for (const k of ['fecha_solicitud', 'fecha_potencial_ingreso']) {
       if (val(r, k) && !row[k]) avisos.push(`S ${s}: no entiendo la fecha "${val(r, k)}" — queda vacía.`);
