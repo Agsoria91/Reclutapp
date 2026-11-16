@@ -4,14 +4,14 @@ import { state } from '../lib/store.js';
 import { toast } from '../components/ui.js';
 import { mascotSVG } from '../components/mascot.js';
 
-const CORPORATIVO = /^[^@\s]+@(tecpetrol|efis)\.com$/i;
+const CORPORATIVO = /^[^@\s]+@(tecpetrol|efis)\.com(\.ar)?$/i;
 
 export function render(el) {
   if (state.session && state.canRead) { location.hash = '#/posiciones'; return; }
   el.innerHTML = String(html`<section class="login card">
     <div class="login-art">${mascotSVG('loading', 150)}</div>
     <h1>Reclutamiento EFiS</h1>
-    <p class="muted">Acceso solo con cuenta corporativa <b>@efis.com</b> o <b>@tecpetrol.com</b>. Las cuentas las crea RRHH: si necesitás entrar, pedile acceso a Recursos Humanos.</p>
+    <p class="muted">Acceso solo con cuenta corporativa <b>@efis.com</b>, <b>@efis.com.ar</b>, <b>@tecpetrol.com</b> o <b>@tecpetrol.com.ar</b>. Las cuentas las crea RRHH: si necesitás entrar, pedile acceso a Recursos Humanos.</p>
     ${state.session && !state.canRead ? html`<p class="note">La cuenta <b>${state.session.user.email}</b> no está habilitada. Pedile acceso a RRHH, o salí e ingresá con otra cuenta.</p>` : ''}
     <form id="login-form" class="form-grid">
       <label class="field field--wide"><span>Correo corporativo</span><input name="email" type="email" required autocomplete="username" placeholder="nombre.apellido@efis.com"></label>
@@ -30,7 +30,7 @@ export function render(el) {
     const email = form.email.value.trim().toLowerCase();
     const password = form.password.value;
     if (!password) return toast('Ingresá la contraseña', 'error');
-    if (!CORPORATIVO.test(email)) return toast('Usá tu correo @efis.com o @tecpetrol.com', 'error');
+    if (!CORPORATIVO.test(email)) return toast('Usá tu correo corporativo de EFiS o Tecpetrol (.com o .com.ar)', 'error');
     const btn = e.submitter; btn.disabled = true;
     const { error } = await sb.auth.signInWithPassword({ email, password });
     btn.disabled = false;
