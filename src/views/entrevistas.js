@@ -4,7 +4,7 @@
 import { html, raw } from '../lib/html.js';
 import { state } from '../lib/store.js';
 import { fmtMonth, fmtInt } from '../lib/format.js';
-import { countBy, interviewStats, reached } from '../lib/kpis.js';
+import { countBy, interviewStats, reached, isCovered } from '../lib/kpis.js';
 import { filterGroup, toggleFilter, kpi, bars, saveLocal, loadLocal, serializeFilters, restoreFilters, animateIn, prevSize } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 
@@ -90,6 +90,7 @@ export function render(el) {
       <button type="button" class="btn btn--ghost btn--sm" data-act="clear">Limpiar todo</button></div>` : ''}
   </section>
 
+  ${internosNota()}
   ${s.entrevistados ? html`<p class="headline">De cada <b>10</b> entrevistados, <b>${de10}</b> aprueban la entrevista y <b>${ing10}</b> terminan ingresando.</p>` : ''}
 
   <section class="kpis kpis--6">
@@ -168,4 +169,14 @@ export function render(el) {
       if (e.target.name === 'ent-group') { groupBy = e.target.value; saveLocal('reclutapp.ent.group', groupBy); render(el); }
     });
   }
+}
+
+// Sillas cubiertas por movimiento interno (traslados): no pasan por entrevista,
+// por eso no suman acá aunque el mapa de posiciones las cuente como cubiertas.
+function internosNota() {
+  const areas = filters.area;
+  const ps = state.positions.filter((p) => (!areas.size || areas.has(p.yacimiento)) && isCovered(p));
+  const internos = ps.filter((p) => p.tipo_cobertura === 'Movimiento interno').length;
+  if (!internos) return '';
+  return html`<p class="note">Además, <b>${internos}</b> de las <b>${ps.length}</b> sillas cubiertas${areas.size ? ` en ${[...areas].join(', ')}` : ''} fueron por <b>movimiento interno</b> (traslados): no pasan por entrevista, por eso no suman en estos números.</p>`;
 }
