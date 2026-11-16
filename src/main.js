@@ -18,6 +18,7 @@ import * as ingresos from './views/ingresos.js';
 import * as entrevistas from './views/entrevistas.js';
 import * as nomina from './views/nomina.js';
 import * as historial from './views/historial.js';
+import * as dashboardpj from './views/dashboardpj.js';
 import { descargarRespaldo, diasDesdeRespaldo } from './lib/respaldo.js';
 import { descargarExcel } from './lib/reporteExcel.js';
 
@@ -25,6 +26,7 @@ const ROUTES = {
   posiciones: { view: posiciones, label: 'Posiciones' },
   candidatos: { view: candidatos, label: 'Candidatos' },
   entrevistas: { view: entrevistas, label: 'Entrevistas' },
+  dashboardpj: { view: dashboardpj, label: 'Dashboard PJ', staff: true },
   ingresos: { view: ingresos, label: 'Ingresos', staff: true },
   legajos: { view: legajos, label: 'Legajos', staff: true },
   nomina: { view: nomina, label: 'Nómina', staff: true },
