@@ -95,3 +95,14 @@ test('embudo de entrevistas: cancelados cuentan hasta donde llegaron', async () 
   assert.equal(s.efectividad, 75);
   assert.equal(s.conversion, 25);
 });
+
+// Embudo de entrevistas: un hito posterior implica los anteriores
+import { reached } from '../src/lib/kpis.js';
+test('reached: con EPO cuenta como entrevistado y aprobado aunque falte la fecha', () => {
+  const sm = { cv_recibido: { orden: 10 }, entrevista: { orden: 20 }, entrevista_aprobada: { orden: 30 }, examen_medico: { orden: 60 }, apto: { orden: 70 }, ingresado: { orden: 90 }, cancelado: { orden: 99 } };
+  const c = { stage: 'cancelado', en_entrevista: null, entrevista_ok: false, epo: '2026-10-01' };
+  assert.equal(reached(c, 'entrevista', sm), true);
+  assert.equal(reached(c, 'entrevista_aprobada', sm), true);
+  assert.equal(reached(c, 'examen_medico', sm), true);
+  assert.equal(reached(c, 'apto', sm), false);
+});
