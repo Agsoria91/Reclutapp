@@ -417,3 +417,11 @@ fieldset.sensitive { border: 1px dotted var(--st-orange); }
   .topbar .nav { order: 3; flex-basis: 100%; margin: 0 -10px; }
   .topbar-right { margin-left: auto; }
 }
+
+/* Navegación SIEMPRE visible: fila propia debajo del logo, y si no entra en
+   una línea, pasa a la siguiente (nunca se esconde ni requiere deslizar). */
+.topbar { flex-wrap: wrap; row-gap: 4px; }
+.topbar .nav { order: 3; flex-basis: 100%; margin: 0 -10px; flex-wrap: wrap; overflow: visible; }
+.topbar-right { margin-left: auto; }
+.brand-app { display: inline; }
+@media (max-width: 640px) { .brand-app { display: none; } .topbar .nav { margin: 0 -8px; } .nav a { padding: 8px; } }
