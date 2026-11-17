@@ -439,3 +439,5 @@ fieldset.sensitive { border: 1px dotted var(--st-orange); }
 .tbl--pj .pj-pend { max-width: 280px; white-space: normal; color: var(--text-2); }
 .tbl--pj small.block { max-width: 320px; }
 .pj-dir-head { grid-template-columns: minmax(200px, 1.4fr) minmax(80px, 1fr) auto auto auto !important; }
+.volver-silla { justify-self: start; }
+.cand-edit-btn { margin-top: 8px; }
