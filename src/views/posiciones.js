@@ -328,7 +328,8 @@ export function openEditor(id) {
       <div>
         <span class="muted">Persona en la silla</span>
         <div class="seat-name">${p.candidato_nombre || html`<span class="muted">Vacante</span>`} ${p.id ? stagePill(p.stage) : ''}</div>
-        ${linked ? html`<small class="muted">Vinculada a la ficha de Candidatos PP · ${linked.procedencia || ''} ${linked.localidad ? '· ' + linked.localidad : ''}</small>`
+        ${linked ? html`<small class="muted">Vinculada a la ficha de Candidatos PP · ${linked.procedencia || ''} ${linked.localidad ? '· ' + linked.localidad : ''}</small>
+          <button type="button" class="btn btn--sm cand-edit-btn" data-act="cand-edit" data-cid="${linked.id}">Editar ficha del candidato</button>`
           : p.candidato_nombre ? html`<small class="muted">Nombre cargado a mano, sin ficha de candidato.</small>` : ''}
       </div>
       ${p.id ? html`<div class="seat-actions">
@@ -400,6 +401,13 @@ export function openEditor(id) {
     }
     if (act === 'terna-add') { closeDrawer(); openAssignFromPosition(p, { mode: 'terna' }); }
     const cid = e.target.closest('[data-cid]')?.dataset.cid;
+    if (act === 'cand-edit' && cid) {
+      closeDrawer();
+      // se carga al usarlo (evita la dependencia circular entre pantallas)
+      const { openCandidate } = await import('./candidatos.js');
+      openCandidate(cid, { volver: () => openEditor(p.id) });
+      return;
+    }
     if (act === 'terna-main' && cid) {
       const c = state.candidates.find((x) => x.id === cid);
       const ok = await confirmDialog(`¿Hacer a ${c.nombre} el candidato principal de "${p.puesto}"?${p.candidato_nombre ? ` ${p.candidato_nombre} sigue en la terna.` : ''}`, { ok: 'Hacer principal' });
@@ -447,6 +455,7 @@ function ternaBox(p) {
           <small class="muted block">${[c.procedencia, c.localidad].filter(Boolean).join(' · ')}</small></span>
         ${stagePill(c.stage, { small: true })}
         <span class="terna-actions">
+          <button type="button" class="btn btn--ghost btn--sm" data-act="cand-edit" data-cid="${c.id}" title="Editar datos, etapa, talles, CV…">Editar ficha</button>
           ${!main && !out ? html`<button type="button" class="btn btn--ghost btn--sm" data-act="terna-main" data-cid="${c.id}">Hacer principal</button>` : ''}
           ${!main ? html`<button type="button" class="btn btn--danger-ghost btn--sm" data-act="terna-del" data-cid="${c.id}" aria-label="Quitar de la terna">Quitar</button>` : ''}
         </span></li>`;

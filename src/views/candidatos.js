@@ -306,13 +306,15 @@ function bind(el) {
 // ---------------------------------------------------------------------------
 const MOTIVOS = ['No Califica', 'CV No Califica', 'Rechaza Propuesta', 'Secundario Incompleto', 'No Apto Medico', 'Sin vacante disponible', 'No se presenta', 'Otro'];
 
-export function openCandidate(id) {
+// `volver`: si se abrió desde otra pantalla (p. ej. la silla), a dónde volver al terminar.
+export function openCandidate(id, { volver } = {}) {
   const c = id ? state.candidates.find((x) => x.id === id) : { stage: 'cv_recibido', cv_recibido: todayISO(), motivos_baja: [] };
   if (!c) return;
   const stageOpts = state.stages.filter((s) => s.code !== 'sin_candidato').map((s) => [s.code, s.label]);
   const u = (f) => [...new Set(state.candidates.map(f).filter(Boolean))].sort();
 
   const root = openDrawer(html`
+    ${volver ? html`<button type="button" class="btn btn--ghost btn--sm volver-silla" data-act="volver">← Volver a la silla</button>` : ''}
     ${c.id ? avisoBar(c) : ''}
     ${c.id ? html`<div class="seat-box">
       <div><span class="muted">Silla</span>
@@ -408,9 +410,13 @@ export function openCandidate(id) {
     if (ingreso) celebrate();
     // Cambió de etapa: ofrecer avisarle en el momento (mensaje según la etapa)
     if (c.id && data.stage !== c.stage) avisarCambioDeEtapa(c.id, c.stage);
+    else if (volver) volver();
   });
 
-  root.addEventListener('click', (e) => { const b = e.target.closest('[data-aviso-open]'); if (b) openAvisoDrawer(b.dataset.avisoOpen); });
+  root.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-aviso-open]'); if (b) openAvisoDrawer(b.dataset.avisoOpen);
+    if (volver && e.target.closest('[data-act="volver"]')) { closeDrawer(); volver(); }
+  });
   root.addEventListener('click', async (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'seat') { closeDrawer(); openAssignFromCandidate(c); }
