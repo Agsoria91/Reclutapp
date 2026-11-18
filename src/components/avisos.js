@@ -155,8 +155,8 @@ export function openAvisoDrawer(id, { tipo, cambio } = {}) {
   const c = getC();
   if (!c) return;
   const intro = cambio
-    ? html`<p class="note">Cambió de etapa: <b>${cambio.de}</b> → <b>${cambio.a}</b>. ¿Le avisás? Revisá el mensaje y elegí WhatsApp o Mail, o tocá “No avisar”.</p>`
-    : html`<p class="muted small">Revisá el mensaje antes de enviarlo. Se abre WhatsApp o tu correo con todo escrito; el envío lo hacés vos.</p>`;
+    ? html`<p class="note">Cambió de etapa: <b>${cambio.de}</b> → <b>${cambio.a}</b>. ¿Le avisás?</p>`
+    : '';
   const root = openDrawer(html`${intro}${avisoBox(c, tipo || tipoSugerido(c) || 'novedad')}`, { title: c.nombre });
   bindAvisos(root, getC, { onDone: () => closeDrawer() });
 }

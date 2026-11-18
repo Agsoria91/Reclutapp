@@ -98,7 +98,7 @@ function tablaProcedencia(filas) {
   const rows = porProcedencia(filas);
   if (!rows.length) return '';
   return html`<div class="tl-proc-tbl table-wrap"><table class="tbl tbl--compact">
-    <thead><tr><th>Procedencia</th><th class="num">Pasaron</th><th class="num">Ingresaron</th><th class="num">Se cayeron</th><th class="num">En curso</th><th>Dónde se cayeron</th><th class="num">Días prom.</th></tr></thead>
+    <thead><tr><th>Procedencia</th><th class="num">Pasaron</th><th class="num">Ingresaron</th><th class="num">No continuaron</th><th class="num">En curso</th><th>Etapa de finalización</th><th class="num">Días prom.</th></tr></thead>
     <tbody>${rows.map(([k, g]) => html`<tr>
       <td><b>${k}</b></td><td class="num">${g.n}</td>
       <td class="num ${g.ingresaron ? 'ok-txt' : ''}">${g.ingresaron}</td>
@@ -150,13 +150,13 @@ function fila(f, x0, span) {
       <span class="tl-meta">${f.rol}</span>
       <span class="tl-proc">Procedencia: <b>${procedenciaDe(f.c)}</b></span>
       <span class="tl-out">${f.ingreso ? `Ingresó el ${fmtDate(f.c.fecha_ingreso)}`
-        : f.cayo ? `Se cayó en ${f.llego}${motivos ? ' — ' + motivos : ''}`
+        : f.cayo ? `No continuó · etapa: ${f.llego}${motivos ? ' — ' + motivos : ''}`
         : html`Hoy: ${stagePill(f.c.stage, { small: true })}`}</span>
     </div>
     <div class="tl-track" role="img" aria-label="${f.c.nombre}: ${f.hitos.map((h) => `${h.label} ${fmtDate(h.fecha)}`).join(', ')}">
       ${segs.map((s) => html`<span class="tl-seg tl-seg--${colorOf(s.stage)}" style="left:${s.a}%;width:${s.w}%" title="${s.label}: ${fmtDate(s.fecha)} · ${s.dias} días"></span>`)}
       ${f.hitos.filter((h) => h.fecha <= f.fin).map((h) => html`<i class="tl-dot" style="left:${pos(h.fecha)}%" title="${h.label}: ${fmtDate(h.fecha)}"></i>`)}
-      ${f.fin ? html`<b class="tl-end ${f.cayo ? 'tl-end--out' : f.ingreso ? 'tl-end--in' : ''}" style="left:${pos(f.fin)}%" title="${f.cayo ? 'Baja' + (f.finAprox ? ' (fecha aproximada)' : '') : f.ingreso ? 'Ingreso' : 'Hoy'}">${fin}</b>` : ''}
+      ${f.fin ? html`<b class="tl-end ${f.cayo ? 'tl-end--out' : f.ingreso ? 'tl-end--in' : ''}" style="left:${pos(f.fin)}%" title="${f.cayo ? 'Finalizó el proceso' + (f.finAprox ? ' (fecha aproximada)' : '') : f.ingreso ? 'Ingreso' : 'Hoy'}">${fin}</b>` : ''}
     </div>
     <div class="tl-days"><b>${f.dias ?? '—'}</b><small>${f.finAprox ? '~días' : 'días'}</small></div>
   </li>`;
@@ -169,7 +169,7 @@ export function historialSilla(p, { conEstimados = false, compacto = false } = {
   const r = resumen(filas);
   if (!filas.length) {
     return html`<div class="tl-empty muted small">Todavía no pasó nadie por esta silla.
-      ${estimados.length ? html`Hay <b>${estimados.length}</b> personas que se cayeron en la misma búsqueda antes de que existiera el registro: <button type="button" class="btn btn--sm" data-act="hist-est">Ver estimado</button>` : ''}</div>`;
+      ${estimados.length ? html`Hay <b>${estimados.length}</b> candidatos de la misma búsqueda que no continuaron (registro previo): <button type="button" class="btn btn--sm" data-act="hist-est">Ver estimado</button>` : ''}</div>`;
   }
   const hoy = todayISO();
   const fechas = filas.flatMap((f) => [f.inicio, f.fin]).filter(Boolean).sort();
@@ -182,22 +182,31 @@ export function historialSilla(p, { conEstimados = false, compacto = false } = {
   return html`<div class="tl ${compacto ? 'tl--compact' : ''}">
     <p class="tl-sum">
       <b>${r.total}</b> ${r.total === 1 ? 'persona pasó' : 'personas pasaron'} por esta silla${conEstimados && estimados.length ? html` <span class="tag">${estimados.length} estimadas</span>` : ''}:
-      <b>${r.ingresaron}</b> ${r.ingresaron === 1 ? 'ingresó' : 'ingresaron'}, <b>${r.cayeron}</b> se ${r.cayeron === 1 ? 'cayó' : 'cayeron'}, <b>${r.enCurso}</b> en curso.
+      <b>${r.ingresaron}</b> ${r.ingresaron === 1 ? 'ingresó' : 'ingresaron'}, <b>${r.cayeron}</b> no ${r.cayeron === 1 ? 'continuó' : 'continuaron'}, <b>${r.enCurso}</b> en curso.
       ${r.promedio != null ? html`Proceso promedio: <b>${r.promedio} días</b>.` : ''}
-      ${r.top.length ? html`Donde más se cae: <b>${r.top[0][0]}</b> (${r.top[0][1]}).` : ''}
-      ${actual ? html`<br>Hoy: <b>${actual.c.nombre}</b> en ${stagePill(actual.c.stage, { small: true })} hace ${actual.hitos.length ? daysBetween(actual.hitos.at(-1).fecha, hoy) : '—'} días.` : ''}
+      ${r.top.length ? html`Etapa de mayor desvinculación: <b>${r.top[0][0]}</b> (${r.top[0][1]}).` : ''}
+      ${actual ? html`<br>Hoy: <b>${actual.c.nombre}</b> en ${stagePill(actual.c.stage, { small: true })} ${haceCuanto(actual.hitos.at(-1)?.fecha, hoy)}.` : ''}
     </p>
     <div class="tl-axis" aria-hidden="true"><span></span><div class="tl-ticks">
       ${marcas.map((m) => html`<span style="left:${((daysBetween(x0, m) / span) * 100).toFixed(2)}%">${fmtMonth(m, { short: true })}</span>`)}
       <span class="tl-today" style="left:${((daysBetween(x0, hoy) / span) * 100).toFixed(2)}%">hoy</span>
     </div><span></span></div>
     <ol class="tl-rows">${filas.map((f) => fila(f, x0, span))}</ol>
-    <div class="tl-legend">${leyenda}<span class="legend">✓ ingresó · ✕ baja · ▸ en curso</span></div>
+    <div class="tl-legend">${leyenda}<span class="legend">✓ ingresó · ✕ no continuó · ▸ en curso</span></div>
     <h4 class="tl-h">Por procedencia</h4>
     ${tablaProcedencia(filas)}
-    ${!conEstimados && estimados.length ? html`<p class="small muted">Antes de que existiera el registro automático: <b>${estimados.length}</b> personas se cayeron en la misma búsqueda (${busquedaDeSilla(p)?.label || p.puesto} · ${p.yacimiento}).
+    ${!conEstimados && estimados.length ? html`<p class="small muted">Registro previo: <b>${estimados.length}</b> candidatos de la misma búsqueda no continuaron (${busquedaDeSilla(p)?.label || p.puesto} · ${p.yacimiento}).
       <button type="button" class="btn btn--sm" data-act="hist-est">Sumar estimado</button></p>` : ''}
-    ${conEstimados && estimados.length ? html`<p class="small muted">“Misma búsqueda” = cancelados que se postularon a ${busquedaDeSilla(p)?.label || p.puesto} en ${p.yacimiento} (nunca otra área); no quedaron vinculados a esta silla puntual, por eso son estimados.
+    ${conEstimados && estimados.length ? html`<p class="small muted">Incluye candidatos de la misma búsqueda (${busquedaDeSilla(p)?.label || p.puesto} · ${p.yacimiento}) previos al registro por silla.
       <button type="button" class="btn btn--sm" data-act="hist-real">Ver solo esta silla</button></p>` : ''}
   </div>`;
+}
+
+// "hace 5 días", "desde hoy", o "programado para el 20/11" si la fecha es futura
+function haceCuanto(fecha, hoy) {
+  if (!fecha) return '';
+  const d = daysBetween(fecha, hoy);
+  if (d < 0) return `programado para el ${fmtDate(fecha)}`;
+  if (d === 0) return 'desde hoy';
+  return `hace ${d} ${d === 1 ? 'día' : 'días'}`;
 }

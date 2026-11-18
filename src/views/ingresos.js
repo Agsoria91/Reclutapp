@@ -25,8 +25,7 @@ export function render(el) {
   const completos = sillas.filter((x) => x.c && !x.prog.missing.length).length;
 
   el.innerHTML = String(html`
-  <section class="page-head"><div><h1>Próximos ingresos</h1>
-    <p class="muted">Todo lo que está en <b>Próximo ingreso</b>. Completá los datos de alta y confirmá el ingreso: la silla pasa a Ingresado y el legajo se crea con todo lo cargado.</p></div></section>
+  <section class="page-head"><div><h1>Próximos ingresos</h1></div></section>
   <section class="kpis kpis--6">
     ${kpi('Próximos ingresos', sillas.length + sinSilla.length, { tone: 'blue', big: true, id: 'pi-tot' })}
     ${kpi('Datos completos', completos, { tone: 'green', id: 'pi-ok' })}

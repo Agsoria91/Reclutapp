@@ -19,8 +19,7 @@ export function render(el) {
   if (el._init) return;
   el._init = true;
   el.innerHTML = String(html`
-    <section class="page-head"><div><h1>Usuarios</h1>
-      <p class="muted">La app solo se puede ver con una cuenta creada acá, con correo @efis.com, @efis.com.ar, @tecpetrol.com o @tecpetrol.com.ar. Al dar de alta a alguien se genera una contraseña temporal: pasásela por un canal privado y que la cambie al entrar (menú <b>Mi contraseña</b>).</p></div></section>
+    <section class="page-head"><div><h1>Usuarios</h1></div></section>
     <section class="card">
       <form id="u-form" class="form-grid">
         <label class="field"><span>Correo corporativo</span><input name="email" type="email" required autocomplete="off" placeholder="nombre@tecpetrol.com"></label>

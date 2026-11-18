@@ -78,8 +78,7 @@ export function render(el) {
   const ing10 = s.entrevistados ? Math.round((s.ingresados / s.entrevistados) * 10) : null;
 
   el.innerHTML = String(html`
-  <section class="page-head"><div><h1>Entrevistas y efectividad</h1>
-    <p class="muted">Cuántas entrevistas se hicieron y cuántas avanzan. Un candidato cancelado cuenta hasta la instancia a la que llegó.</p></div></section>
+  <section class="page-head"><div><h1>Entrevistas y efectividad</h1></div></section>
 
   <section class="filters card">
     ${filterGroup({ dim: 'area', label: 'Área', options: pillOptions('area'), selected: filters.area })}
@@ -130,7 +129,7 @@ export function render(el) {
           </button>`;
         })}
       </div>
-      <p class="legend small muted"><i class="lg-ent"></i> entrevistas <i class="lg-ok"></i> aprobadas · tocá un mes para filtrar</p>
+      <p class="legend small muted"><i class="lg-ent"></i> entrevistas <i class="lg-ok"></i> aprobadas</p>
       <h2 class="card-title mt">Motivos de baja después de la entrevista</h2>
       ${motivos.length ? bars(motivos, { color: 'red', total: s.bajasPost, chart: 'e-mot' }) : html`<p class="muted">Sin bajas con motivo.</p>`}
     </article>

@@ -18,8 +18,7 @@ export function render(el) {
   if (el._init) return;
   el._init = true;
   el.innerHTML = String(html`
-    <section class="page-head"><div><h1>Importar planillas</h1>
-      <p class="muted">Subí el CSV de <b>Seguimiento de ingresos</b> (posiciones) o el de <b>Candidatos PP</b>. Se reconoce solo cuál es, su encoding (Windows-1252 o UTF-8) y su separador. Re-importar actualiza las filas existentes en vez de duplicarlas.</p></div></section>
+    <section class="page-head"><div><h1>Importar planillas</h1></div></section>
     <section class="card">
       <label class="dropzone" id="dz">
         <input type="file" id="csv-file" accept=".csv,text/csv" hidden>
