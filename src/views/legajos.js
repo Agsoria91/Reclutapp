@@ -35,8 +35,7 @@ export function render(el) {
 
   el.innerHTML = String(html`
   <section class="page-head">
-    <div><h1>Legajos de ingresados</h1>
-      <p class="muted">Quienes ingresaron por una silla. Es la misma ficha de la <a href="#/nomina">Nómina</a>: lo que corrijas acá se ve allá y al revés. Se completa solo cuando una silla pasa a <b>Ingresado</b>.</p></div>
+    <div><h1>Legajos de ingresados</h1></div>
     <div class="head-actions">
       <button class="btn" data-act="export">Exportar CSV</button>
       <button class="btn" data-act="new">+ Alta manual</button>

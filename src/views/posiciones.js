@@ -104,7 +104,6 @@ export function render(el) {
   <section class="page-head">
     <div>
       <h1>Mapa de posiciones</h1>
-      <p class="muted">Cada fila es una silla a cubrir. ${staff ? 'Abrí un sector y tocá una silla para editarla o sentar a un candidato.' : 'Vista de solo lectura.'}</p>
     </div>
     <div class="head-actions">
       ${staff ? html`<button class="btn" data-act="new">+ Nueva silla</button>` : ''}
@@ -459,7 +458,7 @@ function ternaBox(p) {
           ${!main && !out ? html`<button type="button" class="btn btn--ghost btn--sm" data-act="terna-main" data-cid="${c.id}">Hacer principal</button>` : ''}
           ${!main ? html`<button type="button" class="btn btn--danger-ghost btn--sm" data-act="terna-del" data-cid="${c.id}" aria-label="Quitar de la terna">Quitar</button>` : ''}
         </span></li>`;
-    })}</ul>` : html`<p class="muted small">Todavía no hay candidatos en la terna. Sumá a los que estén en proceso para esta silla: cuando uno se cae, promovés al siguiente.</p>`}
+    })}</ul>` : html`<p class="muted small">Sin candidatos en la terna.</p>`}
   </section>`;
 }
 

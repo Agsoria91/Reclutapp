@@ -78,8 +78,7 @@ export function render(el) {
   const recientes = base.filter((n) => n.fecha_ingreso && daysBetween(n.fecha_ingreso, hoy) <= 90).length;
 
   el.innerHTML = String(html`
-  <section class="page-head"><div><h1>Nómina EFiS</h1>
-    <p class="muted">Todo el personal. Cada ingreso confirmado en la app se suma solo (marcado como <span class="tag tag--match">alta app</span>). Solo RRHH.</p></div>
+  <section class="page-head"><div><h1>Nómina EFiS</h1></div>
     <div class="head-actions">
       <label class="btn">Reimportar planilla<input type="file" id="nom-file" accept=".csv,text/csv" hidden></label>
       <button class="btn" data-act="export">Exportar CSV</button>

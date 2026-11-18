@@ -129,8 +129,7 @@ export function render(el) {
   <section class="page-head">
     <div>
       <h1>Dashboard PJ</h1>
-      <p class="muted">Búsquedas de EFiS según la planilla de Status de Vacantes.
-        ${ult ? html`Actualizado el <b>${fmtDate(ult.importado_at)}</b>${ult.archivo ? ` con “${ult.archivo}”` : ''} · ${ult.filas} búsquedas.` : 'Todavía no se cargó ninguna planilla.'}</p>
+      <p class="muted">${ult ? html`Actualizado el <b>${fmtDate(ult.importado_at)}</b>${ult.archivo ? ` con “${ult.archivo}”` : ''} · ${ult.filas} búsquedas.` : 'Todavía no se cargó ninguna planilla.'}</p>
     </div>
     <div class="head-actions">
       <label class="btn btn--primary">Actualizar con CSV<input type="file" id="pj-file" accept=".csv,text/csv" hidden></label>
@@ -186,8 +185,7 @@ export function render(el) {
             <span class="col-bar"><span class="col-fill" style="height:${prevSize('pjmes|' + m)}%" data-h="${(c / mesMax) * 100}" data-k="pjmes|${m}"></span></span>
             <span class="col-lbl">${fmtMonth(m, { short: true })}</span></button>`;
         })}
-      </div>
-      <p class="small muted">Tocá un mes para filtrar. Los meses futuros son pedidos de la línea para más adelante.</p></article>
+      </div></article>
   </section>
 
   ${porDireccionPosicion(rows)}

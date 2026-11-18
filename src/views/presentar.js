@@ -37,7 +37,7 @@ export function render(el, params) {
   <div class="present">
     <div class="present-tools no-print">
       <a class="btn btn--ghost" href="${back}">← Volver</a>
-      <span class="muted">Consejo: en el diálogo de impresión elegí "Guardar como PDF" y orientación horizontal.</span>
+      <span class="spacer"></span>
       <button class="btn btn--primary" onclick="window.print()">Imprimir / PDF</button>
     </div>
     <header class="present-head">

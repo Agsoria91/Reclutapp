@@ -120,7 +120,6 @@ export function render(el) {
   <section class="page-head">
     <div>
       <h1>Candidatos PP</h1>
-      <p class="muted">Tocá un cuadro (Candidatos, En proceso, Ingresados) o cualquier barra para filtrar: todo lo demás se recalcula. ${staff ? 'Abajo, el reporte y el listado con las fichas.' : 'El detalle por persona es solo para RRHH.'}</p>
     </div>
     ${staff ? html`<div class="head-actions"><button class="btn" data-act="new">+ Nuevo candidato</button></div>` : ''}
   </section>
@@ -180,7 +179,7 @@ export function render(el) {
     <article class="card">
       <h2 class="card-title">Avance por área</h2>
       ${bars(avancePorArea(), { color: 'green', max: 100, fmt: (n) => n + '%', dim: 'area', selected: filters.area, chart: 'c-av' })}
-      <p class="muted small">Sillas cubiertas (Ingresado) sobre el total del mapa de posiciones. Tocá un área para filtrar.</p>
+      <p class="muted small">Sillas cubiertas sobre el total del mapa de posiciones.</p>
     </article>
   </section>
 
