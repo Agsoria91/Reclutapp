@@ -111,6 +111,7 @@ export function render(el) {
     </div>
   </section>
 
+  ${staff && posSapRepetidas().length ? html`<p class="note">POS SAP repetidas: ${posSapRepetidas().map(([k, xs]) => html`<b>${k}</b> (${xs.map((x) => `${x.puesto} · ${x.yacimiento}`).join(' / ')}) `)}— corregilas en cada silla.</p>` : ''}
   <section class="filters card">
     ${filterGroup({ dim: 'area', label: 'Área', options: optionsFor('area'), selected: posFilters.area })}
     ${filterGroup({ dim: 'sector', label: 'Sector', options: optionsFor('sector'), selected: posFilters.sector, allLabel: 'Todos' })}
@@ -346,8 +347,9 @@ export function openEditor(id) {
     <form id="pos-form" class="form-grid">
       ${pickField('Área (yacimiento)', 'yacimiento', p.yacimiento, state.positions.map((x) => x.yacimiento), { required: true })}
       ${pickField('Sector', 'sector', p.sector, state.positions.map((x) => x.sector))}
-      ${field('Puesto', 'puesto', p.puesto, { required: true, span: 2 })}
-      ${field('POS SAP', 'pos_sap', p.pos_sap)}
+      ${field('Puesto', 'puesto', p.puesto, { required: true, span: p.id ? 2 : 1, hint: p.id ? '' : 'Con varias sillas se numeran solas (Puesto 1, 2, 3…)' })}
+      ${p.id ? '' : field('Cantidad de sillas', 'cantidad', 1, { type: 'number', hint: 'Crea varias sillas iguales de una vez' })}
+      ${field('POS SAP', 'pos_sap', p.pos_sap, { hint: 'Única por silla' })}
       ${pickField('Jefe directo', 'jefe_directo', p.jefe_directo, [state.positions.map((x) => x.jefe_directo), state.nomina.map((x) => x.jefe)])}
       ${pickField('Diagrama', 'diagrama', p.diagrama, [state.positions.map((x) => x.diagrama), state.nomina.map((x) => x.diagrama)])}
       ${field('Turno', 'turno', p.turno)}
@@ -376,13 +378,26 @@ export function openEditor(id) {
   root.querySelector('#pos-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = formData(e.target);
+    const cantidad = Math.max(1, Math.min(50, parseInt(data.cantidad, 10) || 1));
+    delete data.cantidad;
     if (linked) delete data.candidato_nombre;
     if (data.fecha_objetivo && /^\d{4}-\d{2}$/.test(data.fecha_objetivo)) data.fecha_objetivo += '-01';
+    // POS SAP: es única
+    const sap = String(data.pos_sap ?? '').trim();
+    if (sap) {
+      if (cantidad > 1) { toast('La POS SAP es única por silla: creá las sillas sin POS SAP y cargala después en cada una.', 'error', 7000); return; }
+      const otra = state.positions.find((x) => x.id !== p.id && String(x.pos_sap ?? '').trim() === sap);
+      if (otra) { toast(`La POS SAP ${sap} ya está asignada a "${otra.puesto}" (${otra.yacimiento}${otra.sector ? ' · ' + otra.sector : ''}). Revisá el número.`, 'error', 8000); return; }
+    }
     const btn = e.submitter; btn.disabled = true;
-    const q = p.id ? sb.from('positions').update(data).eq('id', p.id) : sb.from('positions').insert(data);
+    let q;
+    if (p.id) q = sb.from('positions').update(data).eq('id', p.id);
+    else if (cantidad === 1) q = sb.from('positions').insert(data);
+    else q = sb.from('positions').insert(numerarSillas(data, cantidad));
     const { error } = await q;
     btn.disabled = false;
-    if (error) { toast(error.message, 'error'); return; }
+    if (error) { toast(error.message, 'error', 7000); return; }
+    if (!p.id && cantidad > 1) { toast(`${cantidad} sillas creadas`, 'ok'); closeDrawer(); await loadAll({ silent: true }); return; }
     const wasIngreso = data.stage === 'ingresado' && p.stage !== 'ingresado';
     toast(wasIngreso ? '¡Ingreso confirmado! Se creó el legajo.' : 'Silla guardada', 'ok');
     closeDrawer();
@@ -472,3 +487,29 @@ export function celebrate() {
   setTimeout(() => d.remove(), 2600);
 }
 
+
+// Varias sillas iguales: "Puesto 3", "Puesto 4"… continuando la numeración que
+// ya exista para ese puesto en la misma área y sector.
+function numerarSillas(data, cantidad) {
+  const base = String(data.puesto).trim().replace(/\s+\d+$/, '');
+  const re = new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+(\\d+))?$`, 'i');
+  let max = 0;
+  for (const x of state.positions) {
+    if (x.yacimiento !== data.yacimiento || (x.sector || '') !== (data.sector || '')) continue;
+    const m = re.exec(String(x.puesto).trim());
+    if (m) max = Math.max(max, m[1] ? +m[1] : 1);
+  }
+  return Array.from({ length: cantidad }, (_, i) => ({ ...data, puesto: `${base} ${max + i + 1}` }));
+}
+
+// POS SAP repetidas ya cargadas (para corregir)
+export function posSapRepetidas() {
+  const m = new Map();
+  for (const x of state.positions) {
+    const k = String(x.pos_sap ?? '').trim();
+    if (!k) continue;
+    if (!m.has(k)) m.set(k, []);
+    m.get(k).push(x);
+  }
+  return [...m.entries()].filter(([, xs]) => xs.length > 1);
+}

@@ -3,6 +3,7 @@ import { html, raw } from '../lib/html.js';
 import CONVENIO from '../data/convenio.json';
 import { field, pickField } from './ui.js';
 import { state } from '../lib/store.js';
+import { LOCALIDADES, buscarLocalidad, PROVINCIAS_AR } from '../data/localidades.js';
 
 // ---------------------------------------------------------------------------
 // Puesto de convenio: en el formulario se elige primero el PUESTO (buscador)
@@ -67,7 +68,33 @@ export function preingresoProgress(c) {
 
 const TALLES_ROPA = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '38', '40', '42', '44', '46', '48', '50', '52', '54', '56', '58', '60'];
 const TALLES_BOTAS = Array.from({ length: 14 }, (_, i) => String(35 + i));
-const PROVINCIAS = ['Neuquén', 'Río Negro', 'Mendoza', 'La Pampa', 'Chubut', 'Buenos Aires', 'Córdoba', 'Santa Cruz', 'Salta'];
+const PROVINCIAS = PROVINCIAS_AR;
+
+// Al elegir (o escribir) la localidad se completan provincia y código postal.
+if (typeof document !== 'undefined' && !document._localidadBound) {
+  document._localidadBound = true;
+  const completar = (origen, texto) => {
+    const loc = buscarLocalidad(texto);
+    const scope = origen.closest('fieldset, form');
+    if (!loc || !scope) return;
+    const prov = scope.querySelector('select[data-pick="provincia"]');
+    if (prov) {
+      const n = (v) => String(v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+      let opt = [...prov.options].find((o) => n(o.value) === n(loc.provincia));
+      if (!opt) { opt = new Option(loc.provincia, loc.provincia); prov.add(opt, prov.options[prov.options.length - 1]); }
+      prov.value = opt.value;
+      prov.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    const cp = scope.querySelector('input[name="codigo_postal"]');
+    if (cp) { cp.value = loc.cp; cp.classList.add('is-auto'); setTimeout(() => cp.classList.remove('is-auto'), 1200); }
+  };
+  document.addEventListener('change', (e) => {
+    const s = e.target.closest?.('select[data-pick="localidad"]');
+    if (s && s.value && s.value !== '__otro__') completar(s, s.value);
+    const t = e.target.closest?.('input[data-otro-for="localidad"]');
+    if (t) completar(t, t.value);
+  });
+}
 
 // talles en su orden natural (no alfabético)
 function pickTalle(label, name, value, talles) {
@@ -88,7 +115,7 @@ export function preingresoFields(c) {
         ${field('Teléfono', 'telefono', c.telefono, { type: 'tel' })}
         ${field('Mail', 'mail', c.mail, { type: 'email', span: 2 })}
         ${field('Domicilio', 'domicilio', c.domicilio, { span: 2 })}
-        ${pickField('Localidad', 'localidad', c.localidad, [state.candidates.map((x) => x.localidad), state.nomina.map((x) => x.localidad), state.positions.map((x) => x.localidad)])}
+        ${pickField('Localidad', 'localidad', c.localidad, [LOCALIDADES.map((l) => l[0]), state.candidates.map((x) => x.localidad), state.nomina.map((x) => x.localidad), state.positions.map((x) => x.localidad)], { hint: 'Completa provincia y código postal' })}
         ${field('Código postal', 'codigo_postal', c.codigo_postal)}
         ${pickField('Provincia', 'provincia', c.provincia, [PROVINCIAS, state.candidates.map((x) => x.provincia), state.nomina.map((x) => x.provincia)])}
       </div>
