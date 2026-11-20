@@ -467,3 +467,7 @@ fieldset.sensitive { border: 1px dotted var(--st-orange); }
   .drawer--wide .drawer-body { padding: 24px 32px 36px; }
 }
 @media (max-width: 640px) { .drawer--wide { width: 100vw; } }
+.view > .sap-aviso { padding: 8px var(--pad); font-size: 13px; }
+.sap-aviso summary { cursor: pointer; list-style: none; display: inline-flex; gap: 8px; align-items: center; }
+.sap-aviso summary::-webkit-details-marker { display: none; }
+.sap-aviso ul { margin: 8px 0; padding-left: 18px; }

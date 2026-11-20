@@ -112,7 +112,7 @@ export function render(el) {
     </div>
   </section>
 
-  ${staff && posSapRepetidas().length ? html`<p class="note">POS SAP repetidas: ${posSapRepetidas().map(([k, xs]) => html`<b>${k}</b> (${xs.map((x) => `${x.puesto} · ${x.yacimiento}`).join(' / ')}) `)}— corregilas en cada silla.</p>` : ''}
+  ${staff ? avisoPosSap() : ''}
   <section class="filters card">
     ${filterGroup({ dim: 'area', label: 'Área', options: optionsFor('area'), selected: posFilters.area })}
     ${filterGroup({ dim: 'sector', label: 'Sector', options: optionsFor('sector'), selected: posFilters.sector, allLabel: 'Todos' })}
@@ -304,6 +304,7 @@ function onClick(e) {
   if (f) { toggleFilter(posFilters, f.dataset.filter, f.dataset.value); persist(); render(el); return; }
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'new') { openEditor(null); return; }
+  if (act === 'sap-ocultar') { saveLocal('reclutapp.pos.sapOculto', firmaRep(posSapRepetidas())); render(el); return; }
   if (act === 'toggle-all') {
     const keys = [...el.querySelectorAll('details[data-g]')].map((d) => d.dataset.g);
     const allOpen = keys.every((k) => openGroups.has(k));
@@ -513,4 +514,17 @@ export function posSapRepetidas() {
     m.get(k).push(x);
   }
   return [...m.entries()].filter(([, xs]) => xs.length > 1);
+}
+
+// Aviso compacto y desplegable de POS SAP repetidas. Se puede ocultar; vuelve a
+// aparecer solo si cambia el conjunto de repetidas.
+const firmaRep = (reps) => reps.map(([k]) => k).sort().join('|');
+function avisoPosSap() {
+  const reps = posSapRepetidas();
+  if (!reps.length || loadLocal('reclutapp.pos.sapOculto', '') === firmaRep(reps)) return '';
+  return html`<details class="sap-aviso">
+    <summary><span class="pill pill--sm pill--orange">${reps.length} POS SAP repetida${reps.length === 1 ? '' : 's'}</span> <span class="muted small">ver detalle</span></summary>
+    <ul>${reps.map(([k, xs]) => html`<li><b>${k}</b> · ${xs.map((x) => `${x.puesto} (${x.yacimiento})`).join(' / ')}</li>`)}</ul>
+    <button type="button" class="btn btn--ghost btn--sm" data-act="sap-ocultar">Ocultar aviso</button>
+  </details>`;
 }
