@@ -153,3 +153,14 @@ test('carga masiva: plantilla -> lectura, validación y duplicados', () => {
   assert.equal(filas[3].estado, 'duplicado');
   assert.equal(filas[4].estado, 'duplicado');
 });
+
+test('nómina: celdas y columnas vacías no viajan en la importación', async () => {
+  const { parseNominaCSV } = await import('../src/lib/importers.js');
+  const csv = 'APELLIDO Y NOMBRE;DNI;SECTOR;YACIMIENTO;CATEGORIA\r\nPerez Juan;30.111.222;;;B\r\nGomez Ana;30111333;;;\r\n';
+  const { rows, columnasVacias } = parseNominaCSV(csv);
+  assert.equal(rows.length, 2);
+  assert.ok(!('sector' in rows[0]) && !('yacimiento' in rows[0]));
+  assert.equal(rows[0].categoria, 'B');
+  assert.ok(!('categoria' in rows[1]));
+  assert.deepEqual(columnasVacias.sort(), ['SECTOR', 'YACIMIENTO']);
+});
