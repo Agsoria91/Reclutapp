@@ -188,3 +188,19 @@ export function avancePeriodo(positions, meses, { candidatos = [], today } = {})
     porArea: [...porArea.entries()].sort((a, b) => b[1].req - a[1].req),
   };
 }
+
+// Sillas que faltaba cubrir a una fecha de corte: mes objetivo hasta el mes
+// del corte y sin ingreso efectivo a esa fecha (las cubiertas después cuentan
+// como faltantes). Las cubiertas sin fecha de ingreso se toman como cubiertas.
+export function faltantesAlCorte(positions, corte, { candidatos = [] } = {}) {
+  const candPorId = new Map(candidatos.map((c) => [c.id, c]));
+  const mesCorte = monthKey(corte);
+  return positions.filter((p) => {
+    if (p.stage === 'cancelado') return false;
+    const m = monthKey(p.fecha_objetivo);
+    if (!m || m > mesCorte) return false;
+    if (!isCovered(p)) return true;
+    const f = p.fecha_ingreso || candPorId.get(p.candidate_id)?.fecha_ingreso;
+    return !!f && f > corte;
+  });
+}

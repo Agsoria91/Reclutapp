@@ -4,7 +4,7 @@ import { html, raw, $ } from '../lib/html.js';
 import { state, loadAll } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
 import { fmtDate, fmtInt, norm, todayISO, daysBetween, fmtMonth } from '../lib/format.js';
-import { countBy } from '../lib/kpis.js';
+import { countBy, faltantesAlCorte, sectorMatches } from '../lib/kpis.js';
 import { decodeBytes } from '../lib/csv.js';
 import { parseNominaCSV } from '../lib/importers.js';
 import {
@@ -127,6 +127,7 @@ export function render(el) {
     ${kpi('Plazo fijo vence ≤ 60 días', pfProx, { tone: pfProx ? 'red' : '', id: 'n-pf' })}
     ${kpi('Edad promedio', Math.round(base.map(edad).filter(Boolean).reduce((a, b, _, arr) => a + b / arr.length, 0)) || 0, { id: 'n-edad' })}
   </section>
+  ${coberturaDotacion()}
   ${meses.size ? dotacionPorMes() : ''}
   <section class="grid-2">
     <article class="card"><h2 class="card-title">Por yacimiento</h2>${bars(countBy(filterRows('yacimiento'), getters.yacimiento), { dim: 'yacimiento', selected: filters.yacimiento, chart: 'n-yac', limit: 12 })}</article>
@@ -291,12 +292,70 @@ function dotacionPorMes() {
   const base = filterRowsSinEstado();
   const lista = [...meses].sort();
   return html`<section class="card"><h2 class="card-title">Dotación por mes</h2><div class="table-wrap"><table class="tbl tbl--compact">
-    <thead><tr><th>Mes</th><th class="num">Dotación</th><th class="num">Ingresos del mes</th><th class="num">Bajas del mes</th></tr></thead>
-    <tbody>${lista.map((m) => html`<tr><td><b>${fmtMonth(m)}</b></td>
-      <td class="num"><b>${base.filter((n) => enMes(n, m)).length}</b></td>
+    <thead><tr><th>Mes</th><th class="num">Dotación</th><th class="num">Faltaban tomar</th><th class="num">Dotación requerida</th><th class="num">% cobertura</th><th class="num">Ingresos del mes</th><th class="num">Bajas del mes</th></tr></thead>
+    <tbody>${lista.map((m) => { const c = corteMes(m); const dot = base.filter((n) => enMes(n, m)).length; const f = faltantesFiltrados(c).length; return html`<tr><td><b>${fmtMonth(m)}</b></td>
+      <td class="num"><b>${dot}</b></td>
+      <td class="num">${f || '·'}</td>
+      <td class="num">${dot + f}</td>
+      <td class="num"><b>${porc(dot, dot + f)}%</b></td>
       <td class="num">${base.filter((n) => n.fecha_ingreso && n.fecha_ingreso.startsWith(m)).length || '·'}</td>
-      <td class="num">${base.filter((n) => n.fecha_baja && n.fecha_baja.startsWith(m)).length || '·'}</td></tr>`)}</tbody>
+      <td class="num">${base.filter((n) => n.fecha_baja && n.fecha_baja.startsWith(m)).length || '·'}</td></tr>`; })}</tbody>
   </table></div></section>`;
 }
 // para contar la dotación de cada mes: todos los filtros menos Estado y meses
 const filterRowsSinEstado = () => state.nomina.filter((n) => DIMS.every((d) => d === 'estado' || !filters[d].size || [].concat(getters[d](n)).some((v) => filters[d].has(v))));
+
+// ---------------------------------------------------------------------------
+// Dotación vs. lo que faltaba tomar (sillas del mapa de posiciones).
+// Corte: fin del último mes elegido, o hoy. Los filtros de yacimiento, sector
+// y encuadre se aplican también a las sillas.
+// ---------------------------------------------------------------------------
+const porc = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+const corteMes = (m) => { const f = finDeMes(m); const h = todayISO(); return f < h ? f : h; };
+const codigo = (v) => { const s = norm(v).replace(/[^a-z0-9]/g, ''); return ({ ltn1: 'lt1n' })[s] || s; };
+const yacDeSilla = (p) => { const c = codigo(p.yacimiento); return [...canon.entries()].find(([k]) => k.startsWith('yacimiento|') && codigo(k.slice(11)) === c)?.[1] || p.yacimiento || 'Sin dato'; };
+function silllaPasaFiltros(p, except) {
+  if (except !== 'yacimiento' && filters.yacimiento.size && ![...filters.yacimiento].some((y) => codigo(y) === codigo(p.yacimiento))) return false;
+  if (except !== 'sector' && filters.sector.size && ![...filters.sector].some((s) => sectorMatches(p.sector, s))) return false;
+  if (except !== 'encuadre' && filters.encuadre.size && !filters.encuadre.has(p.encuadre || 'PP')) return false;
+  return true;
+}
+const faltantesFiltrados = (corte, except) => faltantesAlCorte(state.positions, corte, { candidatos: state.candidates }).filter((p) => silllaPasaFiltros(p, except));
+
+function coberturaDotacion() {
+  const ult = [...meses].sort().pop();
+  const corte = ult ? corteMes(ult) : todayISO();
+  const personas = ult ? filterRowsSinEstado().filter((n) => enMes(n, ult)) : filterRows(null);
+  const falt = faltantesFiltrados(corte);
+  const req = personas.length + falt.length;
+  const enProceso = falt.filter((p) => p.candidato_nombre && p.stage !== 'ingresado').length;
+  const ingresaronDespues = falt.filter((p) => p.stage === 'ingresado').length;
+  // Por yacimiento: dotación (nómina) + faltantes (sillas), sin el filtro de yacimiento para comparar todos
+  const dotY = countBy(ult ? filterRowsSinEstado().filter((n) => enMes(n, ult)) : filterRows(null), getters.yacimiento);
+  const filas = new Map(dotY.map(([y, n]) => [y, { dot: n, falt: 0 }]));
+  for (const p of falt) { const y = yacDeSilla(p); const f = filas.get(y) || { dot: 0, falt: 0 }; f.falt++; filas.set(y, f); }
+  const orden = [...filas.entries()].filter(([, v]) => v.dot || v.falt).sort((a, b) => (b[1].falt - a[1].falt) || (b[1].dot - a[1].dot));
+  const titulo = ult ? `al ${fmtDate(corte)}` : 'hoy';
+  const faltL = ult ? 'Faltaban tomar' : 'Faltan tomar';
+  return html`<section class="card cob-dot">
+    <header class="list-head"><h2 class="card-title">Dotación y faltantes <small class="muted">${titulo}</small></h2></header>
+    <div class="cob-dot-grid">
+      <div class="cob-dot-kpis">
+        <div class="cob-dot-pct"><b>${porc(personas.length, req)}%</b><span>cobertura de la dotación requerida</span></div>
+        <div class="cob-dot-bar" role="img" aria-label="${personas.length} en nómina, ${falt.length} faltan tomar">
+          <span class="is-dot" style="width:${porc(personas.length, req)}%"></span><span class="is-falt" style="width:${100 - porc(personas.length, req)}%"></span></div>
+        <dl class="cob-dot-nums">
+          <div><dt>En nómina</dt><dd>${fmtInt(personas.length)}</dd></div>
+          <div><dt>${faltL}</dt><dd class="is-falt-txt">${fmtInt(falt.length)}</dd></div>
+          <div><dt>Dotación requerida</dt><dd>${fmtInt(req)}</dd></div>
+        </dl>
+        ${falt.length ? html`<p class="small muted">${ult ? 'De las que faltaban' : 'De las que faltan'}: ${enProceso} con candidato en proceso${ult && ingresaronDespues ? `, ${ingresaronDespues} ingresaron después del corte` : ''}${falt.length - enProceso - ingresaronDespues > 0 ? `, ${falt.length - enProceso - ingresaronDespues} sin candidato` : ''}.</p>` : ''}
+      </div>
+      <div class="table-wrap"><table class="tbl tbl--compact">
+        <thead><tr><th>Yacimiento</th><th class="num">En nómina</th><th class="num">${ult ? 'Faltaban' : 'Faltan'}</th><th class="num">Requerida</th><th class="num">% cobertura</th></tr></thead>
+        <tbody>${orden.map(([y, v]) => html`<tr><td><b>${y}</b></td><td class="num">${v.dot}</td><td class="num ${v.falt ? 'is-falt-txt' : ''}">${v.falt || '·'}</td><td class="num">${v.dot + v.falt}</td>
+          <td class="num"><span class="cob-mini"><span style="width:${porc(v.dot, v.dot + v.falt)}%"></span></span> <b>${porc(v.dot, v.dot + v.falt)}%</b></td></tr>`)}</tbody>
+      </table></div>
+    </div>
+  </section>`;
+}

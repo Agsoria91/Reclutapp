@@ -179,3 +179,16 @@ test('avance del período: lo cubierto después del corte cuenta como pendiente'
   assert.equal(a.req, 4); assert.equal(a.ok, 2); assert.equal(a.despues, 1); assert.equal(a.pend, 1);
   assert.equal(a.faltan, 2); assert.equal(a.avance, 50);
 });
+
+test('faltantes al corte: cubierta después del corte sigue faltando', async () => {
+  const { faltantesAlCorte } = await import('../src/lib/kpis.js');
+  const pos = [
+    { id: 1, fecha_objetivo: '2026-10-01', stage: 'ingresado', fecha_ingreso: '2026-10-20' },
+    { id: 2, fecha_objetivo: '2026-10-01', stage: 'ingresado', fecha_ingreso: '2026-11-03' },
+    { id: 3, fecha_objetivo: '2026-09-01', stage: 'en_entrevista' },
+    { id: 4, fecha_objetivo: '2026-11-01', stage: 'sin_candidato' },
+    { id: 5, fecha_objetivo: '2026-10-01', stage: 'ingresado' },
+  ];
+  assert.deepEqual(faltantesAlCorte(pos, '2026-10-31').map((p) => p.id), [2, 3]);
+  assert.deepEqual(faltantesAlCorte(pos, '2026-11-20').map((p) => p.id), [3, 4]);
+});
