@@ -253,12 +253,20 @@ function openPersona(id) {
 
 async function reimportar(file) {
   try {
-    const { rows, warnings } = parseNominaCSV(decodeBytes(new Uint8Array(await file.arrayBuffer())));
+    const { rows, warnings, columnasVacias } = parseNominaCSV(decodeBytes(new Uint8Array(await file.arrayBuffer())));
     const nuevos = rows.filter((r) => !state.nomina.some((n) => n.dni === r.dni)).length;
-    if (!(await confirmDialog(`Planilla de nómina: ${rows.length} personas (${nuevos} nuevas, ${rows.length - nuevos} a actualizar por DNI)${warnings.length ? `, ${warnings.length} filas salteadas` : ''}. Los datos de la planilla reemplazan a los de la app para esas personas. ¿Importar?`, { ok: 'Importar' }))) return;
-    for (let i = 0; i < rows.length; i += 100) {
-      const { error } = await sb.from('nomina').upsert(rows.slice(i, i + 100), { onConflict: 'dni' });
-      if (error) throw error;
+    const vacias = columnasVacias.length
+      ? ` Estas columnas vinieron vacías y se van a ignorar (se conserva lo que ya está en la app): ${columnasVacias.join(', ')}. Si en el Excel tienen fórmulas, copiá y pegá como valores antes de guardar el CSV.`
+      : '';
+    if (!(await confirmDialog(`Planilla de nómina: ${rows.length} personas (${nuevos} nuevas, ${rows.length - nuevos} a actualizar por DNI)${warnings.length ? `, ${warnings.length} filas salteadas` : ''}. Se actualizan los datos que trae la planilla; las celdas vacías no borran nada.${vacias} ¿Importar?`, { ok: 'Importar' }))) return;
+    // Agrupar por conjunto de columnas: un upsert con columnas distintas completaría con vacíos.
+    const grupos = new Map();
+    for (const r of rows) { const k = Object.keys(r).sort().join(','); (grupos.get(k) || grupos.set(k, []).get(k)).push(r); }
+    for (const lote of grupos.values()) {
+      for (let i = 0; i < lote.length; i += 100) {
+        const { error } = await sb.from('nomina').upsert(lote.slice(i, i + 100), { onConflict: 'dni' });
+        if (error) throw error;
+      }
     }
     toast('Nómina actualizada', 'ok');
     loadAll({ silent: true });

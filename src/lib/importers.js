@@ -314,7 +314,13 @@ export function parseNominaCSV(bytesOrText) {
     o.localidad = normLocalidad(o.localidad);
     if (o.jefe === '#N/A') o.jefe = null;
     if (o.mail) o.mail = o.mail.toLowerCase();
+    // Una celda vacía no borra lo que ya hay en la app: solo viajan los datos presentes.
+    for (const k of Object.keys(o)) if (o[k] == null || o[k] === '') delete o[k];
     out.push(o);
   }
-  return { rows: out, warnings };
+  // Columnas de la planilla que vinieron vacías en todas las filas (p. ej. fórmulas que no se exportaron al CSV)
+  const mapeadas = [...new Set(header.map((h) => NOM_COLS[h]).filter(Boolean))];
+  const vacias = mapeadas.filter((k) => !['nombre', 'dni'].includes(k) && out.length && !out.some((o) => k in o));
+  const etiqueta = Object.fromEntries(Object.entries(NOM_COLS).map(([h, k]) => [k, h.toUpperCase()]));
+  return { rows: out, warnings, columnasVacias: vacias.map((k) => etiqueta[k] || k) };
 }
