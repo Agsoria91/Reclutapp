@@ -3,7 +3,7 @@ import { html, raw } from '../lib/html.js';
 import CONVENIO from '../data/convenio.json';
 import { field, pickField } from './ui.js';
 import { state } from '../lib/store.js';
-import { LOCALIDADES, buscarLocalidad, PROVINCIAS_AR } from '../data/localidades.js';
+import { LOCALIDADES_REGION, buscarLocalidad, PROVINCIAS_AR } from '../data/localidades.js';
 
 // ---------------------------------------------------------------------------
 // Puesto de convenio: en el formulario se elige primero el PUESTO (buscador)
@@ -86,7 +86,7 @@ if (typeof document !== 'undefined' && !document._localidadBound) {
       prov.dispatchEvent(new Event('change', { bubbles: true }));
     }
     const cp = scope.querySelector('input[name="codigo_postal"]');
-    if (cp) { cp.value = loc.cp; cp.classList.add('is-auto'); setTimeout(() => cp.classList.remove('is-auto'), 1200); }
+    if (cp && loc.cp) { cp.value = loc.cp; cp.classList.add('is-auto'); setTimeout(() => cp.classList.remove('is-auto'), 1200); }
   };
   document.addEventListener('change', (e) => {
     const s = e.target.closest?.('select[data-pick="localidad"]');
@@ -115,7 +115,7 @@ export function preingresoFields(c) {
         ${field('Teléfono', 'telefono', c.telefono, { type: 'tel' })}
         ${field('Mail', 'mail', c.mail, { type: 'email', span: 2 })}
         ${field('Domicilio', 'domicilio', c.domicilio, { span: 2 })}
-        ${pickField('Localidad', 'localidad', c.localidad, [LOCALIDADES.map((l) => l[0]), state.candidates.map((x) => x.localidad), state.nomina.map((x) => x.localidad), state.positions.map((x) => x.localidad)], { hint: 'Completa provincia y código postal' })}
+        ${pickField('Localidad', 'localidad', c.localidad, LOCALIDADES_REGION, { hint: 'Otra localidad: “＋ Otro…”' })}
         ${field('Código postal', 'codigo_postal', c.codigo_postal)}
         ${pickField('Provincia', 'provincia', c.provincia, [PROVINCIAS, state.candidates.map((x) => x.provincia), state.nomina.map((x) => x.provincia)])}
       </div>

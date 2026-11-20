@@ -12,6 +12,8 @@ export const LOCALIDADES = [
   ['Piedra del Águila', 'Neuquén', '8315'], ['Chos Malal', 'Neuquén', '8353'], ['Junín de los Andes', 'Neuquén', '8371'],
   ['San Martín de los Andes', 'Neuquén', '8370'], ['Villa La Angostura', 'Neuquén', '8407'], ['Las Lajas', 'Neuquén', '8347'],
   ['Loncopué', 'Neuquén', '8349'], ['Aluminé', 'Neuquén', '8345'], ['Villa El Chocón', 'Neuquén', '8311'],
+  ['Buta Ranquil', 'Neuquén', null], ['Barrancas', 'Neuquén', null], ['Octavio Pico', 'Neuquén', null],
+  ['Sauzal Bonito', 'Neuquén', null], ['Tratayén', 'Neuquén', null], ['Arroyito', 'Neuquén', null],
   // Río Negro
   ['Cipolletti', 'Río Negro', '8324'], ['Fernández Oro', 'Río Negro', '8324'], ['Cinco Saltos', 'Río Negro', '8303'],
   ['Catriel', 'Río Negro', '8307'], ['Allen', 'Río Negro', '8328'], ['General Roca', 'Río Negro', '8332'],
@@ -20,12 +22,14 @@ export const LOCALIDADES = [
   ['Ingeniero Huergo', 'Río Negro', '8334'], ['Cervantes', 'Río Negro', '8326'], ['Mainqué', 'Río Negro', '8326'],
   ['Choele Choel', 'Río Negro', '8360'], ['El Bolsón', 'Río Negro', '8430'], ['San Carlos de Bariloche', 'Río Negro', '8400'],
   ['Viedma', 'Río Negro', '8500'], ['Río Colorado', 'Río Negro', '8138'],
+  ['Godoy', 'Río Negro', null], ['Chichinales', 'Río Negro', null], ['Peñas Blancas', 'Río Negro', null], ['San Isidro', 'Río Negro', null],
   // Mendoza
   ['Mendoza', 'Mendoza', '5500'], ['Godoy Cruz', 'Mendoza', '5501'], ['Maipú', 'Mendoza', '5515'],
   ['Luján de Cuyo', 'Mendoza', '5507'], ['Las Heras', 'Mendoza', '5539'], ['Guaymallén', 'Mendoza', '5521'],
   ['San Rafael', 'Mendoza', '5600'], ['Malargüe', 'Mendoza', '5613'],
   // La Pampa, Buenos Aires, Patagonia sur
   ['Santa Rosa', 'La Pampa', '6300'], ['General Pico', 'La Pampa', '6360'], ['25 de Mayo', 'La Pampa', '8201'],
+  ['Santa Isabel', 'La Pampa', null], ['Gobernador Duval', 'La Pampa', null], ['Casa de Piedra', 'La Pampa', null],
   ['Bahía Blanca', 'Buenos Aires', '8000'], ['Carmen de Patagones', 'Buenos Aires', '8504'], ['La Plata', 'Buenos Aires', '1900'],
   ['Mar del Plata', 'Buenos Aires', '7600'], ['Ciudad de Buenos Aires', 'CABA', '1000'],
   ['Comodoro Rivadavia', 'Chubut', '9000'], ['Trelew', 'Chubut', '9100'], ['Rawson', 'Chubut', '9103'], ['Puerto Madryn', 'Chubut', '9120'],
@@ -60,3 +64,21 @@ export function buscarLocalidad(texto) {
 export const PROVINCIAS_AR = ['Neuquén', 'Río Negro', 'Mendoza', 'La Pampa', 'Buenos Aires', 'CABA', 'Chubut', 'Santa Cruz',
   'Tierra del Fuego', 'Córdoba', 'Santa Fe', 'Entre Ríos', 'Corrientes', 'Misiones', 'Chaco', 'Formosa', 'Salta', 'Jujuy',
   'Tucumán', 'Santiago del Estero', 'Catamarca', 'La Rioja', 'San Juan', 'San Luis'];
+
+// Lista que se ofrece al cargar candidatos: Alto Valle de Neuquén y Río Negro,
+// localidades de Vaca Muerta y del área del convenio de Petroleros Privados de
+// Río Negro, Neuquén y La Pampa. Cualquier otra se carga con "Otro…" (y si es
+// una ciudad conocida igual completa provincia y CP).
+export const LOCALIDADES_REGION = [
+  // Neuquén: Confluencia / Alto Valle
+  'Neuquén', 'Plottier', 'Centenario', 'Vista Alegre', 'Senillosa', 'Villa El Chocón', 'Arroyito',
+  // Neuquén: Vaca Muerta y cuenca
+  'Añelo', 'San Patricio del Chañar', 'Tratayén', 'Sauzal Bonito', 'Rincón de los Sauces', 'Octavio Pico',
+  'Cutral Có', 'Plaza Huincul', 'Picún Leufú', 'Zapala', 'Las Lajas', 'Chos Malal', 'Buta Ranquil', 'Barrancas',
+  // Río Negro: Alto Valle
+  'Cipolletti', 'Fernández Oro', 'Allen', 'General Roca', 'Cervantes', 'Mainqué', 'Ingeniero Huergo', 'Villa Regina',
+  'Godoy', 'Chichinales', 'Cinco Saltos', 'Contralmirante Cordero', 'Barda del Medio', 'Campo Grande', 'Sargento Vidal',
+  'Villa Manzano', 'San Isidro', 'Catriel', 'Peñas Blancas',
+  // La Pampa: zona petrolera del convenio
+  '25 de Mayo', 'Santa Isabel', 'Gobernador Duval', 'Casa de Piedra',
+];
