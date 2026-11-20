@@ -37,7 +37,8 @@ function cell(ref, v, style) {
   return `<c r="${ref}" t="inlineStr"${style ? ` s="${style}"` : ''}><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
 }
 
-// sheet = { name, title?, note?, columns: [{ header, width?, pct? }], rows: [[...]], totalRow?: [...] }
+// sheet = { name, title?, note?, columns: [{ header, width?, pct? }], rows: [[...]], totalRow?: [...],
+//          validations?: [{ col, lista: "Listas!$A$2:$A$40", filas? }] }  (desplegables)
 function sheetXml(sh) {
   const out = [];
   let r = 1;
@@ -59,6 +60,8 @@ function sheetXml(sh) {
 <cols>${sh.columns.map((c, i) => `<col min="${i + 1}" max="${i + 1}" width="${c.width || 14}" customWidth="1"/>`).join('')}</cols>
 <sheetData>${out.join('')}</sheetData>
 ${sh.rows.length ? `<autoFilter ref="A${head}:${last}${lastDataRow}"/>` : ''}
+${sh.validations?.length ? `<dataValidations count="${sh.validations.length}">${sh.validations.map((v) =>
+    `<dataValidation type="list" allowBlank="1" showErrorMessage="1" errorStyle="warning" errorTitle="Valor fuera de la lista" error="Elegí de la lista o dejá el valor escrito si es nuevo." sqref="${colName(v.col)}${head + 1}:${colName(v.col)}${head + (v.filas || 500)}"><formula1>${esc(v.lista)}</formula1></dataValidation>`).join('')}</dataValidations>` : ''}
 </worksheet>`;
 }
 

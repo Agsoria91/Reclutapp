@@ -125,3 +125,31 @@ test('parseVacantesCSV: solo EFiS, fechas y columnas por nombre', () => {
   assert.equal(estadoInfo('').grupo, 'sin');
   assert.equal(estadoInfo('Examen medico').label, 'Examen médico');
 });
+
+// Carga masiva: la plantilla generada se puede volver a leer (datos sintéticos)
+import { buildXlsx } from '../src/lib/xlsx.js';
+import { plantillaCargaMasiva, leerCargaMasiva, COLUMNAS } from '../src/lib/cargaMasiva.js';
+test('carga masiva: plantilla -> lectura, validación y duplicados', () => {
+  const op = { area: ['LT2E', 'FDP'], servicio: ['Mantenimiento'], posicion: ['Instrumentista'], procedencia: ['Sindicato'], localidad: ['Neuquén', 'Añelo'], provincia: ['Neuquén'] };
+  const libro = plantillaCargaMasiva(op);
+  const vacia = (o) => COLUMNAS.map(([k]) => o[k] ?? null);
+  libro[0].rows.push(
+    vacia({ nombre: 'Prueba Uno', dni: '30.111.222', area: 'LT2E', localidad: 'Añelo', fecha_nacimiento: '1990-05-14' }),
+    vacia({ nombre: 'Prueba Dos', area: 'FDP', cv_recibido: '2026-11-01' }),
+    vacia({ nombre: 'Prueba Tres' }),
+    vacia({ nombre: 'Existente Persona', area: 'LT2E' }),
+    vacia({ nombre: 'prueba uno', dni: '30111222', area: 'LT2E' }),
+  );
+  const filas = leerCargaMasiva(buildXlsx(libro), [{ nombre: 'Existente Persona', dni: null }], '2026-11-20');
+  assert.equal(filas.length, 5); // la fila de ejemplo se ignora
+  assert.equal(filas[0].estado, 'ok');
+  assert.equal(filas[0].candidato.dni, '30111222');
+  assert.equal(filas[0].candidato.provincia, 'Neuquén');
+  assert.equal(filas[0].candidato.codigo_postal, '8305');
+  assert.equal(filas[0].candidato.fecha_nacimiento, '1990-05-14');
+  assert.equal(filas[0].candidato.cv_recibido, '2026-11-20');
+  assert.equal(filas[1].candidato.cv_recibido, '2026-11-01');
+  assert.equal(filas[2].estado, 'error');
+  assert.equal(filas[3].estado, 'duplicado');
+  assert.equal(filas[4].estado, 'duplicado');
+});
