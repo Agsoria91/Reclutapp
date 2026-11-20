@@ -6,7 +6,7 @@ import './reunion.css';
 import { html, raw } from '../lib/html.js';
 import { state } from '../lib/store.js';
 import { fmtMonth, fmtDate, todayISO, pct } from '../lib/format.js';
-import { positionKpis, pendingByTarget, isCovered, interviewStats, monthKey } from '../lib/kpis.js';
+import { positionKpis, pendingByTarget, isCovered, interviewStats, monthKey, avancePeriodo } from '../lib/kpis.js';
 import { mascot } from '../components/mascot.js';
 import { estadoMedico, esApto, clinicaCanon } from '../components/examen.js';
 
@@ -29,6 +29,7 @@ function datos(area) {
 const SECCIONES = [
   { id: 'posiciones', label: 'Mapa de posiciones', slide: slidePosiciones },
   { id: 'cobertura', label: 'Cobertura por mes', slide: slideCobertura },
+  { id: 'periodo', label: 'Avance del período', slide: slidePeriodo },
   { id: 'reclutamiento', label: 'Reclutamiento', slide: slideReclutamiento },
   { id: 'ingresos', label: 'Ingresos', slide: slideIngresos },
   { id: 'examenes', label: 'Exámenes médicos', slide: slideExamenes, staff: true },
@@ -104,6 +105,52 @@ function slideCobertura({ pend, k }) {
           <span class="dk-col-sub">${g.porArea.map(([a, n]) => `${a} ${n}`).join(' · ')}</span>
         </div>`)}</div>
         <p class="dk-legend"><i class="dk-l-proc"></i>con candidato en proceso <i class="dk-l-sin"></i>sin candidato <i class="dk-l-late"></i>mes vencido</p>
+      </div>
+    </div></section>`;
+}
+
+// Meses objetivo que existen en el mapa y período por defecto (el mes anterior al actual).
+function mesesDelMapa() {
+  return [...new Set(state.positions.map((p) => monthKey(p.fecha_objetivo)).filter(Boolean))].sort();
+}
+function periodoPorDefecto() {
+  const cur = monthKey(todayISO());
+  const prev = mesesDelMapa().filter((m) => m < cur);
+  return prev.length ? [prev[prev.length - 1]] : mesesDelMapa().slice(0, 1);
+}
+const nombrePeriodo = (meses) => (meses.length === 1 ? fmtMonth(meses[0])
+  : `${fmtMonth(meses[0], { short: true })} a ${fmtMonth(meses[meses.length - 1], { short: true })}${meses.length > 2 ? ` (${meses.length} meses)` : ''}`);
+
+function slidePeriodo({ pos, cands, today, meses }) {
+  const a = avancePeriodo(pos, meses, { candidatos: cands, today });
+  if (!a || !a.req) {
+    return html`<section class="dk-slide">${header('periodo')}<div class="dk-body"><div class="dk-card dk-card--full">
+      <h3>Avance del período</h3><p class="dk-empty">No hay sillas con mes objetivo en el período elegido.</p></div></div></section>`;
+  }
+  const barras = (g) => html`<span class="dk-bars-track">
+    <span class="dk-bars-fill" style="width:${pct(g.ok, g.req)}%"></span>
+    <span class="dk-bars-proc" style="width:${pct(g.despues, g.req)}%"></span></span>`;
+  return html`<section class="dk-slide">${header('periodo')}
+    <div class="dk-body dk-grid-2">
+      <div class="dk-col">
+        <div class="dk-big dk-big--green"><b>${a.avance}%</b><span>Avance de ${nombrePeriodo(a.meses)}<br><b>${fmtN(a.ok)}</b> de <b>${fmtN(a.req)}</b> sillas cubiertas al ${fmtDate(a.corte)}</span></div>
+        <div class="dk-kpis">
+          ${dkKpi(a.req, 'Sillas requeridas', `mes objetivo en el período`)}
+          ${dkKpi(a.ok, 'Ingresaron', `hasta el ${fmtDate(a.corte)}`, 'green')}
+          ${dkKpi(a.faltan, 'Pendientes al corte', a.faltan ? `${pct(a.faltan, a.req)}% de lo requerido · hoy siguen abiertas ${a.pend}` : '', a.faltan ? 'lime' : '')}
+          ${dkKpi(a.despues, 'Ingresaron después', 'cubiertas en meses siguientes')}
+        </div>
+      </div>
+      <div class="dk-card">
+        <h3>Por área <small>al ${fmtDate(a.corte)}</small></h3>
+        <ul class="dk-bars">${a.porArea.map(([ar, g]) => html`<li>
+          <span class="dk-bars-lbl">${ar}</span>${barras(g)}
+          <span class="dk-bars-val"><b>${g.ok}</b>/${g.req} · ${pct(g.ok, g.req)}%</span></li>`)}</ul>
+        ${a.meses.length > 1 ? html`<h3 class="dk-sub">Por mes objetivo</h3>
+        <ul class="dk-bars">${a.porMes.filter(([, g]) => g.req).map(([m, g]) => html`<li>
+          <span class="dk-bars-lbl">${fmtMonth(m, { short: true })}</span>${barras(g)}
+          <span class="dk-bars-val"><b>${g.ok}</b>/${g.req} · ${pct(g.ok, g.req)}%</span></li>`)}</ul>` : ''}
+        <p class="dk-legend"><i class="dk-l-cub"></i>ingresaron en el período <i class="dk-l-proc"></i>ingresaron después <i class="dk-l-sin"></i>pendiente</p>
       </div>
     </div></section>`;
 }
@@ -213,7 +260,10 @@ function dkKpi(v, label, sub, tone = '') {
 export function render(el, params) {
   if (state.loading && !state.positions.length) { el.innerHTML = String(mascot('loading')); return; }
   const area = params?.get('area') || '';
-  const d = { area, ...datos(area) };
+  const disponibles = mesesDelMapa();
+  const pedidos = (params?.get('meses') || '').split(',').filter((m) => disponibles.includes(m));
+  const meses = pedidos.length ? pedidos.sort() : periodoPorDefecto();
+  const d = { area, meses, ...datos(area) };
   const slides = [slidePortada(d), ...SECCIONES.filter((s) => !s.staff || state.isStaff).map((s) => s.slide(d)), slideCierre()];
   const ids = ['portada', ...SECCIONES.filter((s) => !s.staff || state.isStaff).map((s) => s.id), 'cierre'];
   idx = Math.min(idx, slides.length - 1);
@@ -223,6 +273,10 @@ export function render(el, params) {
     <div class="dk-tools">
       <a class="dk-btn" href="#/posiciones">← Salir</a>
       <label class="dk-sel"><span>Área</span><select id="dk-area"><option value="">Todas</option>${areas.map((a) => html`<option value="${a}" ${raw(a === area ? 'selected' : '')}>${a}</option>`)}</select></label>
+      <details class="dk-sel dk-meses"><summary><span>Período</span> ${meses.length ? nombrePeriodo(meses) : '—'}</summary>
+        <div class="dk-meses-box">${disponibles.map((m) => html`<label><input type="checkbox" value="${m}" ${raw(meses.includes(m) ? 'checked' : '')}> ${fmtMonth(m)}</label>`)}
+          <div class="dk-meses-pre"><button type="button" class="dk-btn" data-dk-meses="hasta">Hasta el mes pasado</button><button type="button" class="dk-btn" data-dk-meses="aplicar">Aplicar</button></div></div>
+      </details>
       <span class="dk-spacer"></span>
       <button class="dk-btn" type="button" data-dk="prev" aria-label="Anterior">◀</button>
       <span class="dk-count">${idx + 1} / ${slides.length}</span>
@@ -244,9 +298,25 @@ export function render(el, params) {
   el.querySelector('[data-dk="prev"]').onclick = () => ir(idx - 1);
   el.querySelector('[data-dk="next"]').onclick = () => ir(idx + 1);
   el.querySelector('[data-dk="full"]').onclick = () => { if (!document.fullscreenElement) el.querySelector('.dk-root').requestFullscreen?.(); else document.exitFullscreen?.(); };
-  el.querySelector('#dk-area').onchange = (e) => { idx = 0; location.hash = '#/reunion' + (e.target.value ? '?area=' + encodeURIComponent(e.target.value) : ''); };
+  const irA = (ar, ms) => {
+    const q = new URLSearchParams();
+    if (ar) q.set('area', ar);
+    if (ms?.length) q.set('meses', ms.join(','));
+    location.hash = '#/reunion' + (q.toString() ? '?' + q.toString().replace(/%2C/g, ',') : '');
+  };
+  el.querySelector('#dk-area').onchange = (e) => { idx = 0; irA(e.target.value, pedidos); };
+  el.querySelectorAll('[data-dk-meses]').forEach((b) => {
+    b.onclick = () => {
+      const cur = monthKey(todayISO());
+      const ms = b.dataset.dkMeses === 'hasta' ? disponibles.filter((m) => m < cur)
+        : [...el.querySelectorAll('.dk-meses-box input:checked')].map((i) => i.value);
+      if (!ms.length) return;
+      const pi = ids.indexOf('periodo'); if (pi >= 0) idx = pi;
+      irA(area, ms);
+    };
+  });
   el.querySelectorAll('[data-dk-go]').forEach((b) => { b.onclick = () => ir(ids.indexOf(b.dataset.dkGo)); });
-  stage.onclick = (e) => { if (!e.target.closest('button, a, select')) ir(idx + 1); };
+  stage.onclick = (e) => { if (!e.target.closest('button, a, select, details')) ir(idx + 1); };
   window.onresize = fit;
   if (!keysBound) {
     keysBound = true;

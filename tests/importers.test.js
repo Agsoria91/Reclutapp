@@ -164,3 +164,18 @@ test('nómina: celdas y columnas vacías no viajan en la importación', async ()
   assert.ok(!('categoria' in rows[1]));
   assert.deepEqual(columnasVacias.sort(), ['SECTOR', 'YACIMIENTO']);
 });
+
+test('avance del período: lo cubierto después del corte cuenta como pendiente', async () => {
+  const { avancePeriodo } = await import('../src/lib/kpis.js');
+  const pos = [
+    { id: 1, yacimiento: 'LT2E', fecha_objetivo: '2026-10-01', stage: 'ingresado', fecha_ingreso: '2026-10-20' },
+    { id: 2, yacimiento: 'LT2E', fecha_objetivo: '2026-10-01', stage: 'ingresado', fecha_ingreso: '2026-11-03' },
+    { id: 3, yacimiento: 'FDP', fecha_objetivo: '2026-10-01', stage: 'en_entrevista' },
+    { id: 4, yacimiento: 'FDP', fecha_objetivo: '2026-09-01', stage: 'ingresado', candidate_id: 'c1' },
+    { id: 5, yacimiento: 'FDP', fecha_objetivo: '2026-11-01', stage: 'sin_candidato' },
+  ];
+  const a = avancePeriodo(pos, ['2026-09', '2026-10'], { candidatos: [{ id: 'c1', fecha_ingreso: '2026-09-15' }], today: '2026-11-20' });
+  assert.equal(a.corte, '2026-10-31');
+  assert.equal(a.req, 4); assert.equal(a.ok, 2); assert.equal(a.despues, 1); assert.equal(a.pend, 1);
+  assert.equal(a.faltan, 2); assert.equal(a.avance, 50);
+});
