@@ -471,3 +471,11 @@ fieldset.sensitive { border: 1px dotted var(--st-orange); }
 .sap-aviso summary { cursor: pointer; list-style: none; display: inline-flex; gap: 8px; align-items: center; }
 .sap-aviso summary::-webkit-details-marker { display: none; }
 .sap-aviso ul { margin: 8px 0; padding-left: 18px; }
+
+/* Carga masiva */
+.cm-pasos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.cm-paso { display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; align-items: center; border: 1px dotted var(--rule); padding: 14px; }
+.cm-paso > b { font: 700 28px/1 var(--font-sans); color: var(--accent-text); grid-row: span 2; }
+.cm-paso > .btn, .cm-paso > label.btn { grid-column: 2; justify-self: start; }
+.cm-resumen { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 6px 0 10px; }
+@media (max-width: 760px) { .cm-pasos { grid-template-columns: 1fr; } }

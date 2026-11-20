@@ -122,7 +122,7 @@ export function render(el) {
     <div>
       <h1>Candidatos PP</h1>
     </div>
-    ${staff ? html`<div class="head-actions"><button class="btn" data-act="new">+ Nuevo candidato</button></div>` : ''}
+    ${staff ? html`<div class="head-actions"><button class="btn" data-act="carga-masiva">Carga masiva</button><button class="btn" data-act="new">+ Nuevo candidato</button></div>` : ''}
   </section>
 
   ${staff ? pendientesCard() : ''}
@@ -282,6 +282,7 @@ function bind(el) {
       }
       if (act === 'more') { page++; render(el); return; }
       if (act === 'new') { openCandidate(null); return; }
+      if (act === 'carga-masiva') { import('./cargaMasiva.js').then((m) => m.openCargaMasiva()); return; }
       if (act === 'avisar') { openAvisoDrawer(e.target.closest('[data-cid]').dataset.cid); return; }
       if (act === 'plantillas') { openPlantillas(); return; }
       const tr = e.target.closest('tr[data-id]');
