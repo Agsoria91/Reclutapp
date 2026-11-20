@@ -228,7 +228,6 @@ export function render(el, params) {
       <span class="dk-count">${idx + 1} / ${slides.length}</span>
       <button class="dk-btn" type="button" data-dk="next" aria-label="Siguiente">▶</button>
       <button class="dk-btn" type="button" data-dk="full">Pantalla completa</button>
-      <a class="dk-btn" href="#/presentar${area ? '?area=' + encodeURIComponent(area) : ''}">Mapa imprimible</a>
     </div>
     <div class="dk-viewport"><div class="dk-stage" id="dk-stage">${slides.map((s, i) => html`<div class="dk-frame ${i === idx ? 'is-on' : ''}" data-dk-id="${ids[i]}">${s}</div>`)}</div></div>
   </div>`);
