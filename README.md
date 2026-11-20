@@ -1,11 +1,13 @@
 # Reclutamiento EFiS · Energy Field Services
 
+> **Documento técnico para IT (arquitectura, base de datos, seguridad y cómo migrar): [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md)**
+
 App web que une las tres patas del reclutamiento de la operación EFiS:
 
 | Módulo | Qué es | Quién lo ve |
 |---|---|---|
-| **Posiciones** ("el taco") | Una fila por silla a cubrir: área, sector, persona asignada, estado, fecha objetivo. Incluye **Modo reunión** limpio e imprimible (PDF). | Público (solo lectura) · RRHH edita |
-| **Candidatos PP** | Pipeline de todos los orígenes: KPIs por etapa, avance vs. necesidad, días promedio, origen, motivos de baja, localidades. RRHH ve fichas, CVs y **sienta candidatos en sillas**. | KPIs públicos · fichas solo RRHH |
+| **Posiciones** ("el taco") | Una fila por silla a cubrir: área, sector, persona asignada, estado, fecha objetivo. Incluye **Modo reunión** limpio e imprimible (PDF). | Lectores (solo lectura) · RRHH edita |
+| **Candidatos PP** | Pipeline de todos los orígenes: KPIs por etapa, avance vs. necesidad, días promedio, origen, motivos de baja, localidades. RRHH ve fichas, CVs y **sienta candidatos en sillas**. | KPIs para lectores · fichas solo RRHH |
 | **Nómina** | Registro único de todo el personal EFiS (planilla + ingresos confirmados en la app). | Solo RRHH |
 | **Legajos** | La nómina filtrada a quienes ingresaron por una silla (mismo registro, no una copia). | Solo RRHH |
 
