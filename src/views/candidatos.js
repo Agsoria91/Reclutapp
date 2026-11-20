@@ -14,6 +14,7 @@ import { mascot } from '../components/mascot.js';
 import { openAssignFromCandidate } from './asignar.js';
 import { celebrate } from './posiciones.js';
 import { preingresoFields } from '../components/ingreso.js';
+import { examenFields, bindExamen } from '../components/examen.js';
 
 // Dimensiones de filtro cruzado: tocar una barra filtra por ese valor y todo
 // lo demás se recalcula. Cada gráfico se calcula con TODOS los filtros menos
@@ -345,10 +346,7 @@ export function openCandidate(id, { volver } = {}) {
       ${field('CV recibido', 'cv_recibido', c.cv_recibido, { type: 'date' })}
       ${field('En entrevista', 'en_entrevista', c.en_entrevista, { type: 'date' })}
       ${field('Validación RRLL', 'validacion_rrll', c.validacion_rrll, { type: 'date' })}
-      ${field('EPO', 'epo', c.epo, { type: 'date' })}
-      ${field('Clínica', 'clinica', c.clinica)}
-      ${field('Aptitud recibida', 'aptitud_recibida', c.aptitud_recibida, { type: 'date' })}
-      ${field('Aptitud', 'aptitud', c.aptitud, { options: [['', '—'], 'Apto', 'Apto Con Preexistencia', 'No Apto Temporal', 'No Apto'] })}
+      ${examenFields(c)}
       ${field('Fecha de ingreso', 'fecha_ingreso', c.fecha_ingreso, { type: 'date' })}
       ${state.candidates.some((x) => 'fecha_baja' in x) ? field('Fecha de baja', 'fecha_baja', c.fecha_baja, { type: 'date', hint: 'Se completa sola al cancelar; corregila si la baja fue otro día.' }) : ''}
       <fieldset class="field--wide"><legend>Motivos de baja (si se cancela)</legend>
@@ -412,6 +410,7 @@ export function openCandidate(id, { volver } = {}) {
     else if (volver) volver();
   });
 
+  bindExamen(root);
   root.addEventListener('click', (e) => {
     const b = e.target.closest('[data-aviso-open]'); if (b) openAvisoDrawer(b.dataset.avisoOpen);
     if (volver && e.target.closest('[data-act="volver"]')) { closeDrawer(); volver(); }
