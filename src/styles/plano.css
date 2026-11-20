@@ -479,3 +479,20 @@ fieldset.sensitive { border: 1px dotted var(--st-orange); }
 .cm-paso > .btn, .cm-paso > label.btn { grid-column: 2; justify-self: start; }
 .cm-resumen { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 6px 0 10px; }
 @media (max-width: 760px) { .cm-pasos { grid-template-columns: 1fr; } }
+
+/* Nómina · Dotación y faltantes */
+.cob-dot-grid { display: grid; grid-template-columns: minmax(260px, 1fr) 2fr; gap: 24px; align-items: start; }
+@media (max-width: 900px) { .cob-dot-grid { grid-template-columns: 1fr; } }
+.cob-dot-kpis { display: grid; gap: 12px; }
+.cob-dot-pct { display: flex; align-items: baseline; gap: 10px; }
+.cob-dot-pct b { font-size: 48px; line-height: 1; color: var(--accent-text); letter-spacing: -.02em; }
+.cob-dot-pct span { color: var(--muted, #6b7a72); }
+.cob-dot-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--rule); }
+.cob-dot-bar .is-dot { background: var(--accent, #00873E); }
+.cob-dot-bar .is-falt { background: #E8A33D; }
+.cob-dot-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; }
+.cob-dot-nums dt { font-size: 12px; color: var(--muted, #6b7a72); }
+.cob-dot-nums dd { margin: 0; font-size: 24px; font-weight: 700; }
+.is-falt-txt { color: #B86E00; }
+.cob-mini { display: inline-block; width: 60px; height: 6px; border-radius: 3px; background: var(--rule); vertical-align: middle; overflow: hidden; }
+.cob-mini span { display: block; height: 100%; background: var(--accent, #00873E); }
