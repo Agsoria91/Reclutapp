@@ -149,3 +149,42 @@ export function interviewStats(rows, stageMap) {
     conversion: pctOf(ingresados, entrevistados), // de cada 100 entrevistas, cuántos ingresan
   };
 }
+
+// ---------------------------------------------------------------------------
+// Avance del período: lo que hacía falta según el mes objetivo de las sillas
+// vs. lo que ingresó hasta el cierre del último mes elegido. Una silla de
+// octubre cubierta en noviembre cuenta como pendiente al corte de octubre.
+// ---------------------------------------------------------------------------
+const finDeMes = (m) => { const [y, mm] = m.split('-').map(Number); return new Date(Date.UTC(y, mm, 0)).toISOString().slice(0, 10); };
+
+export function avancePeriodo(positions, meses, { candidatos = [], today } = {}) {
+  const sel = [...meses].filter(Boolean).sort();
+  if (!sel.length) return null;
+  const fin = finDeMes(sel[sel.length - 1]);
+  const corte = today && today < fin ? today : fin;
+  const candPorId = new Map(candidatos.map((c) => [c.id, c]));
+  const fechaIngreso = (p) => p.fecha_ingreso || candPorId.get(p.candidate_id)?.fecha_ingreso || null;
+  const set = new Set(sel);
+  const req = positions.filter((p) => p.stage !== 'cancelado' && set.has(monthKey(p.fecha_objetivo)));
+  const clasif = (p) => {
+    if (!isCovered(p)) return 'pend';
+    const f = fechaIngreso(p);
+    if (!f) return 'ok_sf';
+    return f <= corte ? 'ok' : 'despues';
+  };
+  const vacio = () => ({ req: 0, ok: 0, despues: 0, pend: 0, sinFecha: 0 });
+  const sumar = (g, c) => { g.req++; if (c === 'ok' || c === 'ok_sf') g.ok++; if (c === 'ok_sf') g.sinFecha++; if (c === 'despues') g.despues++; if (c === 'pend') g.pend++; };
+  const tot = vacio(); const porMes = new Map(); const porArea = new Map();
+  for (const p of req) {
+    const c = clasif(p);
+    sumar(tot, c);
+    const m = monthKey(p.fecha_objetivo); if (!porMes.has(m)) porMes.set(m, vacio()); sumar(porMes.get(m), c);
+    const a = p.yacimiento || 'Sin área'; if (!porArea.has(a)) porArea.set(a, vacio()); sumar(porArea.get(a), c);
+  }
+  const avance = tot.req ? Math.round((tot.ok / tot.req) * 100) : 0;
+  return {
+    meses: sel, corte, ...tot, faltan: tot.req - tot.ok, avance,
+    porMes: sel.map((m) => [m, porMes.get(m) || vacio()]),
+    porArea: [...porArea.entries()].sort((a, b) => b[1].req - a[1].req),
+  };
+}

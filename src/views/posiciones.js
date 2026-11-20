@@ -107,7 +107,7 @@ export function render(el) {
     </div>
     <div class="head-actions">
       ${staff ? html`<button class="btn" data-act="new">+ Nueva silla</button>` : ''}
-      <a class="btn btn--primary" href="#/reunion${posFilters.area.size === 1 ? '?area=' + encodeURIComponent([...posFilters.area][0]) : ''}">Modo reunión</a>
+      <a class="btn btn--primary" href="#/reunion${linkReunion()}">Modo reunión</a>
     </div>
   </section>
 
@@ -263,6 +263,15 @@ function bind(el) {
     const n = $('#pos-search', el); n.focus(); n.setSelectionRange(pos, pos);
   });
   $('#pos-pend', el)?.addEventListener('change', (e) => { soloPendientes = e.target.checked; persist(); render(el); });
+}
+
+// El modo reunión abre con el área y los meses objetivo filtrados acá.
+function linkReunion() {
+  const q = [];
+  if (posFilters.area.size === 1) q.push('area=' + encodeURIComponent([...posFilters.area][0]));
+  const ms = [...posFilters.mes].filter((m) => m !== 'sin-fecha').sort();
+  if (ms.length) q.push('meses=' + ms.join(','));
+  return q.length ? '?' + q.join('&') : '';
 }
 
 function persist() { saveLocal(KEY, { ...serializeFilters(posFilters), soloPendientes }); }

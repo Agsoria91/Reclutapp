@@ -118,3 +118,16 @@
 .dk-root h1, .dk-root h3 { text-transform: none; letter-spacing: -.02em; }
 .dk-cover h1 { letter-spacing: -.035em; }
 .dk-head-title { text-transform: none; letter-spacing: .01em; }
+
+/* Selector de período (meses objetivo) */
+.dk-meses { position: relative; }
+.dk-meses > summary { list-style: none; cursor: pointer; }
+.dk-meses > summary::-webkit-details-marker { display: none; }
+.dk-meses-box { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; min-width: 240px; max-height: 60vh; overflow: auto;
+  background: #fff; color: #1d2b25; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.3); padding: 10px 12px; display: grid; gap: 6px; }
+.dk-meses-box label { display: flex; gap: 8px; align-items: center; font-size: 14px; text-transform: capitalize; }
+.dk-meses-pre { display: flex; gap: 6px; margin-top: 6px; }
+.dk-meses-pre .dk-btn { color: #1d2b25; border-color: #c9d3ce; }
+.dk-sub { margin-top: 18px; }
+.dk-meses > summary { background: #0F2419; color: #fff; border: 1px solid #2E4A3B; border-radius: 6px; padding: 5px 10px; font: 13px Arial, sans-serif; text-transform: capitalize; }
+.dk-meses > summary span { color: #9fb5a9; margin-right: 4px; text-transform: none; }
