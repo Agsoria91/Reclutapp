@@ -3,12 +3,13 @@
 import { html, raw, $ } from '../lib/html.js';
 import { state, loadAll } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
-import { fmtDate, fmtInt, norm, todayISO, daysBetween } from '../lib/format.js';
+import { fmtDate, fmtInt, norm, todayISO, daysBetween, fmtMonth } from '../lib/format.js';
 import { countBy } from '../lib/kpis.js';
 import { decodeBytes } from '../lib/csv.js';
 import { parseNominaCSV } from '../lib/importers.js';
 import {
   filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, formData, field, confirmDialog, animateIn, pickField,
+  multiSelectFilter, loadLocal, saveLocal,
 
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
@@ -17,6 +18,27 @@ const DIMS = ['yacimiento', 'sector', 'encuadre', 'estado', 'pendiente'];
 const filters = Object.fromEntries(DIMS.map((d) => [d, new Set(d === 'estado' ? ['activo'] : [])]));
 let search = '';
 let page = 1;
+// Dotación por mes: quiénes estaban en la empresa en los meses elegidos
+let meses = new Set(loadLocal('reclutapp.nom.meses', []));
+let openMulti = null;
+const finDeMes = (m) => { const [y, mm] = m.split('-').map(Number); return new Date(Date.UTC(y, mm, 0)).toISOString().slice(0, 10); };
+// estaba en el mes m: ingresó antes de que termine y no se fue antes de que empiece
+const enMes = (n, m) => !!n.fecha_ingreso && n.fecha_ingreso <= finDeMes(m)
+  && (n.fecha_baja ? n.fecha_baja >= m + '-01' : n.estado !== 'baja');
+function mesesDisponibles() {
+  const ini = state.nomina.map((n) => n.fecha_ingreso).filter(Boolean).sort()[0];
+  if (!ini) return [];
+  const out = []; const hoy = todayISO().slice(0, 7);
+  let [y, m] = ini.slice(0, 7).split('-').map(Number);
+  while (`${y}-${String(m).padStart(2, '0')}` <= hoy) { out.push(`${y}-${String(m).padStart(2, '0')}`); m++; if (m > 12) { m = 1; y++; } }
+  return out.reverse();
+}
+function presetsMeses(disp) {
+  const hoy = todayISO().slice(0, 7); const y = Number(hoy.slice(0, 4));
+  return [['Este mes', [hoy]], ['Últimos 3 meses', disp.slice(0, 3)], ['Últimos 6 meses', disp.slice(0, 6)],
+    [`Año ${y}`, disp.filter((m) => m.startsWith(String(y)))], [`Año ${y - 1}`, disp.filter((m) => m.startsWith(String(y - 1)))]]
+    .filter(([, v]) => v.length);
+}
 
 const PAGE = 80;
 
@@ -51,8 +73,10 @@ const getters = {
 const edad = (n) => (n.fecha_nacimiento ? Math.floor(daysBetween(n.fecha_nacimiento, todayISO()) / 365.25) : null);
 
 
-function filterRows(except) {
-  return state.nomina.filter((n) => DIMS.every((d) => d === except || !filters[d].size || [].concat(getters[d](n)).some((v) => filters[d].has(v))));
+function filterRows(except, { sinMeses = false } = {}) {
+  const porMes = meses.size && !sinMeses;
+  return state.nomina.filter((n) => DIMS.every((d) => d === except || (porMes && d === 'estado') || !filters[d].size || [].concat(getters[d](n)).some((v) => filters[d].has(v)))
+    && (!porMes || [...meses].some((m) => enMes(n, m))));
 }
 const opts = (dim) => {
   const o = countBy(filterRows(dim), getters[dim]).sort((a, b) => String(a[0]).localeCompare(String(b[0]), 'es'));
@@ -90,16 +114,20 @@ export function render(el) {
     ${filterGroup({ dim: 'sector', label: 'Sector', options: opts('sector'), selected: filters.sector, allLabel: 'Todos' })}
     ${filterGroup({ dim: 'encuadre', label: 'Encuadre', options: opts('encuadre'), selected: filters.encuadre, allLabel: 'Todos' })}
     ${filterGroup({ dim: 'pendiente', label: 'Pendiente', options: opts('pendiente'), selected: filters.pendiente, allLabel: 'Todos' })}
-    ${filterGroup({ dim: 'estado', label: 'Estado', options: opts('estado'), selected: filters.estado, allLabel: 'Todos' })}
+    ${meses.size ? '' : filterGroup({ dim: 'estado', label: 'Estado', options: opts('estado'), selected: filters.estado, allLabel: 'Todos' })}
+    <div class="filters-row">
+      ${multiSelectFilter({ dim: 'mes', label: 'Dotación en el mes', options: mesesDisponibles().map((m) => [m, filterRowsSinEstado().filter((n) => enMes(n, m)).length]), selected: meses, allLabel: 'Hoy', presets: presetsMeses(mesesDisponibles()), open: openMulti === 'mes', labelOf: (m) => fmtMonth(m) })}
+    </div>
   </section>
   <section class="kpis kpis--6">
-    ${kpi('Personas', base.length, { tone: 'blue', big: true, id: 'n-tot' })}
+    ${kpi(meses.size ? (meses.size === 1 ? `Dotación ${fmtMonth([...meses][0])}` : 'Personas en el período') : 'Personas', base.length, { tone: 'blue', big: true, id: 'n-tot' })}
     ${kpi('Ingresos últimos 90 días', recientes, { tone: 'green', id: 'n-rec' })}
     ${kpi('DDJJ pendiente', base.filter((n) => !okVal(n.ddjj)).length, { tone: 'orange', id: 'n-ddjj' })}
     ${kpi('Kit pendiente', base.filter((n) => !okVal(n.regalo_kit)).length, { tone: 'orange', id: 'n-kit' })}
     ${kpi('Plazo fijo vence ≤ 60 días', pfProx, { tone: pfProx ? 'red' : '', id: 'n-pf' })}
     ${kpi('Edad promedio', Math.round(base.map(edad).filter(Boolean).reduce((a, b, _, arr) => a + b / arr.length, 0)) || 0, { id: 'n-edad' })}
   </section>
+  ${meses.size ? dotacionPorMes() : ''}
   <section class="grid-2">
     <article class="card"><h2 class="card-title">Por yacimiento</h2>${bars(countBy(filterRows('yacimiento'), getters.yacimiento), { dim: 'yacimiento', selected: filters.yacimiento, chart: 'n-yac', limit: 12 })}</article>
     <article class="card"><h2 class="card-title">Por sector</h2>${bars(countBy(filterRows('sector'), getters.sector), { color: 'green', dim: 'sector', selected: filters.sector, chart: 'n-sec', limit: 12 })}</article>
@@ -133,6 +161,10 @@ export function render(el) {
   if (!el._bound) {
     el._bound = true;
     el.addEventListener('click', (e) => {
+      const pr = e.target.closest('[data-multi-preset]');
+      if (pr) { meses = new Set(pr.dataset.values ? JSON.parse(pr.dataset.values) : []); saveLocal('reclutapp.nom.meses', [...meses]); openMulti = 'mes'; page = 1; render(el); return; }
+      const sm = e.target.closest('.fmulti-box > summary');
+      if (sm) { e.preventDefault(); const box = sm.parentElement; box.open = !box.open; openMulti = box.open ? 'mes' : null; return; }
       const f = e.target.closest('[data-filter]');
       if (f) { toggleFilter(filters, f.dataset.filter, f.dataset.value); page = 1; render(el); return; }
       const act = e.target.closest('[data-act]')?.dataset.act;
@@ -144,7 +176,12 @@ export function render(el) {
     });
     el.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('tr[data-id]')) openPersona(e.target.dataset.id); });
     el.addEventListener('change', (e) => {
+      const mo = e.target.closest('[data-multi-opt]');
+      if (mo) { if (mo.checked) meses.add(mo.value); else meses.delete(mo.value); saveLocal('reclutapp.nom.meses', [...meses]); openMulti = 'mes'; page = 1; render(el); return; }
       if (e.target.id === 'nom-file' && e.target.files[0]) reimportar(e.target.files[0]);
+    });
+    document.addEventListener('click', (e) => {
+      if (openMulti && el.isConnected && !e.target.closest('.fmulti-box')) { openMulti = null; el.querySelectorAll('.fmulti-box[open]').forEach((d) => { d.open = false; }); }
     });
   }
   el._rows = rows;
@@ -240,3 +277,18 @@ function exportCSV(rows) {
 }
 
 export { raw, fmtInt };
+
+// Tabla de dotación para los meses elegidos (con los demás filtros aplicados)
+function dotacionPorMes() {
+  const base = filterRowsSinEstado();
+  const lista = [...meses].sort();
+  return html`<section class="card"><h2 class="card-title">Dotación por mes</h2><div class="table-wrap"><table class="tbl tbl--compact">
+    <thead><tr><th>Mes</th><th class="num">Dotación</th><th class="num">Ingresos del mes</th><th class="num">Bajas del mes</th></tr></thead>
+    <tbody>${lista.map((m) => html`<tr><td><b>${fmtMonth(m)}</b></td>
+      <td class="num"><b>${base.filter((n) => enMes(n, m)).length}</b></td>
+      <td class="num">${base.filter((n) => n.fecha_ingreso && n.fecha_ingreso.startsWith(m)).length || '·'}</td>
+      <td class="num">${base.filter((n) => n.fecha_baja && n.fecha_baja.startsWith(m)).length || '·'}</td></tr>`)}</tbody>
+  </table></div></section>`;
+}
+// para contar la dotación de cada mes: todos los filtros menos Estado y meses
+const filterRowsSinEstado = () => state.nomina.filter((n) => DIMS.every((d) => d === 'estado' || !filters[d].size || [].concat(getters[d](n)).some((v) => filters[d].has(v))));
