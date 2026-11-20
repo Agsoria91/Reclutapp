@@ -364,7 +364,7 @@ export function openCandidate(id, { volver } = {}) {
 
   const form = root.querySelector('#cand-form');
   // Fechas que mandan la etapa: se muestra al instante lo que la base va a aplicar.
-  const HITO_CAMPOS = ['en_entrevista', 'validacion_rrll', 'epo', 'aptitud_recibida', 'aptitud', 'fecha_ingreso'];
+  const HITO_CAMPOS = ['en_entrevista', 'validacion_rrll', 'epo', 'aptitud_recibida', 'aptitud', 'fecha_ingreso', 'interconsulta', 'interconsulta_cierre'];
   const hint = document.createElement('p');
   hint.className = 'note small field--wide';
   hint.hidden = true;
@@ -375,8 +375,18 @@ export function openCandidate(id, { volver } = {}) {
     if (sel.value === 'cancelado') return;
     const v = (n) => form.elements[n]?.value || '';
     const hoy = todayISO();
+    // Apto solo con aptitud "Apto…" elegida y sin interconsulta abierta
+    const interAbierta = v('interconsulta') && !v('interconsulta_cierre');
+    const aptoMedico = v('aptitud_recibida') && /^\s*apto/i.test(v('aptitud')) && !interAbierta;
+    const noAptoMedico = /^\s*no apto/i.test(v('aptitud')) || interAbierta;
+    if (noAptoMedico && sel.value === 'apto') {
+      sel.value = 'examen_medico';
+      hint.textContent = interAbierta ? 'Con la interconsulta abierta queda en "Examen Médico".' : 'Con aptitud "No apto" queda en "Examen Médico" (no se cancela).';
+      hint.hidden = false;
+      return;
+    }
     const sug = v('fecha_ingreso') ? (v('fecha_ingreso') <= hoy ? 'ingresado' : 'proximo_ingreso')
-      : v('aptitud_recibida') && !/^no apto/i.test(v('aptitud')) ? 'apto'
+      : aptoMedico ? 'apto'
       : v('epo') ? 'examen_medico'
       : v('validacion_rrll') ? 'validacion_rrll'
       : v('en_entrevista') ? 'entrevista' : null;

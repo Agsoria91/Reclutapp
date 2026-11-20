@@ -7,7 +7,7 @@ import { filterGroup, toggleFilter, kpi, bars, saveLocal, loadLocal, serializeFi
 import { mascot } from '../components/mascot.js';
 import { estadoMedico, esApto, clinicaCanon, diasExamen, hitosExamen, ESTADOS_MEDICOS } from '../components/examen.js';
 
-const DIMS = ['clinica', 'procedencia', 'area', 'estado', 'mes'];
+const DIMS = ['clinica', 'procedencia', 'area', 'sector', 'estado', 'mes'];
 const KEY = 'reclutapp.ex.filters';
 const filters = restoreFilters(loadLocal(KEY, {}), DIMS);
 let grupo = loadLocal('reclutapp.ex.grupo', 'todos');
@@ -17,6 +17,8 @@ const getters = {
   clinica: (c) => clinicaCanon(c.clinica) || 'Sin dato',
   procedencia: (c) => canon(c.procedencia),
   area: (c) => c.area || 'Sin dato',
+  // sector de la silla (o el servicio de la ficha si no tiene silla)
+  sector: (c) => { const v = canon(c._silla?.sector || c.servicio); return v === 'Planta' ? 'Plantas' : v; },
   estado: (c) => estadoMedico(c).label,
   mes: (c) => c.epo.slice(0, 7),
 };
@@ -70,6 +72,7 @@ export function render(el) {
     ${filterGroup({ dim: 'clinica', label: 'Clínica', options: contar(filtrar('clinica'), 'clinica'), selected: filters.clinica })}
     ${filterGroup({ dim: 'procedencia', label: 'Procedencia', options: contar(filtrar('procedencia'), 'procedencia'), selected: filters.procedencia })}
     ${filterGroup({ dim: 'area', label: 'Área', options: contar(filtrar('area'), 'area'), selected: filters.area })}
+    ${filterGroup({ dim: 'sector', label: 'Sector', options: contar(filtrar('sector'), 'sector'), selected: filters.sector, allLabel: 'Todos' })}
     ${chips.length || grupo !== 'todos' ? html`<div class="active-filters"><span class="muted small">Filtrando por:</span>
       ${grupo !== 'todos' ? html`<button type="button" class="chip chip--on" data-ex-grupo>${GRUPOS[grupo][0]} ✕</button>` : ''}
       ${chips.map(([d, v]) => html`<button type="button" class="chip chip--on" data-filter="${d}" data-value="${v}">${d === 'mes' ? fmtMonth(v) : v} ✕</button>`)}
