@@ -6,6 +6,7 @@ import { html, raw } from '../lib/html.js';
 import { state } from '../lib/store.js';
 import { field, pickField } from './ui.js';
 import { fmtDate, todayISO, daysBetween } from '../lib/format.js';
+import { buscarLocalidad } from '../data/localidades.js';
 
 export const CLINICAS = ['CMIT', 'SYNERGYS', 'SANTA CRUZ', 'DIENTS'];
 const n = (v) => String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -79,7 +80,8 @@ export function timelineExamen(c) {
 
 // Campos de la ficha del candidato
 export function examenFields(c) {
-  const clinicas = [CLINICAS, state.candidates.map((x) => clinicaCanon(x.clinica))];
+  // clínicas: las 4 con convenio + otras ya cargadas que no sean nombres de localidades
+  const clinicas = [CLINICAS, state.candidates.map((x) => clinicaCanon(x.clinica)).filter((v) => v && !buscarLocalidad(v))];
   const sedes = state.candidates.map((x) => x.clinica_localidad);
   return html`<fieldset class="field--wide ex-box"><legend>Examen médico preocupacional ${pillMedico(c)}</legend>
     ${c.id ? timelineExamen(c) : ''}

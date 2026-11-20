@@ -454,3 +454,16 @@ fieldset.sensitive { border: 1px dotted var(--st-orange); }
 .ex-inter-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .ex-rec { display: grid; gap: 1px; min-width: 200px; }
 .ex-rec b { font-family: var(--font-mono); font-weight: 500; font-size: 11px; margin-right: 4px; }
+
+/* Panel de silla / candidato más amplio: ocupa casi toda la pantalla en
+   escritorio y los campos se reparten en 3 columnas */
+.drawer--wide { width: min(1180px, 94vw); }
+@media (min-width: 1100px) {
+  .drawer--wide .form-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .drawer--wide .form-grid label.field--wide { grid-column: span 2; }
+  .drawer--wide .form-grid fieldset.field--wide, .drawer--wide .form-grid .form-actions,
+  .drawer--wide .form-grid > .note, .drawer--wide .form-grid > p { grid-column: 1 / -1; }
+  .drawer--wide .form-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .drawer--wide .drawer-body { padding: 24px 32px 36px; }
+}
+@media (max-width: 640px) { .drawer--wide { width: 100vw; } }
