@@ -107,7 +107,8 @@ export function render(el) {
     </div>
     <div class="head-actions">
       ${staff ? html`<button class="btn" data-act="new">+ Nueva silla</button>` : ''}
-      <a class="btn btn--primary" href="${presentHash()}">Modo reunión</a>
+      <a class="btn" href="${presentHash()}">Mapa imprimible</a>
+      <a class="btn btn--primary" href="#/reunion${posFilters.area.size === 1 ? '?area=' + encodeURIComponent([...posFilters.area][0]) : ''}">Modo reunión</a>
     </div>
   </section>
 

@@ -20,6 +20,7 @@ import * as nomina from './views/nomina.js';
 import * as historial from './views/historial.js';
 import * as dashboardpj from './views/dashboardpj.js';
 import * as examenes from './views/examenes.js';
+import * as reunion from './views/reunion.js';
 import { descargarRespaldo, diasDesdeRespaldo } from './lib/respaldo.js';
 import { descargarExcel } from './lib/reporteExcel.js';
 
@@ -35,6 +36,7 @@ const ROUTES = {
   importar: { view: importar, label: 'Importar', staff: true },
   usuarios: { view: usuarios, label: 'Usuarios', staff: true },
   presentar: { view: presentar, bare: true },
+  reunion: { view: reunion, bare: true },
   historial: { view: historial, bare: true, staff: true },
   login: { view: login },
 };
@@ -114,7 +116,7 @@ function route() {
   app.innerHTML = String(shell(name));
   const container = $('#view');
   current = { name, container, params };
-  document.title = `${r.label || ({ presentar: 'Mapa de posiciones', historial: 'Historial de silla' }[name] || 'Ingreso')} · Reclutamiento EFiS`;
+  document.title = `${r.label || ({ presentar: 'Mapa de posiciones', historial: 'Historial de silla', reunion: 'Modo reunión' }[name] || 'Ingreso')} · Reclutamiento EFiS`;
   draw();
   $('#btn-theme')?.addEventListener('click', toggleTheme);
   $('#btn-refresh')?.addEventListener('click', () => loadAll());
