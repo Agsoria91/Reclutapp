@@ -496,3 +496,20 @@ fieldset.sensitive { border: 1px dotted var(--st-orange); }
 .is-falt-txt { color: #B86E00; }
 .cob-mini { display: inline-block; width: 60px; height: 6px; border-radius: 3px; background: var(--rule); vertical-align: middle; overflow: hidden; }
 .cob-mini span { display: block; height: 100%; background: var(--accent, #00873E); }
+
+/* Tarjetas desplegables */
+.fold-title { cursor: pointer; user-select: none; display: flex; align-items: baseline; gap: 8px; }
+.fold-title::after { content: ''; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-2px); transition: transform .15s; margin-left: 4px; opacity: .7; flex: none; align-self: center; }
+.card.is-folded .fold-title::after { transform: rotate(-45deg); }
+.fold-title:hover { color: var(--accent-text); }
+.fold-title:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+.card.is-folded > :not(.fold-head) { display: none !important; }
+.card.is-folded { padding-bottom: 14px; }
+.card.is-folded .fold-head { margin-bottom: 0; }
+.card.is-folded .fold-head > :not(.fold-title):not(:has(.fold-title)) { display: none; }
+@media print { .card.is-folded > :not(.fold-head) { display: revert !important; } }
+
+/* Tablas: encabezado de columnas numéricas alineado con el contenido */
+.tbl th.num { text-align: right; }
+.cob-mini + b { display: inline-block; min-width: 3.2em; text-align: right; }

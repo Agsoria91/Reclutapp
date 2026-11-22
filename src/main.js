@@ -23,6 +23,7 @@ import * as examenes from './views/examenes.js';
 import * as reunion from './views/reunion.js';
 import { descargarRespaldo, diasDesdeRespaldo } from './lib/respaldo.js';
 import { descargarExcel } from './lib/reporteExcel.js';
+import { initFolds } from './components/folds.js';
 
 const ROUTES = {
   posiciones: { view: posiciones, label: 'Posiciones' },
@@ -71,6 +72,7 @@ const ICON = {
 
 const app = $('#app');
 let current = { name: null, container: null };
+initFolds(app, () => current.name);
 
 function shell(name) {
   const r = ROUTES[name];
