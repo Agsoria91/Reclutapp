@@ -5,28 +5,51 @@
    rótulos en mayúscula espaciada y numeración 01, 02… en la navegación y los
    bloques. Solo se aplica con <html data-estilo="tinta">; no toca el marcado.
    ========================================================================== */
+/* claro: papel cálido, tinta y verde EFiS 348 (el lima no tiene contraste sobre fondo claro) */
 :root[data-estilo="tinta"] {
-  --bg: #0B0C0B;
-  --bg-deep: #060706;
-  --surface: #121413;
-  --surface-2: #171A18;
-  --field: #121413;
-  --line: #262A28;
-  --rule: #262A28;
-  --rule-strong: #3A403C;
-  --rule-solid: #333835;
-  --text: #ECEBE6;
-  --text-2: #8E8D87;
-  --accent: #78B450;
-  --accent-text: #9CCB74;
-  --accent-ink: #0B0C0B;
-  --focus: #9CCB74;
+  --bg: #F2F1EC;
+  --bg-deep: #0B0C0B;
+  --surface: #FAF9F6;
+  --surface-2: #E8E7E1;
+  --field: #FAF9F6;
+  --line: #DAD8D0;
+  --rule: #DAD8D0;
+  --rule-strong: #B4B1A7;
+  --rule-solid: #C6C3B9;
+  --text: #0E100F;
+  --text-2: #64625C;
+  --accent: #008750;
+  --accent-text: #00663C;
+  --accent-ink: #FFFFFF;
+  --focus: #008750;
+  --banner-bg: #F3E7CC; --banner-tx: #5A4313; --banner-line: #E2CFA4;
   --notch: 16px;
   --font-sans: "Archivo Variable", Arial, sans-serif;
+  --logo-mono: none; --logo-color: block;
+  color-scheme: light;
+}
+/* oscuro: tinta casi negra, marfil y lima EFiS 369 */
+:root[data-estilo="tinta"][data-theme="dark"] {
+  --bg: #0B0C0B; --bg-deep: #060706; --surface: #121413; --surface-2: #171A18; --field: #121413;
+  --line: #262A28; --rule: #262A28; --rule-strong: #3A403C; --rule-solid: #333835;
+  --text: #ECEBE6; --text-2: #8E8D87; --accent: #78B450; --accent-text: #9CCB74; --accent-ink: #0B0C0B; --focus: #9CCB74;
+  --banner-bg: #1A1810; --banner-tx: #E7C98B; --banner-line: #3A3422;
   --st-neutral: #9AA7B3; --st-sky: #78BEE6; --st-blue: #4FA8E0; --st-navy: #7FA6D6; --st-plum: #D07BC4;
   --st-violet: #C58BCB; --st-orange: #FA9E32; --st-yellow: #FFCD05; --st-lime: #9CCB74; --st-green: #3DBE7E; --st-red: #F07D62;
   --logo-mono: block; --logo-color: none;
   color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-estilo="tinta"]:not([data-theme="light"]) {
+    --bg: #0B0C0B; --bg-deep: #060706; --surface: #121413; --surface-2: #171A18; --field: #121413;
+    --line: #262A28; --rule: #262A28; --rule-strong: #3A403C; --rule-solid: #333835;
+    --text: #ECEBE6; --text-2: #8E8D87; --accent: #78B450; --accent-text: #9CCB74; --accent-ink: #0B0C0B; --focus: #9CCB74;
+    --banner-bg: #1A1810; --banner-tx: #E7C98B; --banner-line: #3A3422;
+    --st-neutral: #9AA7B3; --st-sky: #78BEE6; --st-blue: #4FA8E0; --st-navy: #7FA6D6; --st-plum: #D07BC4;
+    --st-violet: #C58BCB; --st-orange: #FA9E32; --st-yellow: #FFCD05; --st-lime: #9CCB74; --st-green: #3DBE7E; --st-red: #F07D62;
+    --logo-mono: block; --logo-color: none;
+    color-scheme: dark;
+  }
 }
 [data-estilo="tinta"] body { background: var(--bg); color: var(--text); font-family: var(--font-sans); letter-spacing: .005em; }
 [data-estilo="tinta"] .rotulo,
@@ -52,7 +75,7 @@
 [data-estilo="tinta"] .nav a.is-active::before { color: var(--accent-text); opacity: 1; }
 [data-estilo="tinta"] .nav a.is-active::after { left: 12px; right: 12px; bottom: 0; height: 1px; background: var(--accent); }
 [data-estilo="tinta"] .icon-btn { border-color: var(--rule-solid); border-radius: 0; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%); }
-[data-estilo="tinta"] .backup-banner { background: #1A1810; color: #E7C98B; border-bottom: 1px solid #3A3422; font-family: var(--font-sans); letter-spacing: .04em; }
+[data-estilo="tinta"] .backup-banner { background: var(--banner-bg); color: var(--banner-tx); border-bottom: 1px solid var(--banner-line); font-family: var(--font-sans); letter-spacing: .04em; }
 
 /* título de página grande, con rótulo de sección arriba */
 [data-estilo="tinta"] .page-head { padding-top: clamp(40px, 6vw, 88px); }
