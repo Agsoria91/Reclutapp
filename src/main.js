@@ -9,6 +9,7 @@ import { state, subscribe, refreshAuth, loadAll, set } from './lib/store.js';
 import { loadLocal, saveLocal, closeDrawer, toast, animateIn } from './components/ui.js';
 import { mascot } from './components/mascot.js';
 import * as posiciones from './views/posiciones.js';
+import * as mapa from './views/mapa.js';
 import * as candidatos from './views/candidatos.js';
 import * as legajos from './views/legajos.js';
 import * as presentar from './views/presentar.js';
@@ -29,6 +30,7 @@ import { icono } from './components/iconos.js';
 import { initModerno } from './components/moderno.js';
 
 const ROUTES = {
+  mapa: { view: mapa, label: 'Mapa', full: true },
   posiciones: { view: posiciones, label: 'Posiciones' },
   candidatos: { view: candidatos, label: 'Candidatos' },
   entrevistas: { view: entrevistas, label: 'Entrevistas' },
@@ -65,7 +67,7 @@ function toggleTheme() {
 function parseHash() {
   const h = location.hash.replace(/^#\/?/, '');
   const [path, qs] = h.split('?');
-  return { name: ROUTES[path] ? path : 'posiciones', params: new URLSearchParams(qs || '') };
+  return { name: ROUTES[path] ? path : 'mapa', params: new URLSearchParams(qs || '') };
 }
 
 // Íconos de trazo (no emojis): descarga, actualizar, tema.
@@ -77,7 +79,7 @@ const ICON = {
 
 const app = $('#app');
 // Iniciales de cada sección (navegación lateral del estilo IRIS)
-const INICIALES = { posiciones: 'PO', candidatos: 'CA', entrevistas: 'EN', dashboardpj: 'PJ', examenes: 'EX', ingresos: 'IN', legajos: 'LE', nomina: 'NO', importar: 'IM', usuarios: 'US' };
+const INICIALES = { mapa: 'MA', posiciones: 'PO', candidatos: 'CA', entrevistas: 'EN', dashboardpj: 'PJ', examenes: 'EX', ingresos: 'IN', legajos: 'LE', nomina: 'NO', importar: 'IM', usuarios: 'US' };
 let current = { name: null, container: null };
 initFolds(app, () => current.name);
 initModerno(() => draw());
@@ -90,7 +92,7 @@ function shell(name) {
   <a href="#view" class="skip">Saltar al contenido</a>
   <header class="topbar">
     ${navItems.length ? html`<button type="button" class="menu-btn" id="btn-menu" aria-label="Abrir menú de secciones" aria-expanded="false" aria-controls="menu-secciones"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>` : ''}
-    <a class="brand" href="#/posiciones" aria-label="Inicio">
+    <a class="brand" href="#/mapa" aria-label="Inicio">
       <img src="./brand/efis-isologo.svg" alt="EFiS Energy Field Services" class="brand-logo brand-logo--color">
       <img src="./brand/efis-isologo-negativo.svg" alt="" aria-hidden="true" class="brand-logo brand-logo--mono">
       <span class="brand-app"><b>Reclutamiento</b></span>
@@ -115,7 +117,7 @@ function shell(name) {
     ${diasDesdeRespaldo() == null ? 'Todavía no descargaste un respaldo desde esta computadora.' : `Hace ${diasDesdeRespaldo()} días que no descargás un respaldo.`}
     Conviene guardar uno por semana en el OneDrive/Drive de RRHH.
     <button class="btn btn--sm" data-act="respaldo">Descargar respaldo</button></div>` : ''}
-  <main id="view" class="view" tabindex="-1"></main>
+  <main id="view" class="view ${r.full ? 'view--mapa' : ''}" tabindex="-1"></main>
   <footer class="foot"><span>EFiS · Energy Field Services — Recursos Humanos</span><span>Cuenca Neuquina · 38°57′S 68°04′O</span></footer>`;
 }
 
