@@ -4,7 +4,7 @@ import { sb } from '../lib/supabase.js';
 import { fmtDate, fmtMoney, fmtInt, norm, fmtMonth } from '../lib/format.js';
 import { applyFilters, countBy } from '../lib/kpis.js';
 import {
-  filterGroup, toggleFilter, kpi, bars, animateIn, openDrawer, closeDrawer, toast, formData, field, pickField,
+  filterGroup, toggleFilter, kpi, bars, animateIn, openDrawer, closeDrawer, toast, formData, field, pickField, bento, seriePorMes,
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 import { convenioFields, bindConvenio, preingresoFields } from '../components/ingreso.js';
@@ -46,12 +46,7 @@ export function render(el) {
     ${filterGroup({ dim: 'sector', label: 'Sector', options: opts('sector'), selected: filters.sector, allLabel: 'Todos' })}
     ${filterGroup({ dim: 'estado', label: 'Estado', options: opts('estado'), selected: filters.estado, allLabel: 'Todos' })}
   </section>
-  <section class="kpis">
-    ${kpi('Activos', fmtInt(activos.length), { tone: 'green', big: true })}
-    ${kpi('Bajas', fmtInt(base.length - activos.length), { tone: 'red' })}
-    ${kpi('Sin fecha de ingreso', fmtInt(base.filter((h) => !h.fecha_ingreso).length), { tone: 'orange', sub: 'a completar' })}
-    ${kpi('Sin DNI', fmtInt(base.filter((h) => !h.dni).length), { tone: 'orange', sub: 'a completar' })}
-  </section>
+  ${bentoLegajos(base, activos)}
   <section class="grid-2">
     <article class="card"><h2 class="card-title">Ingresos por mes</h2>${porMes.length ? bars(porMes, { color: 'green', limit: 12 }) : html`<p class="muted">Sin fechas.</p>`}</article>
     <article class="card"><h2 class="card-title">Activos por área</h2>${bars(countBy(activos, (h) => h.yacimiento || '—'), { color: 'blue' })}</article>
@@ -144,4 +139,22 @@ function exportCSV(rows) {
   a.download = `legajos_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function bentoLegajos(base, activos) {
+  const serie = seriePorMes(base, (h) => h.fecha_ingreso);
+  const bajas = base.length - activos.length;
+  return bento({
+    hero: {
+      label: 'Legajos activos', value: activos.length, id: 'l-act', serie, serieLabel: 'ingresos por mes',
+      chips: [{ text: `${serie[serie.length - 1][1]} ingresos este mes`, tone: 'up' }],
+      foot: [html`Total de legajos <b>${fmtInt(base.length)}</b>`],
+    },
+    tiles: [
+      { label: 'Bajas', value: bajas, id: 'l-baj', tone: bajas ? 'alert' : '', sub: `${base.length ? Math.round((bajas / base.length) * 100) : 0}% de los ingresados` },
+      { label: 'Ingresos este mes', value: serie[serie.length - 1][1], id: 'l-mes', tone: 'good', sub: `${serie[serie.length - 2][1]} el mes anterior` },
+      { label: 'Sin fecha de ingreso', value: base.filter((h) => !h.fecha_ingreso).length, id: 'l-sf', tone: 'warn', sub: 'a completar' },
+      { label: 'Sin DNI', value: base.filter((h) => !h.dni).length, id: 'l-sd', tone: 'warn', sub: 'a completar' },
+    ],
+  });
 }

@@ -5,7 +5,7 @@ import { html, raw } from '../lib/html.js';
 import { state } from '../lib/store.js';
 import { fmtMonth, fmtInt } from '../lib/format.js';
 import { countBy, interviewStats, reached, isCovered } from '../lib/kpis.js';
-import { filterGroup, toggleFilter, kpi, bars, saveLocal, loadLocal, serializeFilters, restoreFilters, animateIn, prevSize } from '../components/ui.js';
+import { filterGroup, toggleFilter, kpi, bars, saveLocal, loadLocal, serializeFilters, restoreFilters, animateIn, prevSize, bento, seriePorMes } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 
 const DIMS = ['area', 'sector', 'procedencia', 'mes'];
@@ -90,16 +90,8 @@ export function render(el) {
   </section>
 
   ${internosNota()}
-  ${s.entrevistados ? html`<p class="headline">De cada <b>10</b> entrevistados, <b>${de10}</b> aprueban la entrevista y <b>${ing10}</b> terminan ingresando.</p>` : ''}
 
-  <section class="kpis kpis--6">
-    ${kpi('Entrevistas realizadas', s.entrevistados, { tone: 'blue', big: true, id: 'e-ent' })}
-    ${kpi('Aprobaron', s.aprobados, { tone: 'navy', sub: `efectividad ${pctTxt(s.efectividad)}`, id: 'e-apr' })}
-    ${kpi('Efectividad', s.efectividad ?? 0, { suffix: '%', tone: 'green', sub: 'aprobadas / entrevistas', id: 'e-efe' })}
-    ${kpi('Llegaron a examen', s.examen, { tone: 'orange', id: 'e-exa' })}
-    ${kpi('Ingresaron', s.ingresados, { tone: 'green', sub: `${pctTxt(s.conversion)} de los entrevistados`, id: 'e-ing' })}
-    ${kpi('Bajas post-entrevista', s.bajasPost, { tone: 'red', id: 'e-baj' })}
-  </section>
+  ${bentoEntrevistas(s, de10, ing10)}
 
   <section class="grid-2">
     <article class="card">
@@ -178,4 +170,27 @@ function internosNota() {
   const internos = ps.filter((p) => p.tipo_cobertura === 'Movimiento interno').length;
   if (!internos) return '';
   return html`<p class="internos-dato">Movimientos internos <b>${internos}</b> <span>sin entrevista</span></p>`;
+}
+
+function bentoEntrevistas(s, de10, ing10) {
+  const serie = seriePorMes(filterRows('mes'), (c) => c.en_entrevista);
+  return bento({
+    hero: {
+      label: 'Efectividad de entrevistas', value: s.efectividad ?? 0, suffix: '%', id: 'e-efe',
+      serie, serieLabel: 'entrevistas por mes',
+      chips: [de10 != null && { text: `${de10} de cada 10 aprueban`, tone: 'good' }],
+      foot: [html`Entrevistas <b>${fmtInt(s.entrevistados)}</b>`, html`Aprobadas <b>${fmtInt(s.aprobados)}</b>`],
+    },
+    tiles: [
+      { label: 'Conversión a ingreso', wide: true, meter: s.conversion ?? 0,
+        body: html`<div class="bt-cob-row"><span class="bt-big">${s.conversion ?? 0}<small>%</small></span>
+          <span class="bt-cob-txt"><b>${fmtInt(s.ingresados)}</b> de <b>${fmtInt(s.entrevistados)}</b> entrevistados<br>terminaron ingresando${ing10 != null ? ` (${ing10} de cada 10)` : ''}</span></div>` },
+      { label: 'Entrevistas realizadas', value: s.entrevistados, id: 'e-ent' },
+      { label: 'Aprobaron', value: s.aprobados, id: 'e-apr', tone: 'good', sub: 'la entrevista' },
+      { label: 'Llegaron a examen', value: s.examen, id: 'e-exa', sub: 'preocupacional' },
+      { label: 'Ingresaron', value: s.ingresados, id: 'e-ing', tone: 'good' },
+      { label: 'Bajas post-entrevista', value: s.bajasPost, id: 'e-baj', tone: s.bajasPost ? 'alert' : '', sub: 'no continuaron' },
+      { label: 'Entrevistas este mes', value: serie[serie.length - 1][1], id: 'e-mes', sub: `${serie[serie.length - 2][1]} el mes anterior` },
+    ],
+  });
 }
