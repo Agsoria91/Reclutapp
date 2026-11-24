@@ -479,9 +479,9 @@
 .mapa .leaflet-container { cursor: grab; } .mapa .leaflet-dragging .leaflet-container, .mapa .leaflet-container:active { cursor: grabbing; }
 .mapa-zoom button[data-mover] { font-size: 13px; }
 /* nombres de áreas: los de otras operadoras aparecen al acercarse */
-.mp-area-nombre:not(.is-efis) { display: none; font-size: 9.5px !important; letter-spacing: .1em; color: rgba(232, 238, 234, .3) !important; }
+.mp-area-nombre:not(.is-efis) { display: none; font-size: 10px !important; letter-spacing: .1em; color: rgba(236, 241, 238, .6) !important; text-shadow: 0 1px 3px rgba(0, 0, 0, .95), 0 0 6px rgba(0, 0, 0, .6) !important; }
 .mapa-leaflet:is([data-nivel="9"], [data-nivel="10"], [data-nivel="11"], [data-nivel="12"], [data-nivel="13"], [data-nivel="14"], [data-nivel="15"]) .mp-area-nombre:not(.is-efis) { display: block; }
-.mapa-leaflet:is([data-nivel="10"], [data-nivel="11"], [data-nivel="12"], [data-nivel="13"], [data-nivel="14"], [data-nivel="15"]) .mp-area-nombre:not(.is-efis) { font-size: 11px !important; color: rgba(232, 238, 234, .4) !important; }
+.mapa-leaflet:is([data-nivel="10"], [data-nivel="11"], [data-nivel="12"], [data-nivel="13"], [data-nivel="14"], [data-nivel="15"]) .mp-area-nombre:not(.is-efis) { font-size: 11px !important; color: rgba(236, 241, 238, .72) !important; }
 .mp-area-nombre.is-efis { font-size: 10px !important; }
 /* centro de distribución de arena */
 .mp-pt--arena { color: #E3C27A; } .mp-pt--arena .mp-ico { border-color: #E3C27A; box-shadow: 0 0 0 4px rgba(227, 194, 122, .14), 0 8px 24px rgba(0, 0, 0, .55); }
