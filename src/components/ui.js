@@ -1,5 +1,6 @@
 import { html, raw, esc, $ } from '../lib/html.js';
 import { state } from '../lib/store.js';
+import { fmtMonth } from '../lib/format.js';
 
 export function stagePill(code, { small = false } = {}) {
   const s = state.stageMap[code];
@@ -370,4 +371,79 @@ export function rowsToCSV(cols, rows) {
 export function dimSelect(id, label, dims, value) {
   return html`<label class="fselect"><span>${label}</span><select id="${id}">
     ${dims.map(([k, l]) => html`<option value="${k}" ${raw(k === value ? 'selected' : '')}>${l}</option>`)}</select></label>`;
+}
+
+// ---------------------------------------------------------------------------
+// Encabezado en grilla "bento": un bloque principal grande (con su evolución
+// mensual) y los indicadores secundarios alrededor. Los bloques con `act`
+// usan data-kpi (mismo comportamiento que los cuadros clickeables) y los
+// bloques con `filter` usan data-filter/data-value.
+//   hero:  { label, value, suffix, id, chips: [{ text, tone }], serie: [[mes 'AAAA-MM', n]],
+//            serieLabel, marcados: Set<mes>, foot: [html|texto], act, selected }
+//   tiles: [{ label, value, suffix, id, sub, tone: 'good'|'alert'|'warn', wide, act, selected,
+//            filter: [dim, valor], meter: porcentaje, body: html }]
+// ---------------------------------------------------------------------------
+function numBento(value, suffix, key) {
+  const isNum = typeof value === 'number' && Number.isFinite(value);
+  return isNum
+    ? raw(`<span class="kpi-value" data-n="${value}" data-k="${esc(key)}" data-suffix="${esc(suffix || '')}">${fmtNum(numCache.get(key) ?? value)}${esc(suffix || '')}</span>`)
+    : html`<span class="kpi-value">${value ?? '—'}</span>`;
+}
+
+function sparkline(serie, marcados = new Set()) {
+  if (!serie || serie.length < 2) return '';
+  const W = 320; const H = 64;
+  const vals = serie.map(([, v]) => v); const max = Math.max(...vals); const min = Math.min(...vals);
+  const x = (i) => (i / (serie.length - 1)) * W;
+  const y = (v) => H - 6 - ((v - min) / Math.max(1, max - min)) * (H - 14);
+  const pts = serie.map(([, v], i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const dots = serie.map(([m, v], i) => (marcados.has(m) || i === serie.length - 1
+    ? `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3.5" class="bt-spark-dot"/>` : '')).join('');
+  return raw(`<svg class="bt-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <polyline points="0,${H} ${pts} ${W},${H}" class="bt-spark-area"/><polyline points="${pts}" class="bt-spark-line"/>${dots}</svg>`);
+}
+
+const attrsAccion = ({ act, filter, selected }) => {
+  if (act) return raw(`data-kpi="${esc(act)}" aria-pressed="${!!selected}"`);
+  if (filter) return raw(`data-filter="${esc(filter[0])}" data-value="${esc(filter[1])}" aria-pressed="${!!selected}"`);
+  return '';
+};
+
+// Últimos n meses 'AAAA-MM' hasta el mes de `hasta` (incluido), en orden.
+export function ultimosMeses(n = 12, hasta = new Date().toISOString().slice(0, 7)) {
+  let [y, m] = hasta.slice(0, 7).split('-').map(Number);
+  const out = [];
+  for (let i = 0; i < n; i++) { out.unshift(`${y}-${String(m).padStart(2, '0')}`); m--; if (!m) { m = 12; y--; } }
+  return out;
+}
+// Serie mensual a partir de una fecha por fila (cuenta las filas de cada mes).
+export function seriePorMes(rows, fecha, n = 12) {
+  const c = new Map();
+  for (const r of rows) { const f = fecha(r); if (f) { const k = String(f).slice(0, 7); c.set(k, (c.get(k) || 0) + 1); } }
+  return ultimosMeses(n).map((m) => [m, c.get(m) || 0]);
+}
+
+export function bento({ hero, tiles = [] }) {
+  const h = hero;
+  const heroClick = h.act || h.filter;
+  const etiquetaMes = (m) => (/^\d{4}-\d{2}$/.test(m) ? fmtMonth(m, { short: true }) : m);
+  const heroHtml = html`<${raw(heroClick ? 'button type="button"' : 'div')} class="bt bt--hero ${heroClick ? 'bt--btn' : ''} ${h.selected ? 'is-sel' : ''}" ${attrsAccion(h)}>
+      <span class="bt-label">${h.label}</span>
+      <div class="bt-hero-num">${numBento(h.value, h.suffix, 'bt-' + (h.id || h.label))}
+        ${(h.chips || []).filter(Boolean).map((c) => html`<span class="bt-chip ${c.tone ? 'is-' + c.tone : ''}">${c.text}</span>`)}</div>
+      ${h.serie && h.serie.length > 1 ? html`${sparkline(h.serie, h.marcados)}
+        <div class="bt-spark-axis"><span>${etiquetaMes(h.serie[0][0])}</span>${h.serieLabel ? html`<span class="bt-spark-cap">${h.serieLabel}</span>` : ''}<span>${etiquetaMes(h.serie[h.serie.length - 1][0])}</span></div>` : html`<span class="bt-grow"></span>`}
+      ${h.foot && h.foot.filter(Boolean).length ? html`<div class="bt-foot">${h.foot.filter(Boolean).map((f) => html`<span>${f}</span>`)}</div>` : ''}
+    </${raw(heroClick ? 'button' : 'div')}>`;
+  const tile = (t) => {
+    const click = t.act || t.filter;
+    const tag = click ? 'button' : 'div';
+    return html`<${raw(click ? 'button type="button"' : 'div')} class="bt ${t.wide ? 'bt--wide' : ''} ${t.tone ? 'bt--' + t.tone : ''} ${click ? 'bt--btn' : ''} ${t.selected ? 'is-sel' : ''}" ${attrsAccion(t)}>
+      <span class="bt-label">${t.label}</span>
+      ${t.body ? t.body : numBento(t.value, t.suffix, 'bt-' + (t.id || t.label))}
+      ${t.meter != null ? html`<span class="bt-meter"><span style="width:${Math.max(0, Math.min(100, t.meter))}%"></span></span>` : ''}
+      ${t.sub || click ? html`<span class="bt-sub">${t.sub || ''}${click ? html`<b class="bt-go">${t.sub ? ' · ' : ''}${t.selected ? 'mostrando ✓' : 'ver'}</b>` : ''}</span>` : ''}
+    </${raw(tag)}>`;
+  };
+  return html`<section class="bento bento--${Math.min(tiles.length, 9)}">${heroHtml}${tiles.filter(Boolean).map(tile)}</section>`;
 }

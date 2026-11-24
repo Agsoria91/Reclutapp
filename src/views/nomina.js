@@ -9,7 +9,7 @@ import { decodeBytes } from '../lib/csv.js';
 import { parseNominaCSV } from '../lib/importers.js';
 import {
   filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, formData, field, confirmDialog, animateIn, pickField,
-  multiSelectFilter, loadLocal, saveLocal,
+  multiSelectFilter, loadLocal, saveLocal, bento,
 
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
@@ -119,7 +119,7 @@ export function render(el) {
       ${multiSelectFilter({ dim: 'mes', label: 'Dotación en el mes', options: mesesDisponibles().map((m) => [m, filterRowsSinEstado().filter((n) => enMes(n, m)).length]), selected: meses, allLabel: 'Hoy', presets: presetsMeses(mesesDisponibles()), open: openMulti === 'mes', labelOf: (m) => fmtMonth(m) })}
     </div>
   </section>
-  ${bento(base, recientes, pfProx)}
+  ${bentoNomina(base, recientes, pfProx)}
   ${coberturaDotacion()}
   ${meses.size ? dotacionPorMes() : ''}
   <section class="grid-2">
@@ -361,19 +361,7 @@ function coberturaDotacion() {
 // Encabezado en grilla "bento": el dato principal grande con su evolución y
 // los indicadores secundarios alrededor. Los pendientes filtran al hacer clic.
 // ---------------------------------------------------------------------------
-function sparkline(serie, marcados) {
-  if (serie.length < 2) return '';
-  const W = 320; const H = 64; const max = Math.max(...serie.map(([, v]) => v)); const min = Math.min(...serie.map(([, v]) => v));
-  const x = (i) => (i / (serie.length - 1)) * W;
-  const y = (v) => H - 6 - ((v - min) / Math.max(1, max - min)) * (H - 14);
-  const pts = serie.map(([, v], i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  return raw(`<svg class="bt-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
-    <polyline points="0,${H} ${pts} ${W},${H}" class="bt-spark-area"/><polyline points="${pts}" class="bt-spark-line"/>
-    ${serie.map(([m, v], i) => (marcados.has(m) || i === serie.length - 1 ? `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3.5" class="bt-spark-dot"/>` : '')).join('')}
-  </svg>`);
-}
-
-function bento(base, recientes, pfProx) {
+function bentoNomina(base, recientes, pfProx) {
   const sinEstado = filterRowsSinEstado();
   const ultimos = mesesDisponibles().slice(0, 12).reverse();
   const serie = ultimos.map((m) => [m, sinEstado.filter((n) => enMes(n, m)).length]);
@@ -386,31 +374,25 @@ function bento(base, recientes, pfProx) {
   const enc = countBy(base, (n) => n.encuadre || 'Sin dato');
   const ddjj = base.filter((n) => !okVal(n.ddjj)).length;
   const kit = base.filter((n) => !okVal(n.regalo_kit)).length;
-  const titulo = meses.size ? (meses.size === 1 ? `Dotación ${fmtMonth([...meses][0])}` : 'Personas en el período') : 'Personas en nómina';
-  const num = (v, k) => raw(`<span class="kpi-value" data-n="${v}" data-k="bt-${k}">${fmtInt(v)}</span>`);
-  return html`<section class="bento">
-    <div class="bt bt--hero">
-      <span class="bt-label">${titulo}</span>
-      <div class="bt-hero-num">${num(base.length, 'tot')}
-        ${delta != null ? html`<span class="bt-delta ${delta >= 0 ? 'is-up' : 'is-down'}">${delta >= 0 ? '+' : '−'}${Math.abs(delta)} vs ${fmtMonth(serie[iRef - 1][0], { short: true })}</span>` : ''}</div>
-      ${sparkline(serie, meses)}
-      <div class="bt-spark-axis"><span>${serie[0] ? fmtMonth(serie[0][0], { short: true }) : ''}</span><span>${serie.length ? fmtMonth(serie[serie.length - 1][0], { short: true }) : ''}</span></div>
-      <div class="bt-foot">${edadProm ? html`<span>Edad promedio <b>${edadProm}</b></span>` : ''}<span>${filters.yacimiento.size || filters.sector.size || filters.encuadre.size ? 'Con filtros aplicados' : 'Toda la empresa'}</span></div>
-    </div>
-    <div class="bt bt--cob">
-      <span class="bt-label">Cobertura de la dotación requerida ${cob.ult ? `· al ${fmtDate(cob.corte)}` : ''}</span>
-      <div class="bt-cob-row"><span class="bt-big">${pctCob}<small>%</small></span>
-        <span class="bt-cob-txt"><b>${fmtInt(cob.falt.length)}</b> ${cob.ult ? 'faltaban' : 'faltan'} tomar<br>requerida <b>${fmtInt(cob.req)}</b></span></div>
-      <div class="bt-meter"><span style="width:${pctCob}%"></span></div>
-    </div>
-    <div class="bt"><span class="bt-label">Ingresos últimos 90 días</span>${num(recientes, 'rec')}<span class="bt-sub">${pctTxt(recientes, base.length)} de la dotación</span></div>
-    <div class="bt ${pfProx ? 'bt--alert' : ''}"><span class="bt-label">Plazo fijo vence ≤ 60 días</span>${num(pfProx, 'pf')}<span class="bt-sub">${pfProx ? 'revisar renovaciones' : 'sin vencimientos'}</span></div>
-    <div class="bt bt--enc"><span class="bt-label">Encuadre</span>
-      <div class="bt-stack">${enc.map(([k, v], i) => html`<span class="bt-stack-${i}" style="flex:${v}" title="${k} ${v}"></span>`)}</div>
-      <ul class="bt-legend">${enc.map(([k, v], i) => html`<li><i class="bt-stack-${i}"></i>${k} <b>${fmtInt(v)}</b> <small>${pctTxt(v, base.length)}</small></li>`)}</ul>
-    </div>
-    <button type="button" class="bt bt--btn ${filters.pendiente.has('DDJJ') ? 'is-sel' : ''}" data-filter="pendiente" data-value="DDJJ"><span class="bt-label">DDJJ pendiente</span>${num(ddjj, 'ddjj')}<span class="bt-sub">${pctTxt(ddjj, base.length)} · ${filters.pendiente.has('DDJJ') ? 'filtrando ✓' : 'ver quiénes'}</span></button>
-    <button type="button" class="bt bt--btn ${filters.pendiente.has('Kit') ? 'is-sel' : ''}" data-filter="pendiente" data-value="Kit"><span class="bt-label">Kit pendiente</span>${num(kit, 'kit')}<span class="bt-sub">${pctTxt(kit, base.length)} · ${filters.pendiente.has('Kit') ? 'filtrando ✓' : 'ver quiénes'}</span></button>
-  </section>`;
+  return bento({
+    hero: {
+      label: meses.size ? (meses.size === 1 ? `Dotación ${fmtMonth([...meses][0])}` : 'Personas en el período') : 'Personas en nómina',
+      value: base.length, id: 'n-tot', serie, marcados: meses, serieLabel: 'dotación por mes',
+      chips: [delta != null && { text: `${delta >= 0 ? '+' : '−'}${Math.abs(delta)} vs ${fmtMonth(serie[iRef - 1][0], { short: true })}`, tone: delta >= 0 ? 'up' : 'down' }],
+      foot: [edadProm ? html`Edad promedio <b>${edadProm}</b>` : '', filters.yacimiento.size || filters.sector.size || filters.encuadre.size ? 'Con filtros aplicados' : 'Toda la empresa'],
+    },
+    tiles: [
+      { label: `Cobertura de la dotación requerida${cob.ult ? ` · al ${fmtDate(cob.corte)}` : ''}`, wide: true, meter: pctCob,
+        body: html`<div class="bt-cob-row"><span class="bt-big">${pctCob}<small>%</small></span>
+          <span class="bt-cob-txt"><b>${fmtInt(cob.falt.length)}</b> ${cob.ult ? 'faltaban' : 'faltan'} tomar<br>requerida <b>${fmtInt(cob.req)}</b></span></div>` },
+      { label: 'Ingresos últimos 90 días', value: recientes, id: 'n-rec', sub: `${pctTxt(recientes, base.length)} de la dotación` },
+      { label: 'Plazo fijo vence ≤ 60 días', value: pfProx, id: 'n-pf', tone: pfProx ? 'alert' : '', sub: pfProx ? 'revisar renovaciones' : 'sin vencimientos' },
+      { label: 'Encuadre', wide: true,
+        body: html`<div class="bt-stack">${enc.map(([k, v], i) => html`<span class="bt-stack-${i}" style="flex:${v}" title="${k} ${v}"></span>`)}</div>
+          <ul class="bt-legend">${enc.map(([k, v], i) => html`<li><i class="bt-stack-${i}"></i>${k} <b>${fmtInt(v)}</b> <small>${pctTxt(v, base.length)}</small></li>`)}</ul>` },
+      { label: 'DDJJ pendiente', value: ddjj, id: 'n-ddjj', tone: 'warn', filter: ['pendiente', 'DDJJ'], selected: filters.pendiente.has('DDJJ'), sub: `${pctTxt(ddjj, base.length)} de la dotación` },
+      { label: 'Kit pendiente', value: kit, id: 'n-kit', tone: 'warn', filter: ['pendiente', 'Kit'], selected: filters.pendiente.has('Kit'), sub: `${pctTxt(kit, base.length)} de la dotación` },
+    ],
+  });
 }
 const pctTxt = (a, b) => `${porc(a, b)}%`;

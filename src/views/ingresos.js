@@ -6,7 +6,7 @@ import { html } from '../lib/html.js';
 import { state, loadAll } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
 import { fmtDate, todayISO, norm } from '../lib/format.js';
-import { kpi, openDrawer, closeDrawer, toast, formData, field, confirmDialog, stagePill, animateIn } from '../components/ui.js';
+import { kpi, openDrawer, closeDrawer, toast, formData, field, confirmDialog, stagePill, animateIn, bento } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 import { preingresoFields, preingresoProgress } from '../components/ingreso.js';
 import { celebrate } from './posiciones.js';
@@ -26,12 +26,7 @@ export function render(el) {
 
   el.innerHTML = String(html`
   <section class="page-head"><div><h1>Próximos ingresos</h1></div></section>
-  <section class="kpis kpis--6">
-    ${kpi('Próximos ingresos', sillas.length + sinSilla.length, { tone: 'blue', big: true, id: 'pi-tot' })}
-    ${kpi('Datos completos', completos, { tone: 'green', id: 'pi-ok' })}
-    ${kpi('Con datos faltantes', sillas.length - completos, { tone: 'orange', id: 'pi-falta' })}
-    ${kpi('Sin silla asignada', sinSilla.length, { tone: sinSilla.length ? 'red' : '', id: 'pi-sin' })}
-  </section>
+  ${bentoIngresos(sillas, sinSilla, completos)}
   ${sillas.length ? html`<section class="ing-grid">${sillas.map(({ p, c, prog }) => card(p, c, prog))}</section>`
     : mascot('empty', { title: 'Nadie en Próximo ingreso', text: 'Cuando una silla pase a "Próximo ingreso" va a aparecer acá.' })}
   ${sinSilla.length ? html`<section class="card"><h2 class="card-title">En Próximo ingreso sin silla</h2>
@@ -158,4 +153,25 @@ async function crearFicha(p) {
   if (r.error) return toast(r.error.message, 'error');
   toast('Ficha creada y vinculada', 'ok');
   await loadAll({ silent: true });
+}
+
+function bentoIngresos(sillas, sinSilla, completos) {
+  const total = sillas.length + sinSilla.length;
+  const conFecha = sillas.filter((x) => x.p.fecha_ingreso).length;
+  const prox = sillas.find((x) => x.p.fecha_ingreso && x.p.fecha_ingreso >= todayISO());
+  const pc = sillas.length ? Math.round((completos / sillas.length) * 100) : 0;
+  return bento({
+    hero: {
+      label: 'Próximos ingresos', value: total, id: 'pi-tot',
+      chips: [prox && { text: `próximo: ${fmtDate(prox.p.fecha_ingreso)}`, tone: 'good' }],
+      foot: [html`Con fecha confirmada <b>${conFecha}</b>`, html`A confirmar <b>${sillas.length - conFecha}</b>`],
+    },
+    tiles: [
+      { label: 'Datos de alta completos', wide: true, meter: pc,
+        body: html`<div class="bt-cob-row"><span class="bt-big">${completos}</span>
+          <span class="bt-cob-txt"><b>${pc}%</b> de las sillas en próximo ingreso<br>listas para el alta</span></div>` },
+      { label: 'Con datos faltantes', value: sillas.length - completos, id: 'pi-falta', tone: sillas.length - completos ? 'warn' : '' },
+      { label: 'Sin silla asignada', value: sinSilla.length, id: 'pi-sin', tone: sinSilla.length ? 'alert' : '' },
+    ],
+  });
 }

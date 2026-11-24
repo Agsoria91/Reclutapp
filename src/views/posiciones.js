@@ -6,7 +6,7 @@ import { applyFilters, countBy, positionKpis, pendingByTarget, isCovered, hasPer
 import {
   stagePill, filterGroup, selectFilter, multiSelectFilter, toggleFilter, pickField, kpi, openDrawer, closeDrawer, toast, formData, field,
   confirmDialog, saveLocal, loadLocal, serializeFilters, restoreFilters, datalist,
-  animateIn,
+  animateIn, bento, ultimosMeses,
 } from '../components/ui.js';
 import { historialSilla } from '../components/historial.js';
 import { avisarCambioDeEtapa } from '../components/avisos.js';
@@ -127,14 +127,7 @@ export function render(el) {
     </div>
   </section>
 
-  <section class="kpis kpis--6">
-    ${kpi('Sillas', k.total, { id: 'pos-total' })}
-    ${kpi('Cubiertas', k.cubiertas, { sub: `${pct(k.cubiertas, k.total)}% · ${cubInternos} por mov. interno, ${k.cubiertas - cubInternos} por búsqueda`, tone: 'green', id: 'pos-cub' })}
-    ${kpi('Faltan cubrir', k.pendientes, { tone: 'blue', big: true, id: 'pos-pend' })}
-    ${kpi('En proceso', k.enProceso, { tone: 'navy', sub: 'con candidato', id: 'pos-proc' })}
-    ${kpi('Sin candidato', k.sinCandidato, { tone: 'orange', id: 'pos-sin' })}
-    ${kpi('Vencidas', k.vencidas, { sub: 'mes objetivo pasado', tone: k.vencidas ? 'red' : '', id: 'pos-venc' })}
-  </section>
+  ${bentoPosiciones(base, k, cubInternos, pend)}
 
   <section class="card">
     <h2 class="card-title">Faltan cubrir, por mes objetivo</h2>
@@ -535,4 +528,32 @@ function avisoPosSap() {
     <ul>${reps.map(([k, xs]) => html`<li><b>${k}</b> · ${xs.map((x) => `${x.puesto} (${x.yacimiento})`).join(' / ')}</li>`)}</ul>
     <button type="button" class="btn btn--ghost btn--sm" data-act="sap-ocultar">Ocultar aviso</button>
   </details>`;
+}
+
+// Encabezado bento: sillas cubiertas (acumuladas al cierre de cada mes) y estado de lo que falta.
+function bentoPosiciones(base, k, cubInternos, pend) {
+  const candPorId = new Map(state.candidates.map((c) => [c.id, c]));
+  const fechaIng = (p) => p.fecha_ingreso || candPorId.get(p.candidate_id)?.fecha_ingreso || null;
+  const cub = base.filter(isCovered);
+  const serie = ultimosMeses(12).map((m) => [m, cub.filter((p) => { const f = fechaIng(p); return !f || f.slice(0, 7) <= m; }).length]);
+  const delta = serie.length > 1 ? serie[serie.length - 1][1] - serie[serie.length - 2][1] : null;
+  const proxMes = pend.find((g) => g.fecha && !g.vencida);
+  return bento({
+    hero: {
+      label: 'Sillas cubiertas', value: k.cubiertas, id: 'pos-cub', serie, serieLabel: 'cubiertas acumuladas',
+      chips: [{ text: `${pct(k.cubiertas, k.total)}% de ${k.total}`, tone: 'good' }, delta ? { text: `+${delta} este mes`, tone: 'up' } : null],
+      foot: [html`Por búsqueda <b>${k.cubiertas - cubInternos}</b>`, html`Movimiento interno <b>${cubInternos}</b>`],
+    },
+    tiles: [
+      { label: 'Faltan cubrir', wide: true, meter: pct(k.enProceso, k.pendientes),
+        body: html`<div class="bt-cob-row"><span class="bt-big">${k.pendientes}</span>
+          <span class="bt-cob-txt"><b>${k.enProceso}</b> con candidato en proceso<br><b>${k.sinCandidato}</b> sin candidato</span></div>` },
+      { label: 'Vencidas', value: k.vencidas, id: 'pos-venc', tone: k.vencidas ? 'alert' : 'good', sub: 'mes objetivo pasado' },
+      { label: 'Próximo mes objetivo', value: proxMes ? proxMes.total : 0, id: 'pos-prox', sub: proxMes ? `${fmtMonth(proxMes.fecha)} · ${proxMes.sinCandidato} sin candidato` : 'sin sillas pendientes' },
+      { label: 'Sillas totales', value: k.total, id: 'pos-total', sub: 'en el mapa con los filtros' },
+      { label: 'En proceso', value: k.enProceso, id: 'pos-proc', sub: 'con candidato asignado' },
+      { label: 'Sin candidato', value: k.sinCandidato, id: 'pos-sin', tone: k.sinCandidato ? 'warn' : '', sub: 'a buscar' },
+      { label: 'Ingresaron este mes', value: cub.filter((p) => (fechaIng(p) || '').slice(0, 7) === todayISO().slice(0, 7)).length, id: 'pos-mes', tone: 'good', sub: fmtMonth(todayISO()) },
+    ],
+  });
 }
