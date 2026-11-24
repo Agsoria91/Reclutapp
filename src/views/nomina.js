@@ -119,14 +119,7 @@ export function render(el) {
       ${multiSelectFilter({ dim: 'mes', label: 'Dotación en el mes', options: mesesDisponibles().map((m) => [m, filterRowsSinEstado().filter((n) => enMes(n, m)).length]), selected: meses, allLabel: 'Hoy', presets: presetsMeses(mesesDisponibles()), open: openMulti === 'mes', labelOf: (m) => fmtMonth(m) })}
     </div>
   </section>
-  <section class="kpis kpis--6">
-    ${kpi(meses.size ? (meses.size === 1 ? `Dotación ${fmtMonth([...meses][0])}` : 'Personas en el período') : 'Personas', base.length, { tone: 'blue', big: true, id: 'n-tot' })}
-    ${kpi('Ingresos últimos 90 días', recientes, { tone: 'green', id: 'n-rec' })}
-    ${kpi('DDJJ pendiente', base.filter((n) => !okVal(n.ddjj)).length, { tone: 'orange', id: 'n-ddjj' })}
-    ${kpi('Kit pendiente', base.filter((n) => !okVal(n.regalo_kit)).length, { tone: 'orange', id: 'n-kit' })}
-    ${kpi('Plazo fijo vence ≤ 60 días', pfProx, { tone: pfProx ? 'red' : '', id: 'n-pf' })}
-    ${kpi('Edad promedio', Math.round(base.map(edad).filter(Boolean).reduce((a, b, _, arr) => a + b / arr.length, 0)) || 0, { id: 'n-edad' })}
-  </section>
+  ${bento(base, recientes, pfProx)}
   ${coberturaDotacion()}
   ${meses.size ? dotacionPorMes() : ''}
   <section class="grid-2">
@@ -322,12 +315,16 @@ function silllaPasaFiltros(p, except) {
 }
 const faltantesFiltrados = (corte, except) => faltantesAlCorte(state.positions, corte, { candidatos: state.candidates }).filter((p) => silllaPasaFiltros(p, except));
 
-function coberturaDotacion() {
+function datosCobertura() {
   const ult = [...meses].sort().pop();
   const corte = ult ? corteMes(ult) : todayISO();
   const personas = ult ? filterRowsSinEstado().filter((n) => enMes(n, ult)) : filterRows(null);
   const falt = faltantesFiltrados(corte);
-  const req = personas.length + falt.length;
+  return { ult, corte, personas, falt, req: personas.length + falt.length };
+}
+
+function coberturaDotacion() {
+  const { ult, corte, personas, falt, req } = datosCobertura();
   const enProceso = falt.filter((p) => p.candidato_nombre && p.stage !== 'ingresado').length;
   const ingresaronDespues = falt.filter((p) => p.stage === 'ingresado').length;
   // Por yacimiento: dotación (nómina) + faltantes (sillas), sin el filtro de yacimiento para comparar todos
@@ -359,3 +356,61 @@ function coberturaDotacion() {
     </div>
   </section>`;
 }
+
+// ---------------------------------------------------------------------------
+// Encabezado en grilla "bento": el dato principal grande con su evolución y
+// los indicadores secundarios alrededor. Los pendientes filtran al hacer clic.
+// ---------------------------------------------------------------------------
+function sparkline(serie, marcados) {
+  if (serie.length < 2) return '';
+  const W = 320; const H = 64; const max = Math.max(...serie.map(([, v]) => v)); const min = Math.min(...serie.map(([, v]) => v));
+  const x = (i) => (i / (serie.length - 1)) * W;
+  const y = (v) => H - 6 - ((v - min) / Math.max(1, max - min)) * (H - 14);
+  const pts = serie.map(([, v], i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  return raw(`<svg class="bt-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <polyline points="0,${H} ${pts} ${W},${H}" class="bt-spark-area"/><polyline points="${pts}" class="bt-spark-line"/>
+    ${serie.map(([m, v], i) => (marcados.has(m) || i === serie.length - 1 ? `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3.5" class="bt-spark-dot"/>` : '')).join('')}
+  </svg>`);
+}
+
+function bento(base, recientes, pfProx) {
+  const sinEstado = filterRowsSinEstado();
+  const ultimos = mesesDisponibles().slice(0, 12).reverse();
+  const serie = ultimos.map((m) => [m, sinEstado.filter((n) => enMes(n, m)).length]);
+  const ref = meses.size ? [...meses].sort().pop() : ultimos[ultimos.length - 1];
+  const iRef = serie.findIndex(([m]) => m === ref);
+  const delta = iRef > 0 ? serie[iRef][1] - serie[iRef - 1][1] : null;
+  const edadProm = Math.round(base.map(edad).filter(Boolean).reduce((a, b, _, arr) => a + b / arr.length, 0)) || null;
+  const cob = datosCobertura();
+  const pctCob = porc(cob.personas.length, cob.req);
+  const enc = countBy(base, (n) => n.encuadre || 'Sin dato');
+  const ddjj = base.filter((n) => !okVal(n.ddjj)).length;
+  const kit = base.filter((n) => !okVal(n.regalo_kit)).length;
+  const titulo = meses.size ? (meses.size === 1 ? `Dotación ${fmtMonth([...meses][0])}` : 'Personas en el período') : 'Personas en nómina';
+  const num = (v, k) => raw(`<span class="kpi-value" data-n="${v}" data-k="bt-${k}">${fmtInt(v)}</span>`);
+  return html`<section class="bento">
+    <div class="bt bt--hero">
+      <span class="bt-label">${titulo}</span>
+      <div class="bt-hero-num">${num(base.length, 'tot')}
+        ${delta != null ? html`<span class="bt-delta ${delta >= 0 ? 'is-up' : 'is-down'}">${delta >= 0 ? '+' : '−'}${Math.abs(delta)} vs ${fmtMonth(serie[iRef - 1][0], { short: true })}</span>` : ''}</div>
+      ${sparkline(serie, meses)}
+      <div class="bt-spark-axis"><span>${serie[0] ? fmtMonth(serie[0][0], { short: true }) : ''}</span><span>${serie.length ? fmtMonth(serie[serie.length - 1][0], { short: true }) : ''}</span></div>
+      <div class="bt-foot">${edadProm ? html`<span>Edad promedio <b>${edadProm}</b></span>` : ''}<span>${filters.yacimiento.size || filters.sector.size || filters.encuadre.size ? 'Con filtros aplicados' : 'Toda la empresa'}</span></div>
+    </div>
+    <div class="bt bt--cob">
+      <span class="bt-label">Cobertura de la dotación requerida ${cob.ult ? `· al ${fmtDate(cob.corte)}` : ''}</span>
+      <div class="bt-cob-row"><span class="bt-big">${pctCob}<small>%</small></span>
+        <span class="bt-cob-txt"><b>${fmtInt(cob.falt.length)}</b> ${cob.ult ? 'faltaban' : 'faltan'} tomar<br>requerida <b>${fmtInt(cob.req)}</b></span></div>
+      <div class="bt-meter"><span style="width:${pctCob}%"></span></div>
+    </div>
+    <div class="bt"><span class="bt-label">Ingresos últimos 90 días</span>${num(recientes, 'rec')}<span class="bt-sub">${pctTxt(recientes, base.length)} de la dotación</span></div>
+    <div class="bt ${pfProx ? 'bt--alert' : ''}"><span class="bt-label">Plazo fijo vence ≤ 60 días</span>${num(pfProx, 'pf')}<span class="bt-sub">${pfProx ? 'revisar renovaciones' : 'sin vencimientos'}</span></div>
+    <div class="bt bt--enc"><span class="bt-label">Encuadre</span>
+      <div class="bt-stack">${enc.map(([k, v], i) => html`<span class="bt-stack-${i}" style="flex:${v}" title="${k} ${v}"></span>`)}</div>
+      <ul class="bt-legend">${enc.map(([k, v], i) => html`<li><i class="bt-stack-${i}"></i>${k} <b>${fmtInt(v)}</b> <small>${pctTxt(v, base.length)}</small></li>`)}</ul>
+    </div>
+    <button type="button" class="bt bt--btn ${filters.pendiente.has('DDJJ') ? 'is-sel' : ''}" data-filter="pendiente" data-value="DDJJ"><span class="bt-label">DDJJ pendiente</span>${num(ddjj, 'ddjj')}<span class="bt-sub">${pctTxt(ddjj, base.length)} · ${filters.pendiente.has('DDJJ') ? 'filtrando ✓' : 'ver quiénes'}</span></button>
+    <button type="button" class="bt bt--btn ${filters.pendiente.has('Kit') ? 'is-sel' : ''}" data-filter="pendiente" data-value="Kit"><span class="bt-label">Kit pendiente</span>${num(kit, 'kit')}<span class="bt-sub">${pctTxt(kit, base.length)} · ${filters.pendiente.has('Kit') ? 'filtrando ✓' : 'ver quiénes'}</span></button>
+  </section>`;
+}
+const pctTxt = (a, b) => `${porc(a, b)}%`;
