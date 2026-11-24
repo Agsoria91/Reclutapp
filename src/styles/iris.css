@@ -1,0 +1,162 @@
+/* ==========================================================================
+   Estilo "IRIS" (maqueta) · guía UX de BI de Tecpetrol
+   Lienzo gris #ECECEC con tarjetas blancas (radio 5 px, sin sombra), franja
+   de encabezado con divisor vertical a la derecha del título, navegación
+   lateral angosta con círculos azules e iniciales, filtros tipo botón
+   (gris / azul seleccionado), tablas con encabezado azul marino y la paleta
+   del tema Tecpetrol de Power BI. Solo con <html data-estilo="iris">.
+   ========================================================================== */
+:root[data-estilo="iris"] {
+  --ir-blue: #0073B4; --ir-navy: #093C71; --ir-lime: #78B450; --ir-gray: #7F8082; --ir-sky: #58B2E7;
+  --ir-good: #00833F; --ir-bad: #D91F1F;
+  --bg: #ECECEC; --bg-deep: #093C71; --surface: #FFFFFF; --surface-2: #F3F3F3; --field: #FFFFFF;
+  --line: #DADADA; --rule: #CCCCCC; --rule-strong: #CCCCCC; --rule-solid: #CCCCCC;
+  --text: #252423; --text-2: #666666;
+  --accent: var(--ir-blue); --accent-text: var(--ir-blue); --accent-ink: #FFFFFF; --focus: var(--ir-blue);
+  --font-sans: "Segoe UI", "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --st-green: var(--ir-good); --st-red: var(--ir-bad); --st-blue: var(--ir-blue); --st-navy: var(--ir-navy); --st-lime: #5E9A38; --st-orange: #ED7602;
+  --logo-mono: none; --logo-color: block;
+  --rail: 64px;
+  color-scheme: light;
+}
+[data-estilo="iris"] body { background: var(--bg); color: var(--text); font: 14px/1.45 var(--font-sans); }
+[data-estilo="iris"] .card-title, [data-estilo="iris"] .kpi-label, [data-estilo="iris"] .fgroup-label, [data-estilo="iris"] .fmulti-label,
+[data-estilo="iris"] .tbl th, [data-estilo="iris"] .field > span, [data-estilo="iris"] .brand-app, [data-estilo="iris"] .user,
+[data-estilo="iris"] .fselect, [data-estilo="iris"] legend {
+  font-family: var(--font-sans); font-stretch: normal; letter-spacing: 0; text-transform: none;
+}
+
+/* ---------- encabezado: franja sobre el lienzo, divisor vertical tras el título ---------- */
+[data-estilo="iris"] .topbar {
+  background: var(--bg); border-bottom: 1px solid #CCCCCC; padding: 0 16px 0 0; min-height: 66px; gap: 16px;
+}
+[data-estilo="iris"] .brand { align-self: stretch; width: 260px; flex: none; padding: 0 16px; border-right: 1.5px solid #CCCCCC; gap: 12px; }
+[data-estilo="iris"] .brand-logo { height: 40px; }
+[data-estilo="iris"] .brand-app { border-left: 0; padding-left: 0; display: grid; line-height: 1.2; color: var(--ir-blue); font-size: 12px; font-weight: 600; }
+[data-estilo="iris"] .brand-app b { color: var(--ir-navy); font-size: 14px; font-weight: 600; }
+[data-estilo="iris"] .brand-app::after { content: "Recursos Humanos"; }
+[data-estilo="iris"] .topbar-right { margin-left: auto; }
+[data-estilo="iris"] .user { color: var(--text-2); font-size: 12px; }
+
+/* ---------- navegación lateral: círculos azules con iniciales ---------- */
+[data-estilo="iris"] .nav {
+  position: fixed; z-index: 15; left: 5px; top: 79px; bottom: 8px; width: 55px;
+  background: #FFFFFF; border-radius: 4px; flex-direction: column; align-items: center; gap: 6px;
+  padding: 10px 0; overflow-y: auto; overflow-x: visible; flex: none;
+}
+[data-estilo="iris"] .nav a { display: grid; justify-items: center; gap: 2px; padding: 0; background: none; border-radius: 0; color: var(--text-2); }
+[data-estilo="iris"] .nav a::after { display: none; }
+[data-estilo="iris"] .nav-ini {
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+  background: var(--ir-blue); color: #FFFFFF; font: 600 12px var(--font-sans); letter-spacing: .02em;
+  transition: background .15s, box-shadow .15s;
+}
+[data-estilo="iris"] .nav-txt { font: 500 9px/1.1 var(--font-sans); letter-spacing: 0; text-transform: none; max-width: 54px; text-align: center; white-space: normal; color: var(--text-2); }
+[data-estilo="iris"] .nav a:hover .nav-ini { background: var(--ir-navy); }
+[data-estilo="iris"] .nav a.is-active .nav-ini { background: var(--ir-navy); box-shadow: 0 0 0 3px #FFFFFF, 0 0 0 5px var(--ir-lime); }
+[data-estilo="iris"] .nav a.is-active .nav-txt { color: var(--ir-navy); font-weight: 700; }
+[data-estilo="iris"] .nav a + a { margin-top: 2px; }
+
+/* el contenido deja lugar a la barra lateral */
+[data-estilo="iris"] .view, [data-estilo="iris"] .public-banner, [data-estilo="iris"] .backup-banner, [data-estilo="iris"] .foot { margin-left: var(--rail); }
+[data-estilo="iris"] .public-banner, [data-estilo="iris"] .backup-banner {
+  background: #FFF6DB; color: #5A4500; border: 0; border-bottom: 1px solid #F0DFA6; font: 400 12px var(--font-sans); letter-spacing: 0;
+  padding: 7px 16px;
+}
+[data-estilo="iris"] .public-banner::before { display: none; }
+[data-estilo="iris"] .foot { font: 400 11px var(--font-sans); color: #8A8A8A; border-top: 1px solid #DADADA; letter-spacing: 0; text-transform: none; }
+
+/* ---------- lienzo: tarjetas blancas separadas por 12 px ---------- */
+[data-estilo="iris"] .view {
+  border: 0; padding: 12px 12px 24px; gap: 12px; max-width: 1480px;
+}
+[data-estilo="iris"] .view > *, [data-estilo="iris"] .grid-2 > .card { border-top: 0; }
+[data-estilo="iris"] .view > *::before, [data-estilo="iris"] .grid-2 > .card::before { display: none; }
+[data-estilo="iris"] .card { background: #FFFFFF; border-radius: 5px; padding: 14px 16px; border: 0; box-shadow: none; }
+[data-estilo="iris"] .grid-2 { gap: 12px; background: none; }
+[data-estilo="iris"] .grid-2 > .card + .card { border-left: 0; }
+[data-estilo="iris"] .card-title { font: 700 13px var(--font-sans); color: var(--text); margin-bottom: 12px; }
+[data-estilo="iris"] .card-title::before { display: none; }
+[data-estilo="iris"] .card-title small { font-weight: 400; color: var(--text-2); }
+
+/* título de página: como el título de un reporte (chico, azul marino) */
+[data-estilo="iris"] .page-head { padding: 6px 4px 0; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+[data-estilo="iris"] .page-head::after, [data-estilo="iris"] .page-head svg.wave { display: none; }
+[data-estilo="iris"] .page-head h1 { font: 600 22px/1.2 var(--font-sans); letter-spacing: 0; text-transform: none; color: var(--ir-navy); }
+[data-estilo="iris"] .page-head p { font: 400 12px var(--font-sans); letter-spacing: 0; color: var(--text-2); }
+
+/* ---------- botones ---------- */
+[data-estilo="iris"] .btn {
+  border-radius: 3px; border: 1px solid #C8C8C8; background: #FFFFFF; color: var(--text);
+  font: 600 12.5px var(--font-sans); letter-spacing: 0; text-transform: none; padding: 7px 14px; clip-path: none;
+}
+[data-estilo="iris"] .btn:hover { background: #F3F3F3; color: var(--text); border-color: #A8A8A8; }
+[data-estilo="iris"] .btn--primary { background: var(--ir-blue); border-color: var(--ir-blue); color: #FFFFFF; }
+[data-estilo="iris"] .btn--primary:hover { background: var(--ir-navy); border-color: var(--ir-navy); color: #FFFFFF; }
+[data-estilo="iris"] .btn--sm { padding: 4px 10px; font-size: 12px; }
+[data-estilo="iris"] .btn--excel { color: var(--ir-good); border-color: #C8C8C8; }
+[data-estilo="iris"] .icon-btn { border-radius: 3px; border-color: #C8C8C8; background: #FFFFFF; }
+
+/* ---------- filtros tipo "chiclet": gris, seleccionado azul ---------- */
+[data-estilo="iris"] .filters { padding: 12px 16px; }
+[data-estilo="iris"] .fgroup-label { font: 700 12px var(--font-sans); color: var(--text); padding-top: 6px; }
+[data-estilo="iris"] .fpill {
+  border-radius: 2px; border: 0; background: #ECECEC; color: var(--text);
+  font: 400 12px var(--font-sans); letter-spacing: 0; min-height: 28px; padding: 4px 10px;
+}
+[data-estilo="iris"] .fpill small { color: #7F8082; }
+[data-estilo="iris"] .fpill:hover { background: #DCDCDC; }
+[data-estilo="iris"] .fpill.is-on { background: var(--ir-blue); color: #FFFFFF; }
+[data-estilo="iris"] .fpill.is-on small { color: #DCEBF5; opacity: 1; }
+[data-estilo="iris"] .search input, [data-estilo="iris"] .field input, [data-estilo="iris"] .field select, [data-estilo="iris"] .field textarea,
+[data-estilo="iris"] .fselect select, [data-estilo="iris"] .fmonth select, [data-estilo="iris"] .fmulti-box > summary {
+  border-radius: 2px; border: 1px solid #C8C8C8; background: #FFFFFF; font: 400 13px var(--font-sans);
+}
+
+/* ---------- indicadores: tarjetas blancas tipo "card" de Power BI ---------- */
+[data-estilo="iris"] .kpis { gap: 12px; }
+[data-estilo="iris"] .kpi, [data-estilo="iris"] .kpi--click { background: #FFFFFF; border: 0; border-radius: 5px; padding: 12px 16px 14px; border-left: 0; }
+[data-estilo="iris"] .kpis > :first-child { border-left: 0; }
+[data-estilo="iris"] .kpis--6 > :nth-child(n + 4) { border-top: 0; }
+[data-estilo="iris"] .kpi::after { left: 0; top: 0; bottom: 0; width: 4px; height: auto; border-radius: 5px 0 0 5px; }
+[data-estilo="iris"] .kpi-label { font: 700 12px var(--font-sans); color: var(--text); }
+[data-estilo="iris"] .kpi-value { font: 700 30px/1.1 var(--font-sans); letter-spacing: -.01em; color: var(--ir-navy); }
+[data-estilo="iris"] .kpi--big .kpi-value { font-size: 34px; }
+[data-estilo="iris"] .kpi--green .kpi-value { color: var(--ir-good); }
+[data-estilo="iris"] .kpi--red .kpi-value { color: var(--ir-bad); }
+[data-estilo="iris"] .kpi-sub { font: 400 11.5px var(--font-sans); color: var(--text-2); letter-spacing: 0; }
+[data-estilo="iris"] .kpi--click .kpi-hint { font: 600 11px var(--font-sans); color: var(--ir-blue); letter-spacing: 0; }
+[data-estilo="iris"] .kpi--click:hover { background: #F7FAFD; }
+[data-estilo="iris"] .kpi--click.is-sel { background: #EAF3FA; box-shadow: inset 0 -3px 0 var(--ir-blue); }
+
+/* ---------- tablas: encabezado azul marino ---------- */
+[data-estilo="iris"] .tbl th {
+  background: var(--ir-navy); color: #FFFFFF; font: 600 12px var(--font-sans); border-bottom: 0; padding: 8px 10px;
+}
+[data-estilo="iris"] .tbl td { border-bottom: 1px solid #EFEEEE; color: #333333; }
+[data-estilo="iris"] .tbl tbody tr:nth-child(even) td { background: #F7F7F7; }
+[data-estilo="iris"] .tbl tbody tr:hover td { background: #EAF3FA; }
+[data-estilo="iris"] .pill { border-radius: 2px; }
+
+/* ---------- gráficos: paleta del tema Tecpetrol ---------- */
+[data-estilo="iris"] .bars-track { height: 12px; background: #F0F0F0; border-radius: 0; }
+[data-estilo="iris"] .bars-fill { background: var(--ir-lime); border-radius: 0; }
+[data-estilo="iris"] .col-fill { background: var(--ir-blue); }
+[data-estilo="iris"] .bars li { font: 400 12.5px var(--font-sans); }
+
+/* ---------- celular: la barra lateral pasa arriba en fila ---------- */
+@media (max-width: 760px) {
+  [data-estilo="iris"] .brand { width: auto; border-right: 0; }
+  [data-estilo="iris"] .nav { position: static; flex-direction: row; width: auto; order: 3; flex-basis: 100%; margin: 0; padding: 8px; overflow-x: auto; border-radius: 0; gap: 10px; }
+  [data-estilo="iris"] .nav a + a { margin-top: 0; }
+  [data-estilo="iris"] .page-head { grid-template-columns: 1fr; gap: 10px; }
+  [data-estilo="iris"] .page-head .head-actions { justify-content: flex-start; }
+  [data-estilo="iris"] .view, [data-estilo="iris"] .public-banner, [data-estilo="iris"] .backup-banner, [data-estilo="iris"] .foot { margin-left: 0; }
+}
+
+/* toda la app en Segoe UI (sin la monoespaciada del estilo anterior) */
+[data-estilo="iris"] body * { font-family: var(--font-sans); font-stretch: normal; }
+[data-estilo="iris"] .tbl td.mono, [data-estilo="iris"] .mono { letter-spacing: 0; }
+[data-estilo="iris"] .nav { width: 58px; left: 4px; }
+[data-estilo="iris"] .nav-txt { max-width: 56px; overflow-wrap: anywhere; }
+[data-estilo="iris"] .nav a.is-active .nav-ini { box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px var(--ir-lime); }

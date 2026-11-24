@@ -2,8 +2,7 @@ import '@fontsource-variable/martian-mono/standard.css';
 import './styles/tokens.css';
 import './styles/app.css';
 import './styles/plano.css';
-import '@fontsource-variable/archivo/wght.css';
-import './styles/tinta.css';
+import './styles/iris.css';
 import { html, raw, $ } from './lib/html.js';
 import { sb } from './lib/supabase.js';
 import { state, subscribe, refreshAuth, loadAll, set } from './lib/store.js';
@@ -73,6 +72,8 @@ const ICON = {
 };
 
 const app = $('#app');
+// Iniciales de cada sección (navegación lateral del estilo IRIS)
+const INICIALES = { posiciones: 'PO', candidatos: 'CA', entrevistas: 'EN', dashboardpj: 'PJ', examenes: 'EX', ingresos: 'IN', legajos: 'LE', nomina: 'NO', importar: 'IM', usuarios: 'US' };
 let current = { name: null, container: null };
 initFolds(app, () => current.name);
 
@@ -89,7 +90,7 @@ function shell(name) {
       <span class="brand-app"><b>Reclutamiento</b></span>
     </a>
     <nav class="nav" aria-label="Secciones">
-      ${navItems.map(([k, v]) => html`<a href="#/${k}" class="${k === name ? 'is-active' : ''}" ${k === name ? html`aria-current="page"` : ''}>${v.label}</a>`)}
+      ${navItems.map(([k, v]) => html`<a href="#/${k}" class="${k === name ? 'is-active' : ''}" ${k === name ? html`aria-current="page"` : ''} title="${v.label}"><span class="nav-ini" aria-hidden="true">${INICIALES[k] || v.label.slice(0, 2).toUpperCase()}</span><span class="nav-txt">${v.label}</span></a>`)}
     </nav>
     <div class="topbar-right">
       ${state.canRead ? html`<button class="btn btn--sm btn--excel" id="btn-excel" title="${state.isStaff ? 'Descargar todo en Excel (incluye nómina y datos personales)' : 'Descargar resumen en Excel (sin datos personales)'}">${ICON.descarga} Excel</button>

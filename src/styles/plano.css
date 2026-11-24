@@ -513,3 +513,6 @@ fieldset.sensitive { border: 1px dotted var(--st-orange); }
 /* Tablas: encabezado de columnas numéricas alineado con el contenido */
 .tbl th.num { text-align: right; }
 .cob-mini + b { display: inline-block; min-width: 3.2em; text-align: right; }
+
+/* iniciales de la navegación: solo las usa el estilo IRIS */
+.nav-ini { display: none; }
