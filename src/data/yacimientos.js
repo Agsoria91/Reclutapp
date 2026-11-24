@@ -5,18 +5,16 @@
 // 'cfp' = planta de procesamiento (CPF / EPF; `instalaciones` detalla cuáles),
 // 'camion' = unidad móvil, 'oficina' = base administrativa.
 export const YACIMIENTOS = [
-  // Global Energy Monitor (gem.wiki): -38.548, -69.095
-  { codigo: 'FDP', nombre: 'Fortín de Piedra', lon: -69.095, lat: -38.548, tipo: 'cfp', instalaciones: 'CPF' },
-  // ~30 km al sur de Rincón de los Sauces (Hub Norte de Vaca Muerta)
-  { codigo: 'LT2E', nombre: 'Los Toldos II Este', lon: -68.92, lat: -37.64, tipo: 'cfp', instalaciones: 'CPF · EPF', aproximada: true },
-  { codigo: 'LT1N', nombre: 'Los Toldos I Norte', lon: -69.10, lat: -37.55, tipo: 'torre', aproximada: true },
-  // unidad móvil de transporte de arena: sin lugar fijo, se ubica junto a Los Toldos
-  { codigo: 'TLM', nombre: 'TLM · transporte de arena', lon: -68.80, lat: -37.72, tipo: 'camion', movil: true },
+  // Centros de los polígonos oficiales (Subsecretaría de Hidrocarburos de Neuquén, capa Hidrocarburos:Areas)
+  { codigo: 'FDP', nombre: 'Fortín de Piedra', lon: -69.07, lat: -38.55, tipo: 'cfp', instalaciones: 'CPF' },
+  { codigo: 'LT2E', nombre: 'Los Toldos II Este', lon: -69.153, lat: -37.444, tipo: 'cfp', instalaciones: 'CPF · EPF' },
+  { codigo: 'LT1N', nombre: 'Los Toldos I Norte', lon: -69.44, lat: -37.623, tipo: 'torre' },
   // CDA opera dentro de Los Toldos II Este (se dibuja apenas al lado para que no se superponga)
-  { codigo: 'CDA', nombre: 'CDA · Los Toldos II Este', lon: -68.84, lat: -37.60, tipo: 'torre', aproximada: true },
-  // sobre la Dorsal de Huincul, cerca de Senillosa
-  { codigo: 'LBAS', nombre: 'Los Bastos', lon: -68.62, lat: -38.93, tipo: 'ciguena', aproximada: true },
-  // ~50 km al sur de Catriel (Río Negro)
+  { codigo: 'CDA', nombre: 'CDA · Los Toldos II Este', lon: -69.10, lat: -37.415, tipo: 'torre' },
+  // unidad móvil de transporte de arena: sin lugar fijo, se ubica junto a Los Toldos
+  { codigo: 'TLM', nombre: 'TLM · transporte de arena', lon: -69.28, lat: -37.54, tipo: 'camion', movil: true },
+  { codigo: 'LBAS', nombre: 'Los Bastos', lon: -68.64, lat: -38.904, tipo: 'ciguena' },
+  // Río Negro (fuera de la capa de Neuquén): ~50 km al sur de Catriel
   { codigo: 'ASAL', nombre: 'Agua Salada', lon: -67.86, lat: -38.32, tipo: 'ciguena', aproximada: true },
   { codigo: 'NQN', nombre: 'Oficina Neuquén', lon: -68.06, lat: -38.95, tipo: 'oficina', alias: ['Oficina NQN'] },
 ];

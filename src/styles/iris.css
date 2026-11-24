@@ -478,3 +478,8 @@
 .mp-area-nombre.is-efis { color: rgba(156, 203, 116, .8) !important; }
 .mapa .leaflet-container { cursor: grab; } .mapa .leaflet-dragging .leaflet-container, .mapa .leaflet-container:active { cursor: grabbing; }
 .mapa-zoom button[data-mover] { font-size: 13px; }
+/* nombres de áreas: los de otras operadoras aparecen al acercarse */
+.mp-area-nombre:not(.is-efis) { display: none; font-size: 9.5px !important; letter-spacing: .1em; color: rgba(232, 238, 234, .3) !important; }
+.mapa-leaflet:is([data-zoom="9"], [data-zoom="10"], [data-zoom="11"], [data-zoom="12"], [data-zoom="13"], [data-zoom="14"], [data-zoom="15"]) .mp-area-nombre:not(.is-efis) { display: block; }
+.mapa-leaflet:is([data-zoom="10"], [data-zoom="11"], [data-zoom="12"], [data-zoom="13"], [data-zoom="14"], [data-zoom="15"]) .mp-area-nombre:not(.is-efis) { font-size: 11px !important; color: rgba(232, 238, 234, .4) !important; }
+.mp-area-nombre.is-efis { font-size: 10px !important; }

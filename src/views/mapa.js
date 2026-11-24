@@ -10,6 +10,7 @@ import { pct } from '../lib/format.js';
 import { isCovered } from '../lib/kpis.js';
 import { mascot } from '../components/mascot.js';
 import { YACIMIENTOS } from '../data/yacimientos.js';
+import AREAS from '../data/areas-neuquen.json';
 import { posFilters } from './posiciones.js';
 import { saveLocal, loadLocal } from '../components/ui.js';
 
@@ -91,10 +92,18 @@ function abanico(m, marcas) {
   }
 }
 
-// Áreas de concesión (GeoJSON oficial de la Secretaría de Energía, si está disponible).
-const AREAS = null;
-const nombreArea = (f) => f.properties?.nombre || f.properties?.NOMBRE || f.properties?.area || f.properties?.AREA || '';
-const esEfis = (f) => /fort[ií]n de piedra|los toldos|los bastos|agua salada/i.test(nombreArea(f));
+// Áreas de concesión: capa oficial de Neuquén simplificada (src/data/areas-neuquen.json).
+const nombreArea = (f) => f.properties?.n || '';
+const esEfis = (f) => /tecpetrol/i.test(f.properties?.op || '');
+// un solo nombre por área (algunas tienen varios bloques): el del polígono más grande
+const CON_NOMBRE = (() => {
+  const mejor = new Map();
+  const tam = (f) => f.geometry.coordinates.reduce((t, p) => t + p[0].length, 0);
+  for (const f of AREAS.features) { const n = nombreArea(f); if (!mejor.has(n) || tam(f) > tam(mejor.get(n))) mejor.set(n, f); }
+  return new Set(mejor.values());
+})();
+// vista del mapa que dejó la persona (se conserva al relectura de datos)
+let vista = null;
 
 let mapa = null;
 let capaActual = loadLocal('reclutapp.mapa.capa', 'satelite');
@@ -124,7 +133,7 @@ export function render(el) {
       <button type="button" data-mover="arriba" aria-label="Mover el mapa hacia arriba" title="Mover hacia el norte">▲</button>
       <button type="button" data-mover="abajo" aria-label="Mover el mapa hacia abajo" title="Mover hacia el sur">▼</button>
     </div>
-    <div class="mapa-atrib">${raw((CAPAS[capaActual] || CAPAS.satelite)[1])} · Límites &copy; Esri · Leaflet</div>
+    <div class="mapa-atrib">${raw((CAPAS[capaActual] || CAPAS.satelite)[1])} · Límites &copy; Esri · Áreas: Subsecretaría de Hidrocarburos de Neuquén · Leaflet</div>
     <aside class="mapa-panel">
       <span class="mapa-kicker">EFiS · Cuenca Neuquina</span>
       <h1>Yacimientos</h1>
@@ -160,7 +169,7 @@ export function render(el) {
     L.geoJSON(AREAS, {
       pane: 'areas', interactive: false,
       style: (f) => ({ color: esEfis(f) ? '#9CCB74' : '#E8EEEA', weight: esEfis(f) ? 1.8 : 1, opacity: esEfis(f) ? 0.9 : 0.35, fill: esEfis(f), fillColor: '#78B450', fillOpacity: 0.08, dashArray: esEfis(f) ? null : '4 4' }),
-      onEachFeature: (f, lyr) => { const n = nombreArea(f); if (n) lyr.bindTooltip(n, { permanent: true, direction: 'center', className: `mp-area-nombre ${esEfis(f) ? 'is-efis' : ''}`, pane: 'areas' }); },
+      onEachFeature: (f, lyr) => { const n = nombreArea(f); if (n && CON_NOMBRE.has(f)) lyr.bindTooltip(n, { permanent: true, direction: 'center', className: `mp-area-nombre ${esEfis(f) ? 'is-efis' : ''}`, pane: 'areas' }); },
     }).addTo(mapa);
   }
   const marcas = [];
@@ -180,9 +189,18 @@ export function render(el) {
       paddingTopLeft: [60, vista3d ? 150 : 90], paddingBottomRight: [ancho > 860 ? 380 : 30, vista3d ? 190 : 60], maxZoom: 9,
     });
   };
-  encuadrar();
-  requestAnimationFrame(() => { encuadrar(); acomodar(); });
-  el._encuadrar = encuadrar;
+  const marcarZoom = () => { box.dataset.zoom = String(mapa.getZoom()); };
+  mapa.on('zoomend', marcarZoom);
+  mapa.on('moveend', () => { if (mapa) vista = { c: mapa.getCenter(), z: mapa.getZoom() }; });
+  const iniciar = () => {
+    if (!mapa) return;
+    mapa.invalidateSize();
+    if (vista) mapa.setView(vista.c, vista.z, { animate: false }); else encuadrar();
+    marcarZoom(); acomodar();
+  };
+  iniciar();
+  requestAnimationFrame(iniciar);
+  el._encuadrar = () => { vista = null; encuadrar(); };
 
   if (!el._mapa) {
     el._mapa = true;
