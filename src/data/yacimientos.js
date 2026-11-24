@@ -12,7 +12,8 @@ export const YACIMIENTOS = [
   { codigo: 'LT1N', nombre: 'Los Toldos I Norte', lon: -69.10, lat: -37.55, tipo: 'torre', aproximada: true },
   // unidad móvil de transporte de arena: sin lugar fijo, se ubica junto a Los Toldos
   { codigo: 'TLM', nombre: 'TLM · transporte de arena', lon: -68.80, lat: -37.72, tipo: 'camion', movil: true },
-  { codigo: 'CDA', nombre: 'CDA', lon: -68.75, lat: -38.30, tipo: 'torre', aConfirmar: true },
+  // CDA opera dentro de Los Toldos II Este (se dibuja apenas al lado para que no se superponga)
+  { codigo: 'CDA', nombre: 'CDA · Los Toldos II Este', lon: -68.84, lat: -37.60, tipo: 'torre', aproximada: true },
   // sobre la Dorsal de Huincul, cerca de Senillosa
   { codigo: 'LBAS', nombre: 'Los Bastos', lon: -68.62, lat: -38.93, tipo: 'ciguena', aproximada: true },
   // ~50 km al sur de Catriel (Río Negro)

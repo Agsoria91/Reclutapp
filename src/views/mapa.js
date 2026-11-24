@@ -42,7 +42,7 @@ function datos() {
 function marcador(y) {
   const p = y.total ? pct(y.cub, y.total) : null;
   const nota = y.movil ? ' · sin ubicación fija' : y.aConfirmar ? ' · ubicación a confirmar' : y.aproximada ? ' · ubicación aproximada' : '';
-  return `<div class="mp-pt mp-pt--${y.tipo} ${y.total ? '' : 'is-sin'}" data-yac="${y.codigo}" role="button" tabindex="0" aria-label="${esc(y.nombre)}">
+  return `<span class="mp-linea"></span><span class="mp-real"></span><div class="mp-pt mp-pt--${y.tipo} ${y.total ? '' : 'is-sin'}" data-yac="${y.codigo}" role="button" tabindex="0" aria-label="${esc(y.nombre)}">
     <span class="mp-pulso"></span>
     <span class="mp-ico">${svg(y.tipo)}</span>
     <span class="mp-tag"><b>${y.codigo}</b>${p != null ? `<i>${p}%</i>` : ''}</span>
@@ -54,6 +54,41 @@ function marcador(y) {
       ${y.dot != null && y.dot ? `<span class="mp-ficha-dot">${y.dot} personas en nómina</span>` : ''}
       ${y.total ? '<span class="mp-ficha-ir">Ver sillas →</span>' : ''}
     </span></div>`;
+}
+
+// Puntos muy cercanos (p. ej. la zona Los Toldos al alejarse) se abren en
+// abanico alrededor de su centro, con una línea fina hasta la ubicación real.
+function abanico(m, marcas) {
+  const pts = marcas.map((mk) => ({ mk, p: m.latLngToLayerPoint(mk.getLatLng()) }));
+  const usados = new Set();
+  const grupos = [];
+  for (const a of pts) {
+    if (usados.has(a)) continue;
+    const g = [a]; usados.add(a);
+    for (const b of pts) if (!usados.has(b) && g.some((c) => c.p.distanceTo(b.p) < 58)) { g.push(b); usados.add(b); }
+    grupos.push(g);
+  }
+  for (const g of grupos) {
+    const cx = g.reduce((t, x) => t + x.p.x, 0) / g.length;
+    const cy = g.reduce((t, x) => t + x.p.y, 0) / g.length;
+    const r = g.length > 1 ? Math.max(46, 18 * g.length) : 0;
+    g.forEach((x, i) => {
+      const ang = -Math.PI / 2 + (i * 2 * Math.PI) / g.length;
+      const dx = g.length > 1 ? cx + r * Math.cos(ang) - x.p.x : 0;
+      const dy = g.length > 1 ? cy + r * Math.sin(ang) - x.p.y : 0;
+      const el = x.mk.getElement()?.querySelector('.mp-pt');
+      if (!el) return;
+      el.style.setProperty('--dx', `${dx.toFixed(1)}px`);
+      el.style.setProperty('--dy', `${dy.toFixed(1)}px`);
+      const ln = el.parentElement.querySelector('.mp-linea');
+      if (ln) {
+        const len = Math.hypot(dx, dy);
+        ln.style.width = `${len}px`;
+        ln.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+        ln.style.opacity = len > 1 ? 1 : 0;
+      }
+    });
+  }
 }
 
 let mapa = null;
@@ -77,6 +112,12 @@ export function render(el) {
   el.innerHTML = String(html`<div class="mapa ${vista3d ? 'is-3d' : ''}">
     <div class="mapa-cielo" aria-hidden="true"></div>
     <div class="mapa-leaflet" id="mapa-leaflet" aria-label="Mapa de la cuenca neuquina con los yacimientos de EFiS"></div>
+    <div class="mapa-zoom" role="group" aria-label="Zoom del mapa">
+      <button type="button" data-zoom="1" aria-label="Acercar">+</button>
+      <button type="button" data-zoom="-1" aria-label="Alejar">−</button>
+      <button type="button" data-zoom="0" aria-label="Ver todos los yacimientos" title="Ver todos">⤢</button>
+    </div>
+    <div class="mapa-atrib">${raw((CAPAS[capaActual] || CAPAS.satelite)[1])} · Leaflet</div>
     <aside class="mapa-panel">
       <span class="mapa-kicker">EFiS · Cuenca Neuquina</span>
       <h1>Yacimientos</h1>
@@ -98,16 +139,19 @@ export function render(el) {
   const box = el.querySelector('#mapa-leaflet');
   const cont = el.querySelector('.mapa');
   if (window.innerWidth > 860) cont.style.height = `${Math.max(480, window.innerHeight - cont.getBoundingClientRect().top - window.scrollY)}px`;
-  mapa = L.map(box, { zoomControl: false, attributionControl: true, minZoom: 6, maxZoom: 14, zoomSnap: 0.25 });
-  L.control.zoom({ position: 'bottomleft' }).addTo(mapa);
+  mapa = L.map(box, { zoomControl: false, attributionControl: false, minZoom: 7, maxZoom: 15, zoomSnap: 1, zoomDelta: 1, wheelPxPerZoomLevel: 90 });
   const [url, attr, extra] = CAPAS[capaActual] || CAPAS.satelite;
   box.dataset.capa = capaActual;
-  L.tileLayer(url, { attribution: attr, maxZoom: 18, ...extra }).addTo(mapa);
+  L.tileLayer(url, { attribution: attr, maxZoom: 18, detectRetina: true, keepBuffer: 4, ...extra }).addTo(mapa);
+  const marcas = [];
   for (const y of ys) {
     const m = L.marker([y.lat, y.lon], { icon: L.divIcon({ className: 'mp-divicon', html: marcador(y), iconSize: [0, 0] }), keyboard: false, riseOnHover: true });
     m.on('click', () => abrirYacimiento(y));
     m.addTo(mapa);
+    marcas.push(m);
   }
+  const acomodar = () => abanico(mapa, marcas);
+  mapa.on('zoomend moveend', acomodar);
   const encuadrar = () => {
     if (!mapa) return;
     mapa.invalidateSize();
@@ -117,12 +161,15 @@ export function render(el) {
     });
   };
   encuadrar();
-  requestAnimationFrame(encuadrar);
+  requestAnimationFrame(() => { encuadrar(); acomodar(); });
+  el._encuadrar = encuadrar;
 
   if (!el._mapa) {
     el._mapa = true;
     el.addEventListener('click', (e) => {
       if (!el.querySelector('.mapa')) return;
+      const z = e.target.closest('[data-zoom]');
+      if (z && mapa) { const v = Number(z.dataset.zoom); if (v > 0) mapa.zoomIn(); else if (v < 0) mapa.zoomOut(); else el._encuadrar?.(); return; }
       if (e.target.closest('[data-vista3d]')) { vista3d = !vista3d; saveLocal('reclutapp.mapa.3d', vista3d); render(el); return; }
       const c = e.target.closest('[data-capa]');
       if (c) { capaActual = c.dataset.capa; saveLocal('reclutapp.mapa.capa', capaActual); render(el); return; }

@@ -376,7 +376,7 @@
 .mp-pt--oficina .mp-ico { width: 34px; height: 34px; } .mp-pt--oficina .mp-ico svg { width: 19px; height: 19px; }
 /* --- mapa real (Leaflet) --- */
 .mapa-leaflet { position: absolute; inset: 0; background: #0b0f0d; }
-.mapa-leaflet .leaflet-tile-pane { filter: saturate(.9); }
+
 .mp-divicon { background: none; border: 0; }
 .mp-divicon .mp-pt { position: absolute; left: 0; top: 0; transform: translate(-50%, -21px); }
 .mp-divicon:hover { z-index: 2000 !important; }
@@ -399,9 +399,10 @@
   .mapa-panel { position: relative; inset: auto; width: auto; margin: 12px; }
 }
 .mapa-panel { z-index: 1000; }
-.mapa-leaflet[data-capa="satelite"] .leaflet-tile-pane { filter: brightness(.58) saturate(.85) contrast(1.08); }
+.mapa-leaflet[data-capa="satelite"] .leaflet-tile-pane { filter: brightness(.74) saturate(.95) contrast(1.12); }
+.mapa-leaflet .leaflet-tile { image-rendering: -webkit-optimize-contrast; }
 .mapa-leaflet[data-capa="oscuro"] .leaflet-tile-pane { filter: none; }
-.mapa-leaflet::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 450; background: radial-gradient(ellipse at 40% 50%, transparent 55%, rgba(4, 8, 6, .55)); }
+.mapa-leaflet::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 450; background: radial-gradient(ellipse at 40% 50%, transparent 62%, rgba(4, 8, 6, .4)); }
 .mp-pt.ficha-abajo .mp-ficha { bottom: auto; top: calc(100% + 8px); }
 /* el mapa no puede tapar el encabezado ni el menú de secciones */
 .mapa { isolation: isolate; z-index: 0; }
@@ -448,7 +449,7 @@
 [data-estilo="iris"][data-theme="dark"] input, [data-estilo="iris"][data-theme="dark"] select, [data-estilo="iris"][data-theme="dark"] textarea { color: var(--text); }
 /* vista 3D: el mapa se inclina hacia el horizonte */
 .mapa.is-3d { perspective: 1500px; perspective-origin: 40% 0%; }
-.mapa.is-3d .mapa-leaflet { transform: rotateX(20deg) scale(1.2); transform-origin: 40% 75%; }
+.mapa.is-3d .mapa-leaflet { inset: -10% -8% -2% -8%; transform: rotateX(18deg); transform-origin: 45% 80%; }
 .mapa-cielo { display: none; }
 .mapa.is-3d .mapa-cielo { display: block; position: absolute; left: 0; right: 0; top: 0; height: 13%; z-index: 500; pointer-events: none;
   background: linear-gradient(to bottom, #04070A 0%, rgba(8, 18, 16, .7) 40%, rgba(8, 18, 16, 0) 100%); }
@@ -456,3 +457,16 @@
   background: radial-gradient(ellipse at 40% 0%, rgba(120, 180, 80, .18), transparent 70%); }
 .mapa.is-3d .mp-ico { box-shadow: 0 0 0 4px rgba(120, 180, 80, .12), 0 14px 22px rgba(0, 0, 0, .7); }
 .mapa-capas-sep { width: 1px; background: rgba(255, 255, 255, .12); margin: 4px 2px; }
+/* abanico de puntos cercanos */
+.mp-divicon .mp-pt { transform: translate(calc(-50% + var(--dx, 0px)), calc(-21px + var(--dy, 0px))); transition: transform .25s ease; }
+.mp-linea { position: absolute; left: 0; top: 0; height: 1.5px; width: 0; transform-origin: 0 50%; background: rgba(232, 238, 234, .55); opacity: 0; pointer-events: none; }
+.mp-real { position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; background: #E8EEEA; box-shadow: 0 0 0 2px rgba(0, 0, 0, .5); pointer-events: none; }
+/* zoom y atribución fuera del mapa inclinado */
+.mapa-zoom { position: absolute; left: 16px; bottom: 16px; z-index: 900; display: grid; border-radius: 12px; overflow: hidden; background: rgba(9, 15, 12, .85); border: 1px solid rgba(255, 255, 255, .1); box-shadow: 0 8px 24px rgba(0, 0, 0, .4); }
+.mapa-zoom button { width: 40px; height: 38px; border: 0; background: none; color: #E8EEEA; font: 600 20px/1 var(--font-sans); cursor: pointer; }
+.mapa-zoom button + button { border-top: 1px solid rgba(255, 255, 255, .08); }
+.mapa-zoom button:hover { background: rgba(120, 180, 80, .18); }
+.mapa-zoom button:last-child { font-size: 16px; }
+.mapa-atrib { position: absolute; right: 360px; bottom: 6px; z-index: 900; font: 400 10px var(--font-sans); color: #8FA399; background: rgba(7, 11, 9, .6); padding: 2px 6px; border-radius: 4px; }
+.mapa-atrib a { color: #9CCB74; }
+@media (max-width: 860px) { .mapa-zoom { top: calc(68vh - 140px); bottom: auto; } .mapa-atrib { right: 6px; top: calc(68vh - 22px); bottom: auto; } }
