@@ -54,9 +54,10 @@ function applyTheme(t) {
   if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
   else delete document.documentElement.dataset.theme;
 }
-// Diseño de la app: estilo IRIS (guía UX BI Tecpetrol) con paleta EFiS, siempre en claro.
+// Diseño de la app: estilo IRIS (guía UX BI Tecpetrol) con paleta EFiS; claro por defecto,
+// oscuro si la persona lo eligió con el botón de tema.
 document.documentElement.dataset.estilo = 'iris';
-applyTheme('light');
+applyTheme(loadLocal('reclutapp.theme', 'light') === 'dark' ? 'dark' : 'light');
 function toggleTheme() {
   const dark = document.documentElement.dataset.theme === 'dark' ||
     (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
