@@ -25,6 +25,7 @@ import * as reunion from './views/reunion.js';
 import { descargarRespaldo, diasDesdeRespaldo } from './lib/respaldo.js';
 import { descargarExcel } from './lib/reporteExcel.js';
 import { initFolds } from './components/folds.js';
+import { icono } from './components/iconos.js';
 
 const ROUTES = {
   posiciones: { view: posiciones, label: 'Posiciones' },
@@ -91,7 +92,7 @@ function shell(name) {
       <span class="brand-app"><b>Reclutamiento</b></span>
     </a>
     <nav class="nav" id="menu-secciones" aria-label="Secciones">
-      ${navItems.map(([k, v]) => html`<a href="#/${k}" class="${k === name ? 'is-active' : ''}" ${k === name ? html`aria-current="page"` : ''} title="${v.label}"><span class="nav-ini" aria-hidden="true">${INICIALES[k] || v.label.slice(0, 2).toUpperCase()}</span><span class="nav-txt">${v.label}</span></a>`)}
+      ${navItems.map(([k, v]) => html`<a href="#/${k}" class="${k === name ? 'is-active' : ''}" ${k === name ? html`aria-current="page"` : ''} title="${v.label}"><span class="nav-ini" aria-hidden="true">${INICIALES[k] || v.label.slice(0, 2).toUpperCase()}</span><span class="nav-ico">${icono(k)}</span><span class="nav-txt">${v.label}</span></a>`)}
     </nav>
     <div class="topbar-right">
       ${state.canRead ? html`<button class="btn btn--sm btn--excel" id="btn-excel" title="${state.isStaff ? 'Descargar todo en Excel (incluye nómina y datos personales)' : 'Descargar resumen en Excel (sin datos personales)'}">${ICON.descarga} Excel</button>
@@ -171,6 +172,7 @@ function draw() {
 
 subscribe(() => draw());
 window.addEventListener('hashchange', () => { window.scrollTo(0, 0); route(); });
+window.addEventListener('scroll', () => document.documentElement.classList.toggle('con-scroll', window.scrollY > 24), { passive: true });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.documentElement.classList.contains('menu-abierto')) { document.documentElement.classList.remove('menu-abierto'); document.getElementById('btn-menu')?.focus(); } });
 
 // Re-leer al volver a la pestaña (otra persona pudo haber editado).

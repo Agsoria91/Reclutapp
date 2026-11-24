@@ -517,3 +517,4 @@ fieldset.sensitive { border: 1px dotted var(--st-orange); }
 /* iniciales de la navegación: solo las usa el estilo IRIS */
 .nav-ini { display: none; }
 .menu-btn, .menu-velo { display: none; }
+.nav-ico { display: none; }
