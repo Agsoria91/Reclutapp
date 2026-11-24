@@ -371,3 +371,31 @@
 .mp-pulso { top: 21px; width: 42px; height: 42px; margin: -21px 0 0 -21px; }
 .mp-pt { gap: 4px; } .mp-tag { font-size: 11px; padding: 2px 8px; }
 .mp-pt--oficina .mp-ico { width: 34px; height: 34px; } .mp-pt--oficina .mp-ico svg { width: 19px; height: 19px; }
+/* --- mapa real (Leaflet) --- */
+.mapa-leaflet { position: absolute; inset: 0; background: #0b0f0d; }
+.mapa-leaflet .leaflet-tile-pane { filter: saturate(.9); }
+.mp-divicon { background: none; border: 0; }
+.mp-divicon .mp-pt { position: absolute; left: 0; top: 0; transform: translate(-50%, -21px); }
+.mp-divicon:hover { z-index: 2000 !important; }
+.mp-pt--camion { color: #E59A5B; } .mp-pt--camion .mp-ico { border-color: #E59A5B; box-shadow: 0 0 0 4px rgba(229, 154, 91, .14), 0 8px 24px rgba(0, 0, 0, .55); border-style: dashed; }
+.ml-ico.mp-pt--camion { color: #E59A5B; }
+.mapa-ref span.mp-pt--ciguena svg { color: #7CC4D6; } .mapa-ref span.mp-pt--cfp svg { color: #F2C14E; } .mapa-ref span.mp-pt--camion svg { color: #E59A5B; }
+.mapa-ref span.mp-pt--torre svg { color: #9CCB74; }
+.mapa-ref span { color: #8FA399 !important; }
+.mapa-capas { display: inline-flex; gap: 4px; padding: 4px; border-radius: 10px; background: rgba(255, 255, 255, .06); align-self: flex-start; }
+.mapa-capas button { border: 0; background: none; color: #B8C6BF; font: 600 12.5px var(--font-sans); padding: 6px 14px; border-radius: 7px; cursor: pointer; }
+.mapa-capas button.is-on { background: #78B450; color: #0B1210; }
+.mapa .leaflet-control-attribution { background: rgba(7, 11, 9, .7); color: #7E8F87; font-size: 10px; }
+.mapa .leaflet-control-attribution a { color: #9CCB74; }
+.mapa .leaflet-bar a { background: rgba(10, 17, 13, .9); color: #E8EEEA; border-color: rgba(255, 255, 255, .1); }
+.mapa .leaflet-bar a:hover { background: #1C2E24; }
+.mapa .leaflet-container { font-family: var(--font-sans); }
+@media (max-width: 860px) {
+  .mapa { height: auto; display: block; }
+  .mapa-leaflet { position: relative; inset: auto; height: 68vh; }
+  .mapa-panel { position: relative; inset: auto; width: auto; margin: 12px; }
+}
+.mapa-panel { z-index: 1000; }
+.mapa-leaflet[data-capa="satelite"] .leaflet-tile-pane { filter: brightness(.58) saturate(.85) contrast(1.08); }
+.mapa-leaflet[data-capa="oscuro"] .leaflet-tile-pane { filter: none; }
+.mapa-leaflet::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 450; background: radial-gradient(ellipse at 40% 50%, transparent 55%, rgba(4, 8, 6, .55)); }

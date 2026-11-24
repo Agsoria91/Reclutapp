@@ -3,15 +3,20 @@
 // 'torre' = torre de perforación (desarrollo no convencional),
 // 'ciguena' = cigüeña / bombeo mecánico (convencional),
 // 'cfp' = central / planta de facilidades de producción,
-// 'oficina' = base administrativa.
+// 'camion' = unidad móvil, 'oficina' = base administrativa.
 export const YACIMIENTOS = [
-  { codigo: 'FDP', nombre: 'Fortín de Piedra', lon: -68.97, lat: -38.16, tipo: 'cfp' },
-  { codigo: 'LT2E', nombre: 'Los Toldos II Este', lon: -68.83, lat: -37.95, tipo: 'torre' },
-  { codigo: 'LT1N', nombre: 'Los Toldos I Norte', lon: -69.02, lat: -37.80, tipo: 'torre' },
-  { codigo: 'CDA', nombre: 'CDA', lon: -68.62, lat: -38.27, tipo: 'torre', aConfirmar: true },
-  { codigo: 'TLM', nombre: 'TLM', lon: -69.25, lat: -38.30, tipo: 'torre', aConfirmar: true },
-  { codigo: 'LBAS', nombre: 'Los Bastos', lon: -69.30, lat: -38.70, tipo: 'ciguena', aConfirmar: true },
-  { codigo: 'ASAL', nombre: 'Agua Salada', lon: -67.98, lat: -38.02, tipo: 'ciguena' },
+  // Global Energy Monitor (gem.wiki): -38.548, -69.095
+  { codigo: 'FDP', nombre: 'Fortín de Piedra', lon: -69.095, lat: -38.548, tipo: 'cfp' },
+  // ~30 km al sur de Rincón de los Sauces (Hub Norte de Vaca Muerta)
+  { codigo: 'LT2E', nombre: 'Los Toldos II Este', lon: -68.92, lat: -37.64, tipo: 'torre', aproximada: true },
+  { codigo: 'LT1N', nombre: 'Los Toldos I Norte', lon: -69.10, lat: -37.55, tipo: 'torre', aproximada: true },
+  // unidad móvil de transporte de arena: sin lugar fijo, se ubica junto a Los Toldos
+  { codigo: 'TLM', nombre: 'TLM · transporte de arena', lon: -68.80, lat: -37.72, tipo: 'camion', movil: true },
+  { codigo: 'CDA', nombre: 'CDA', lon: -68.75, lat: -38.30, tipo: 'torre', aConfirmar: true },
+  // sobre la Dorsal de Huincul, cerca de Senillosa
+  { codigo: 'LBAS', nombre: 'Los Bastos', lon: -68.62, lat: -38.93, tipo: 'ciguena', aproximada: true },
+  // ~50 km al sur de Catriel (Río Negro)
+  { codigo: 'ASAL', nombre: 'Agua Salada', lon: -67.86, lat: -38.32, tipo: 'ciguena', aproximada: true },
   { codigo: 'NQN', nombre: 'Oficina Neuquén', lon: -68.06, lat: -38.95, tipo: 'oficina', alias: ['Oficina NQN'] },
 ];
 
