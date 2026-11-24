@@ -2,6 +2,8 @@ import '@fontsource-variable/martian-mono/standard.css';
 import './styles/tokens.css';
 import './styles/app.css';
 import './styles/plano.css';
+import '@fontsource-variable/archivo/wght.css';
+import './styles/tinta.css';
 import { html, raw, $ } from './lib/html.js';
 import { sb } from './lib/supabase.js';
 import { state, subscribe, refreshAuth, loadAll, set } from './lib/store.js';
