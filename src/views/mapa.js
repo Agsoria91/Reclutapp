@@ -58,6 +58,7 @@ function marcador(y) {
 
 let mapa = null;
 let capaActual = loadLocal('reclutapp.mapa.capa', 'satelite');
+let vista3d = loadLocal('reclutapp.mapa.3d', true);
 
 function abrirYacimiento(y) {
   if (!y?.total) return;
@@ -73,7 +74,8 @@ export function render(el) {
   const conSillas = ys.filter((y) => y.total).sort((a, b) => b.total - a.total);
 
   if (mapa) { mapa.remove(); mapa = null; }
-  el.innerHTML = String(html`<div class="mapa">
+  el.innerHTML = String(html`<div class="mapa ${vista3d ? 'is-3d' : ''}">
+    <div class="mapa-cielo" aria-hidden="true"></div>
     <div class="mapa-leaflet" id="mapa-leaflet" aria-label="Mapa de la cuenca neuquina con los yacimientos de EFiS"></div>
     <aside class="mapa-panel">
       <span class="mapa-kicker">EFiS · Cuenca Neuquina</span>
@@ -81,6 +83,8 @@ export function render(el) {
       <div class="mapa-tot"><b>${pct(tot.cub, tot.total)}%</b><span>${tot.cub} de ${tot.total} sillas cubiertas</span></div>
       <div class="mapa-capas" role="group" aria-label="Tipo de mapa">
         ${[['satelite', 'Satélite'], ['oscuro', 'Mapa']].map(([k, t]) => html`<button type="button" data-capa="${k}" class="${capaActual === k ? 'is-on' : ''}">${t}</button>`)}
+        <span class="mapa-capas-sep"></span>
+        <button type="button" data-vista3d class="${vista3d ? 'is-on' : ''}" aria-pressed="${vista3d}">3D</button>
       </div>
       <ul class="mapa-lista">${conSillas.map((y) => html`<li><button type="button" data-yac="${y.codigo}">
         <span class="ml-ico mp-pt--${y.tipo}">${raw(svg(y.tipo, 1.8))}</span>
@@ -109,7 +113,7 @@ export function render(el) {
     mapa.invalidateSize();
     const ancho = box.clientWidth;
     mapa.fitBounds(L.latLngBounds(ys.map((y) => [y.lat, y.lon])), {
-      paddingTopLeft: [60, 90], paddingBottomRight: [ancho > 860 ? 380 : 30, 60], maxZoom: 9,
+      paddingTopLeft: [60, vista3d ? 150 : 90], paddingBottomRight: [ancho > 860 ? 380 : 30, vista3d ? 190 : 60], maxZoom: 9,
     });
   };
   encuadrar();
@@ -119,6 +123,7 @@ export function render(el) {
     el._mapa = true;
     el.addEventListener('click', (e) => {
       if (!el.querySelector('.mapa')) return;
+      if (e.target.closest('[data-vista3d]')) { vista3d = !vista3d; saveLocal('reclutapp.mapa.3d', vista3d); render(el); return; }
       const c = e.target.closest('[data-capa]');
       if (c) { capaActual = c.dataset.capa; saveLocal('reclutapp.mapa.capa', capaActual); render(el); return; }
       const b = e.target.closest('.mapa-lista [data-yac]');
