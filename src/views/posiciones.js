@@ -101,9 +101,11 @@ export function render(el) {
   const sortedGroups = [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es'));
   const allOpen = sortedGroups.length && sortedGroups.every(([g]) => openGroups.has(g));
   const tab = subTab('posiciones', ['mapa', 'meses'], 'mapa');
+  const desdeMapa = loadLocal('reclutapp.desdeMapa', null);
 
   el.innerHTML = String(html`
-  ${mHead({ titulo: 'Posiciones', sub: `${k.total} sillas · ${pct(k.cubiertas, k.total)}% cubiertas`, acciones: html`
+  ${mHead({ titulo: desdeMapa ? `Posiciones · ${[...posFilters.area].join(', ')}` : 'Posiciones', sub: `${k.total} sillas · ${pct(k.cubiertas, k.total)}% cubiertas`, acciones: html`
+    ${desdeMapa ? html`<button class="btn btn--ghost" data-act="volver-mapa">← Volver al mapa</button>` : ''}
     ${staff ? html`<button class="btn btn--ghost" data-act="new">+ Nueva silla</button>` : ''}
     <a class="btn btn--primary" href="#/reunion${linkReunion()}">Modo reunión</a>` })}
   ${staff ? avisoPosSap() : ''}
@@ -305,6 +307,11 @@ function onClick(e) {
   if (f) { toggleFilter(posFilters, f.dataset.filter, f.dataset.value); persist(); render(el); return; }
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'new') { openEditor(null); return; }
+  if (act === 'volver-mapa') {
+    const v = loadLocal('reclutapp.desdeMapa', null);
+    posFilters.area = new Set(v?.prev || []); persist(); saveLocal('reclutapp.desdeMapa', null);
+    location.hash = '#/mapa'; return;
+  }
   if (act === 'pos-clear') { Object.keys(posFilters).forEach((d) => { posFilters[d] = new Set(); }); soloPendientes = false; persist(); render(el); return; }
   if (act === 'pos-solo-pend') { soloPendientes = false; persist(); render(el); return; }
   if (act === 'sap-ocultar') { saveLocal('reclutapp.pos.sapOculto', firmaRep(posSapRepetidas())); render(el); return; }
