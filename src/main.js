@@ -2,6 +2,7 @@ import '@fontsource-variable/martian-mono/standard.css';
 import './styles/tokens.css';
 import './styles/app.css';
 import './styles/plano.css';
+import './styles/iris.css';
 import { html, raw, $ } from './lib/html.js';
 import { sb } from './lib/supabase.js';
 import { state, subscribe, refreshAuth, loadAll, set } from './lib/store.js';
@@ -24,6 +25,8 @@ import * as reunion from './views/reunion.js';
 import { descargarRespaldo, diasDesdeRespaldo } from './lib/respaldo.js';
 import { descargarExcel } from './lib/reporteExcel.js';
 import { initFolds } from './components/folds.js';
+import { icono } from './components/iconos.js';
+import { initModerno } from './components/moderno.js';
 
 const ROUTES = {
   posiciones: { view: posiciones, label: 'Posiciones' },
@@ -49,7 +52,9 @@ function applyTheme(t) {
   if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
   else delete document.documentElement.dataset.theme;
 }
-applyTheme(loadLocal('reclutapp.theme', null));
+// Diseño de la app: estilo IRIS (guía UX BI Tecpetrol) con paleta EFiS, siempre en claro.
+document.documentElement.dataset.estilo = 'iris';
+applyTheme('light');
 function toggleTheme() {
   const dark = document.documentElement.dataset.theme === 'dark' ||
     (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
@@ -71,8 +76,11 @@ const ICON = {
 };
 
 const app = $('#app');
+// Iniciales de cada sección (navegación lateral del estilo IRIS)
+const INICIALES = { posiciones: 'PO', candidatos: 'CA', entrevistas: 'EN', dashboardpj: 'PJ', examenes: 'EX', ingresos: 'IN', legajos: 'LE', nomina: 'NO', importar: 'IM', usuarios: 'US' };
 let current = { name: null, container: null };
 initFolds(app, () => current.name);
+initModerno(() => draw());
 
 function shell(name) {
   const r = ROUTES[name];
@@ -81,13 +89,14 @@ function shell(name) {
   return html`
   <a href="#view" class="skip">Saltar al contenido</a>
   <header class="topbar">
+    ${navItems.length ? html`<button type="button" class="menu-btn" id="btn-menu" aria-label="Abrir menú de secciones" aria-expanded="false" aria-controls="menu-secciones"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>` : ''}
     <a class="brand" href="#/posiciones" aria-label="Inicio">
       <img src="./brand/efis-isologo.svg" alt="EFiS Energy Field Services" class="brand-logo brand-logo--color">
       <img src="./brand/efis-isologo-negativo.svg" alt="" aria-hidden="true" class="brand-logo brand-logo--mono">
       <span class="brand-app"><b>Reclutamiento</b></span>
     </a>
-    <nav class="nav" aria-label="Secciones">
-      ${navItems.map(([k, v]) => html`<a href="#/${k}" class="${k === name ? 'is-active' : ''}" ${k === name ? html`aria-current="page"` : ''}>${v.label}</a>`)}
+    <nav class="nav" id="menu-secciones" aria-label="Secciones">
+      ${navItems.map(([k, v]) => html`<a href="#/${k}" class="${k === name ? 'is-active' : ''}" ${k === name ? html`aria-current="page"` : ''} title="${v.label}"><span class="nav-ini" aria-hidden="true">${INICIALES[k] || v.label.slice(0, 2).toUpperCase()}</span><span class="nav-ico">${icono(k)}</span><span class="nav-txt">${v.label}</span></a>`)}
     </nav>
     <div class="topbar-right">
       ${state.canRead ? html`<button class="btn btn--sm btn--excel" id="btn-excel" title="${state.isStaff ? 'Descargar todo en Excel (incluye nómina y datos personales)' : 'Descargar resumen en Excel (sin datos personales)'}">${ICON.descarga} Excel</button>
@@ -100,6 +109,7 @@ function shell(name) {
         : ''}
     </div>
   </header>
+  <div class="menu-velo" data-menu-cerrar></div>
   ${state.canRead && !state.isStaff && name !== 'login' ? html`<div class="public-banner">Vista de lectura · sin datos personales ni sueldos. Uso interno EFiS / Tecpetrol.</div>` : ''}
   ${state.isStaff && (diasDesdeRespaldo() == null || diasDesdeRespaldo() >= 7) ? html`<div class="backup-banner">
     ${diasDesdeRespaldo() == null ? 'Todavía no descargaste un respaldo desde esta computadora.' : `Hace ${diasDesdeRespaldo()} días que no descargás un respaldo.`}
@@ -120,6 +130,15 @@ function route() {
   current = { name, container, params };
   document.title = `${r.label || ({ presentar: 'Mapa de posiciones', historial: 'Historial de silla', reunion: 'Modo reunión' }[name] || 'Ingreso')} · Reclutamiento EFiS`;
   draw();
+  document.documentElement.classList.remove('menu-abierto');
+  $('#btn-menu')?.addEventListener('click', (e) => {
+    const abierto = document.documentElement.classList.toggle('menu-abierto');
+    e.currentTarget.setAttribute('aria-expanded', String(abierto));
+    if (abierto) document.querySelector('#menu-secciones a.is-active, #menu-secciones a')?.focus();
+  });
+  const cerrarMenu = () => document.documentElement.classList.remove('menu-abierto');
+  document.querySelector('[data-menu-cerrar]')?.addEventListener('click', cerrarMenu);
+  $('#menu-secciones')?.addEventListener('click', (e) => { if (e.target.closest('a')) cerrarMenu(); });
   $('#btn-theme')?.addEventListener('click', toggleTheme);
   $('#btn-refresh')?.addEventListener('click', () => loadAll());
   $('#btn-logout')?.addEventListener('click', async () => { await sb.auth.signOut(); });
@@ -157,6 +176,8 @@ function draw() {
 
 subscribe(() => draw());
 window.addEventListener('hashchange', () => { window.scrollTo(0, 0); route(); });
+window.addEventListener('scroll', () => document.documentElement.classList.toggle('con-scroll', window.scrollY > 24), { passive: true });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.documentElement.classList.contains('menu-abierto')) { document.documentElement.classList.remove('menu-abierto'); document.getElementById('btn-menu')?.focus(); } });
 
 // Re-leer al volver a la pestaña (otra persona pudo haber editado).
 let lastFocusLoad = 0;

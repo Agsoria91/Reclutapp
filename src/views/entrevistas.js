@@ -5,6 +5,7 @@ import { html, raw } from '../lib/html.js';
 import { state } from '../lib/store.js';
 import { fmtMonth, fmtInt } from '../lib/format.js';
 import { countBy, interviewStats, reached, isCovered } from '../lib/kpis.js';
+import { mHead, mBarra, mChips, mPanel, mKpis, mTabs, subTab } from '../components/moderno.js';
 import { filterGroup, toggleFilter, kpi, bars, saveLocal, loadLocal, serializeFilters, restoreFilters, animateIn, prevSize } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 
@@ -77,30 +78,46 @@ export function render(el) {
   const de10 = s.entrevistados ? Math.round((s.aprobados / s.entrevistados) * 10) : null;
   const ing10 = s.entrevistados ? Math.round((s.ingresados / s.entrevistados) * 10) : null;
 
+  const tab = subTab('entrevistas', ['graficos', 'tabla'], 'graficos');
   el.innerHTML = String(html`
-  <section class="page-head"><div><h1>Entrevistas y efectividad</h1></div></section>
-
-  <section class="filters card">
+  ${mHead({ titulo: 'Entrevistas', sub: s.entrevistados ? `De cada 10 entrevistados, ${de10} aprueban y ${ing10} ingresan` : 'Efectividad de las entrevistas' })}
+  ${mBarra({ seccion: 'entrevistas', nFiltros: chips.length })}
+  ${mChips(chips.map(([d, v]) => ({ dim: d, valor: v, texto: d === 'mes' && v !== 'Sin fecha' ? fmtMonth(v) : v })), 'clear')}
+  ${mPanel('entrevistas', html`
     ${filterGroup({ dim: 'area', label: 'Área', options: pillOptions('area'), selected: filters.area })}
     ${filterGroup({ dim: 'sector', label: 'Sector', options: pillOptions('sector'), selected: filters.sector, allLabel: 'Todos' })}
-    ${filterGroup({ dim: 'procedencia', label: 'Procedencia', options: pillOptions('procedencia'), selected: filters.procedencia })}
-    ${chips.length ? html`<div class="active-filters"><span class="muted small">Filtrando por:</span>
-      ${chips.map(([d, v]) => html`<button type="button" class="chip chip--on" data-filter="${d}" data-value="${v}">${d === 'mes' && v !== 'Sin fecha' ? fmtMonth(v) : v} ✕</button>`)}
-      <button type="button" class="btn btn--ghost btn--sm" data-act="clear">Limpiar todo</button></div>` : ''}
-  </section>
-
+    ${filterGroup({ dim: 'procedencia', label: 'Procedencia', options: pillOptions('procedencia'), selected: filters.procedencia })}`)}
   ${internosNota()}
-  ${s.entrevistados ? html`<p class="headline">De cada <b>10</b> entrevistados, <b>${de10}</b> aprueban la entrevista y <b>${ing10}</b> terminan ingresando.</p>` : ''}
-
-  <section class="kpis kpis--6">
-    ${kpi('Entrevistas realizadas', s.entrevistados, { tone: 'blue', big: true, id: 'e-ent' })}
-    ${kpi('Aprobaron', s.aprobados, { tone: 'navy', sub: `efectividad ${pctTxt(s.efectividad)}`, id: 'e-apr' })}
-    ${kpi('Efectividad', s.efectividad ?? 0, { suffix: '%', tone: 'green', sub: 'aprobadas / entrevistas', id: 'e-efe' })}
-    ${kpi('Llegaron a examen', s.examen, { tone: 'orange', id: 'e-exa' })}
-    ${kpi('Ingresaron', s.ingresados, { tone: 'green', sub: `${pctTxt(s.conversion)} de los entrevistados`, id: 'e-ing' })}
-    ${kpi('Bajas post-entrevista', s.bajasPost, { tone: 'red', id: 'e-baj' })}
-  </section>
-
+  ${mKpis([
+    { icono: 'entrevistas', label: 'Efectividad', valor: s.efectividad ?? 0, sufijo: '%', id: 'e-efe', barra: s.efectividad ?? 0,
+      serie: meses.map(([m, n]) => [m, n]), sub: html`<b>${fmtInt(s.aprobados)}</b> aprobadas de ${fmtInt(s.entrevistados)} entrevistas` },
+    { icono: 'candidatos', label: 'Entrevistas realizadas', valor: s.entrevistados, id: 'e-ent', sub: `${fmtInt(s.examen)} llegaron a examen` },
+    { icono: 'alta', label: 'Ingresaron', valor: s.ingresados, id: 'e-ing', tono: 'ok', sub: `${pctTxt(s.conversion)} de los entrevistados` },
+    { icono: 'documento', label: 'Bajas post-entrevista', valor: s.bajasPost, id: 'e-baj', tono: s.bajasPost ? 'alerta' : '', sub: 'no continuaron' },
+  ])}
+  ${mTabs('entrevistas', [['graficos', 'Embudo y meses'], ['tabla', 'Efectividad por grupo']], tab)}
+  <div class="m-cuerpo">
+  ${tab === 'tabla' ? html`
+  <section class="card">
+    <header class="list-head">
+      <h2 class="card-title">Efectividad por</h2>
+      <div class="seg" role="radiogroup" aria-label="Agrupar por">${GROUPS.map(([k, l]) => html`<label class="seg-opt ${groupBy === k ? 'is-on' : ''}"><input type="radio" name="ent-group" value="${k}" ${raw(groupBy === k ? 'checked' : '')}> ${l}</label>`)}</div>
+    </header>
+    ${tabla.length ? html`<div class="table-wrap"><table class="tbl tbl--efe">
+      <thead><tr><th>${GROUPS.find((g) => g[0] === groupBy)[1]}</th><th class="num">Entrevistas</th><th class="num">Aprobadas</th><th>Efectividad</th><th class="num hide-sm">Examen</th><th class="num">Ingresos</th><th class="num hide-sm">% ingreso</th><th class="num hide-sm">Bajas</th></tr></thead>
+      <tbody>${tabla.map((r) => html`<tr>
+        <td><strong>${r.k}</strong></td>
+        <td class="num">${r.entrevistados}</td>
+        <td class="num">${r.aprobados}</td>
+        <td><span class="efe"><span class="minibar"><span style="width:${r.efectividad ?? 0}%"></span></span><b>${pctTxt(r.efectividad)}</b></span></td>
+        <td class="num hide-sm">${r.examen}</td>
+        <td class="num">${r.ingresados}</td>
+        <td class="num hide-sm">${pctTxt(r.conversion)}</td>
+        <td class="num hide-sm">${r.bajasPost}</td>
+      </tr>`)}</tbody>
+      <tfoot><tr><td>Total</td><td class="num">${s.entrevistados}</td><td class="num">${s.aprobados}</td><td><b>${pctTxt(s.efectividad)}</b></td><td class="num hide-sm">${s.examen}</td><td class="num">${s.ingresados}</td><td class="num hide-sm">${pctTxt(s.conversion)}</td><td class="num hide-sm">${s.bajasPost}</td></tr></tfoot>
+    </table></div>` : mascot('empty', { text: 'No hay entrevistas con estos filtros.' })}
+  </section>` : html`
   <section class="grid-2">
     <article class="card">
       <h2 class="card-title">Embudo</h2>
@@ -135,26 +152,8 @@ export function render(el) {
     </article>
   </section>
 
-  <section class="card">
-    <header class="list-head">
-      <h2 class="card-title">Efectividad por</h2>
-      <div class="seg" role="radiogroup" aria-label="Agrupar por">${GROUPS.map(([k, l]) => html`<label class="seg-opt ${groupBy === k ? 'is-on' : ''}"><input type="radio" name="ent-group" value="${k}" ${raw(groupBy === k ? 'checked' : '')}> ${l}</label>`)}</div>
-    </header>
-    ${tabla.length ? html`<div class="table-wrap"><table class="tbl tbl--efe">
-      <thead><tr><th>${GROUPS.find((g) => g[0] === groupBy)[1]}</th><th class="num">Entrevistas</th><th class="num">Aprobadas</th><th>Efectividad</th><th class="num hide-sm">Examen</th><th class="num">Ingresos</th><th class="num hide-sm">% ingreso</th><th class="num hide-sm">Bajas</th></tr></thead>
-      <tbody>${tabla.map((r) => html`<tr>
-        <td><strong>${r.k}</strong></td>
-        <td class="num">${r.entrevistados}</td>
-        <td class="num">${r.aprobados}</td>
-        <td><span class="efe"><span class="minibar"><span style="width:${r.efectividad ?? 0}%"></span></span><b>${pctTxt(r.efectividad)}</b></span></td>
-        <td class="num hide-sm">${r.examen}</td>
-        <td class="num">${r.ingresados}</td>
-        <td class="num hide-sm">${pctTxt(r.conversion)}</td>
-        <td class="num hide-sm">${r.bajasPost}</td>
-      </tr>`)}</tbody>
-      <tfoot><tr><td>Total</td><td class="num">${s.entrevistados}</td><td class="num">${s.aprobados}</td><td><b>${pctTxt(s.efectividad)}</b></td><td class="num hide-sm">${s.examen}</td><td class="num">${s.ingresados}</td><td class="num hide-sm">${pctTxt(s.conversion)}</td><td class="num hide-sm">${s.bajasPost}</td></tr></tfoot>
-    </table></div>` : mascot('empty', { text: 'No hay entrevistas con estos filtros.' })}
-  </section>`);
+`}
+  </div>`);
   animateIn(el);
 
   if (!el._bound) {

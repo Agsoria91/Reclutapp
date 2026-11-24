@@ -15,7 +15,7 @@ const tituloDe = (h) => {
 };
 
 function tarjetas(root) {
-  return [...root.querySelectorAll('.card')].filter((card) => !card.classList.contains('filters') && card.querySelector('.card-title'));
+  return [...root.querySelectorAll('.card')].filter((card) => !card.classList.contains('filters') && !card.closest('.m-cuerpo') && card.querySelector('.card-title'));
 }
 
 function preparar(root, ruta) {

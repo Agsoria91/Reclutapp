@@ -6,6 +6,7 @@ import { sb, fetchAll } from '../lib/supabase.js';
 import { fmtDate, fmtMonth, todayISO, norm, daysBetween, pct } from '../lib/format.js';
 import { decodeBytes } from '../lib/csv.js';
 import { parseVacantesCSV, estadoInfo, esVacante } from '../lib/vacantesPj.js';
+import { mHead, mBarra, mChips, mPanel, mKpis, mTabs, subTab } from '../components/moderno.js';
 import {
   filterGroup, toggleFilter, kpi, bars, saveLocal, loadLocal, serializeFilters, restoreFilters,
   pivot, pivotTable, confirmDialog, toast, prevSize, animateIn, multiSelectFilter,
@@ -124,54 +125,39 @@ export function render(el) {
   lista = lista.slice().sort((a, b) => estadoInfo(a.estado).orden - estadoInfo(b.estado).orden || String(a.fecha_solicitud || '9').localeCompare(String(b.fecha_solicitud || '9')));
   const chips = DIMS.flatMap((d) => [...filters[d]].map((v) => [d, v]));
   const ult = datos.ultima;
+  const tab = subTab('dashboardpj', ['busquedas', 'graficos', 'tablas'], 'busquedas');
 
   el.innerHTML = String(html`
-  <section class="page-head">
-    <div>
-      <h1>Dashboard PJ</h1>
-      <p class="muted">${ult ? html`Actualizado el <b>${fmtDate(ult.importado_at)}</b>${ult.archivo ? ` con “${ult.archivo}”` : ''} · ${ult.filas} búsquedas.` : 'Todavía no se cargó ninguna planilla.'}</p>
-    </div>
-    <div class="head-actions">
-      <label class="btn btn--primary">Actualizar con CSV<input type="file" id="pj-file" accept=".csv,text/csv" hidden></label>
-      ${base.length ? html`<button class="btn" data-act="pj-excel">Excel</button>` : ''}
-    </div>
-  </section>
+  ${mHead({ titulo: 'Dashboard PJ', sub: ult ? html`Actualizado el <b>${fmtDate(ult.importado_at)}</b> · ${ult.filas} búsquedas de EFiS` : 'Todavía no se cargó ninguna planilla.', acciones: html`
+    ${base.length ? html`<button class="btn btn--ghost" data-act="pj-excel">Excel</button>` : ''}
+    <label class="btn btn--primary">Actualizar con CSV<input type="file" id="pj-file" accept=".csv,text/csv" hidden></label>` })}
 
   ${datos.error ? html`<p class="note">No se pudieron leer los datos: ${datos.error}</p>` : ''}
   ${!base.length ? html`<section class="card">${mascot('empty', { title: 'Sin datos todavía', text: 'Tocá “Actualizar con CSV” y elegí la planilla Status_Vacantes (.csv). Se toman solo las búsquedas de EFiS.' })}</section>` : html`
-
-  <section class="filters card">
+  ${mBarra({ seccion: 'dashboardpj', buscar: { id: 'pj-search', placeholder: 'Buscar posición, persona, jefe, S o pendientes', valor: search },
+    nFiltros: chips.length + (grupo !== 'todas' ? 1 : 0),
+    extra: multiSelectFilter({ dim: 'mes', label: 'Mes de solicitud', options: opcionesMes(), selected: filters.mes, presets: presetsMes(), open: openMulti === 'mes', labelOf: mesLabel }) })}
+  ${mChips([...(grupo !== 'todas' ? [{ attrs: 'data-pj-grupo="todas"', texto: GRUPOS[grupo][0] }] : []),
+    ...chips.map(([d, v]) => ({ dim: d, valor: v, texto: d === 'mes' && v !== 'Sin fecha' ? fmtMonth(v) : v }))], 'pj-clear')}
+  ${mPanel('dashboardpj', html`
     <div class="fgroup"><span class="fgroup-label">Empresa</span><div class="fgroup-pills"><span class="fpill is-on" title="Filtro fijo: solo se importan búsquedas de EFiS">EFiS</span></div></div>
     ${filterGroup({ dim: 'proceso', label: 'Proceso', options: contar(filtrar('proceso'), 'proceso'), selected: filters.proceso, allLabel: 'Todos' })}
     ${filterGroup({ dim: 'direccion', label: 'Dirección', options: contar(filtrar('direccion'), 'direccion'), selected: filters.direccion })}
-    ${filterGroup({ dim: 'estado', label: 'Estado', options: contar(filtrar('estado'), 'estado').sort((a, b) => estadoInfo(a[0] === 'Sin estado' ? '' : a[0]).orden - estadoInfo(b[0] === 'Sin estado' ? '' : b[0]).orden), selected: filters.estado, allLabel: 'Todos' })}
-    <div class="filters-row">
-      ${multiSelectFilter({ dim: 'mes', label: 'Mes de solicitud de línea', options: opcionesMes(), selected: filters.mes, presets: presetsMes(), open: openMulti === 'mes', labelOf: mesLabel })}
-    </div>
-    ${chips.length || grupo !== 'todas' ? html`<div class="active-filters"><span class="muted small">Filtrando por:</span>
-      ${grupo !== 'todas' ? html`<button type="button" class="chip chip--on" data-pj-grupo="todas">${GRUPOS[grupo][0]} ✕</button>` : ''}
-      ${chips.map(([d, v]) => html`<button type="button" class="chip chip--on" data-filter="${d}" data-value="${v}">${d === 'mes' && v !== 'Sin fecha' ? fmtMonth(v) : v} ✕</button>`)}
-      <button type="button" class="btn btn--ghost btn--sm" data-act="pj-clear">Limpiar todo</button></div>` : ''}
+    ${filterGroup({ dim: 'estado', label: 'Estado', options: contar(filtrar('estado'), 'estado').sort((a, b) => estadoInfo(a[0] === 'Sin estado' ? '' : a[0]).orden - estadoInfo(b[0] === 'Sin estado' ? '' : b[0]).orden), selected: filters.estado, allLabel: 'Todos' })}`)}
+  ${mKpis([
+    { icono: 'dashboardpj', label: 'Búsquedas abiertas', valor: n('abiertas'), id: 'pj-ab', act: 'abiertas', sel: grupo === 'abiertas', serie: meses.slice(-12), sub: html`de <b>${n('todas')}</b> búsquedas` },
+    { icono: 'candidatos', label: 'En proceso', valor: n('proceso'), id: 'pj-pro', act: 'proceso', sel: grupo === 'proceso', sub: generoTexto(sinGrupo.filter(GRUPOS.proceso[1])) },
+    { icono: 'alta', label: 'Cerradas', valor: n('cerradas'), id: 'pj-cer', tono: 'ok', act: 'cerradas', sel: grupo === 'cerradas', barra: pct(n('cerradas'), n('todas')), sub: `${pct(n('cerradas'), n('todas'))}% cubiertas` },
+    { icono: 'reloj', label: 'Atrasadas', valor: atrasadas.length, id: 'pj-atr', tono: atrasadas.length ? 'alerta' : 'ok', sub: 'fecha de línea pasada' },
+  ])}
+  ${mTabs('dashboardpj', [['busquedas', `Búsquedas · ${lista.length}`], ['graficos', 'Gráficos'], ['tablas', 'Tablas']], tab)}
+  <div class="m-cuerpo">
+  ${tab === 'graficos' ? html`
+  <section class="card"><h2 class="card-title">Más indicadores</h2>
+    <ul class="m-stats">${[['En espera', n('espera'), 'on hold / pend. definición', 'espera'], ['Sin estado', n('sin'), 'completar en la planilla', 'sin'], ['Vacantes sin persona', vacantes.length, 'abiertas con “Vacante”'],
+      ['Antigüedad promedio', edadProm != null ? edadProm + ' d' : '—', 'días abiertas desde la solicitud'], ['Próximos ingresos', proximos.length, 'con fecha potencial futura'],
+      ['Insourcing', rows.filter((v) => norm(v.proceso) === 'insourcing').length, 'de la selección'], ['Mov. internos', rows.filter((v) => norm(v.proceso) === 'movimiento interno').length, 'de la selección']].map(([l, v, sub, g]) => html`<li>${g ? html`<button type="button" data-kpi="${g}" class="${grupo === g ? 'is-sel' : ''}"><b>${v}</b><span>${l}</span><small>${sub}</small></button>` : html`<div><b>${v}</b><span>${l}</span><small>${sub}</small></div>`}</li>`)}</ul>
   </section>
-
-  <section class="kpis kpis--6">
-    ${kpi('Búsquedas', n('todas'), { act: 'todas', selected: grupo === 'todas', big: true, id: 'pj-tot' })}
-    ${kpi('Abiertas', n('abiertas'), { act: 'abiertas', selected: grupo === 'abiertas', tone: 'blue', sub: `${pct(n('abiertas'), n('todas'))}% del total`, id: 'pj-ab' })}
-    ${kpi('En proceso', n('proceso'), { act: 'proceso', selected: grupo === 'proceso', tone: 'navy', sub: generoTexto(sinGrupo.filter(GRUPOS.proceso[1])), id: 'pj-pro' })}
-    ${kpi('En espera', n('espera'), { act: 'espera', selected: grupo === 'espera', tone: 'orange', sub: 'on hold / pend. definición', id: 'pj-esp' })}
-    ${kpi('Cerradas', n('cerradas'), { act: 'cerradas', selected: grupo === 'cerradas', tone: 'green', sub: `${pct(n('cerradas'), n('todas'))}% cubiertas`, id: 'pj-cer' })}
-    ${kpi('Sin estado', n('sin'), { act: 'sin', selected: grupo === 'sin', tone: n('sin') ? 'red' : '', sub: 'completar en la planilla', id: 'pj-sin' })}
-  </section>
-
-  <section class="kpis kpis--6 pj-kpis2">
-    ${kpi('Vacantes sin persona', vacantes.length, { sub: 'abiertas con “Vacante”', id: 'pj-vac' })}
-    ${kpi('Atrasadas', atrasadas.length, { tone: atrasadas.length ? 'red' : '', sub: 'abiertas con fecha de línea pasada', id: 'pj-atr' })}
-    ${kpi('Antigüedad promedio', edadProm ?? '—', { suffix: edadProm != null ? ' d' : '', sub: 'días abiertas desde la solicitud', id: 'pj-edad' })}
-    ${kpi('Próximos ingresos', proximos.length, { tone: 'green', sub: 'con fecha potencial futura', id: 'pj-prox' })}
-    ${kpi('Insourcing', rows.filter((v) => norm(v.proceso) === 'insourcing').length, { sub: 'de la selección', id: 'pj-ins' })}
-    ${kpi('Mov. internos', rows.filter((v) => norm(v.proceso) === 'movimiento interno').length, { sub: 'de la selección', id: 'pj-mi' })}
-  </section>
-
   <section class="grid-2">
     <article class="card"><h2 class="card-title">Por estado</h2>${bars(porEstado, { dim: 'estado', selected: filters.estado, total: filtrar('estado').length, limit: 12, chart: 'pj-estado' })}</article>
     <article class="card"><h2 class="card-title">Por proceso</h2>${bars(porProceso, { dim: 'proceso', selected: filters.proceso, color: 'navy', total: filtrar('proceso').length, chart: 'pj-proceso' })}</article>
@@ -188,8 +174,8 @@ export function render(el) {
       </div></article>
   </section>
 
-  ${porDireccionPosicion(rows)}
-
+  ${porDireccionPosicion(rows)}` : ''}
+  ${tab === 'tablas' ? html`
   <section class="card"><h2 class="card-title">Dirección × estado</h2>
     ${pivotTable(pivot(rows, (v) => canon(v.direccion), (v) => estadoInfo(v.estado).label), { rowLabel: 'Dirección' })}</section>
 
@@ -197,9 +183,10 @@ export function render(el) {
     <div class="table-wrap"><table class="tbl tbl--compact"><thead><tr><th>Fecha</th><th>Persona</th><th>Posición</th><th>Dirección</th><th>Estado</th></tr></thead>
     <tbody>${proximos.map((v) => html`<tr><td>${fmtDate(v.fecha_potencial_ingreso)}</td><td>${v.persona || ''}</td><td>${v.posicion || ''}<small class="muted block">${v.descripcion || ''}</small></td><td>${v.direccion || ''}</td><td>${pillEstado(v)}</td></tr>`)}</tbody></table></div></section>` : ''}
 
+` : ''}
+  ${tab === 'busquedas' ? html`
   <section class="card">
-    <div class="list-head"><h2 class="card-title">Búsquedas <small class="muted">${lista.length}</small></h2>
-      <label class="search"><span class="sr-only">Buscar</span><input type="search" id="pj-search" placeholder="Buscar posición, persona, jefe, S, pendientes…" value="${search}"></label></div>
+    <div class="list-head"><h2 class="card-title">Búsquedas <small class="muted">${lista.length}</small></h2></div>
     <div class="table-wrap"><table class="tbl tbl--compact tbl--pj">
       <thead><tr><th>S</th><th>Posición</th><th>Persona</th><th>Estado</th><th>Proceso</th><th>Dirección</th><th>Solicitud</th><th>Pot. ingreso</th><th>Pendientes</th></tr></thead>
       <tbody>${lista.map((v) => html`<tr class="${atrasada(v) ? 'is-late' : ''}">
@@ -213,7 +200,8 @@ export function render(el) {
         <td>${v.fecha_potencial_ingreso ? fmtDate(v.fecha_potencial_ingreso) : ''}</td>
         <td class="small pj-pend">${v.pendientes || ''}</td></tr>`)}</tbody>
     </table></div>
-  </section>`}`);
+  </section>` : ''}
+  </div>`}`);
 
   animateIn(el);
   const s = el.querySelector('#pj-search');

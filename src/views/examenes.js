@@ -3,6 +3,7 @@
 import { html } from '../lib/html.js';
 import { state } from '../lib/store.js';
 import { fmtDate, fmtMonth, todayISO, norm, pct } from '../lib/format.js';
+import { mHead, mBarra, mChips, mPanel, mKpis, mTabs, subTab } from '../components/moderno.js';
 import { filterGroup, toggleFilter, kpi, bars, saveLocal, loadLocal, serializeFilters, restoreFilters, animateIn, prevSize } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 import { estadoMedico, esApto, clinicaCanon, diasExamen, hitosExamen, ESTADOS_MEDICOS } from '../components/examen.js';
@@ -64,30 +65,27 @@ export function render(el) {
     return [k, v, e?.color || 'neutral', k, e?.orden ?? 9];
   }).sort((a, b) => a[4] - b[4]);
   const chips = DIMS.flatMap((d) => [...filters[d]].map((v) => [d, v]));
+  const tab = subTab('examenes', ['personas', 'graficos', 'tablas'], 'personas');
 
   el.innerHTML = String(html`
-  <section class="page-head"><div><h1>Exámenes médicos</h1></div></section>
-
-  <section class="filters card">
+  ${mHead({ titulo: 'Exámenes médicos', sub: `${n('todos')} enviados · ${n('pendiente')} pendientes de resultado` })}
+  ${mBarra({ seccion: 'examenes', buscar: { id: 'ex-search', placeholder: 'Buscar nombre, DNI, clínica o sede', valor: search }, nFiltros: chips.length })}
+  ${mChips([...(grupo !== 'todos' ? [{ attrs: 'data-ex-grupo', texto: GRUPOS[grupo][0] }] : []),
+    ...chips.map(([d, v]) => ({ dim: d, valor: v, texto: d === 'mes' ? fmtMonth(v) : v }))], 'ex-clear')}
+  ${mPanel('examenes', html`
     ${filterGroup({ dim: 'clinica', label: 'Clínica', options: contar(filtrar('clinica'), 'clinica'), selected: filters.clinica })}
     ${filterGroup({ dim: 'procedencia', label: 'Procedencia', options: contar(filtrar('procedencia'), 'procedencia'), selected: filters.procedencia })}
     ${filterGroup({ dim: 'area', label: 'Área', options: contar(filtrar('area'), 'area'), selected: filters.area })}
-    ${filterGroup({ dim: 'sector', label: 'Sector', options: contar(filtrar('sector'), 'sector'), selected: filters.sector, allLabel: 'Todos' })}
-    ${chips.length || grupo !== 'todos' ? html`<div class="active-filters"><span class="muted small">Filtrando por:</span>
-      ${grupo !== 'todos' ? html`<button type="button" class="chip chip--on" data-ex-grupo>${GRUPOS[grupo][0]} ✕</button>` : ''}
-      ${chips.map(([d, v]) => html`<button type="button" class="chip chip--on" data-filter="${d}" data-value="${v}">${d === 'mes' ? fmtMonth(v) : v} ✕</button>`)}
-      <button type="button" class="btn btn--ghost btn--sm" data-act="ex-clear">Limpiar todo</button></div>` : ''}
-  </section>
-
-  <section class="kpis kpis--6">
-    ${kpi('Enviados a examen', n('todos'), { act: 'todos', selected: grupo === 'todos', big: true, id: 'ex-tot' })}
-    ${kpi('Pendientes de resultado', n('pendiente'), { act: 'pendiente', selected: grupo === 'pendiente', tone: 'blue', id: 'ex-pen' })}
-    ${kpi('Aptos', n('aptos'), { act: 'aptos', selected: grupo === 'aptos', tone: 'green', sub: `${pct(n('aptos'), conResultado.length)}% de los resultados`, id: 'ex-apt' })}
-    ${kpi('No aptos', n('noaptos'), { act: 'noaptos', selected: grupo === 'noaptos', tone: n('noaptos') ? 'red' : '', sub: 'definitivos y temporales', id: 'ex-noa' })}
-    ${kpi('En interconsulta', n('interconsulta'), { act: 'interconsulta', selected: grupo === 'interconsulta', tone: 'navy', id: 'ex-int' })}
-    ${kpi('Días hasta la aptitud', dias ?? '—', { suffix: dias != null ? ' d' : '', sub: 'promedio, desde el envío', id: 'ex-dias' })}
-  </section>
-
+    ${filterGroup({ dim: 'sector', label: 'Sector', options: contar(filtrar('sector'), 'sector'), selected: filters.sector, allLabel: 'Todos' })}`)}
+  ${mKpis([
+    { icono: 'examenes', label: 'Enviados a examen', valor: n('todos'), id: 'ex-tot', serie: meses, sub: html`Días hasta la aptitud: <b>${dias ?? '—'}</b>` },
+    { icono: 'reloj', label: 'Pendientes de resultado', valor: n('pendiente'), id: 'ex-pen', act: 'pendiente', sel: grupo === 'pendiente', sub: n('interconsulta') ? `${n('interconsulta')} en interconsulta` : '' },
+    { icono: 'alta', label: 'Aptos', valor: n('aptos'), id: 'ex-apt', tono: 'ok', act: 'aptos', sel: grupo === 'aptos', barra: pct(n('aptos'), conResultado.length), sub: `${pct(n('aptos'), conResultado.length)}% de los resultados` },
+    { icono: 'documento', label: 'No aptos', valor: n('noaptos'), id: 'ex-noa', tono: n('noaptos') ? 'alerta' : '', act: 'noaptos', sel: grupo === 'noaptos', sub: 'definitivos y temporales' },
+  ])}
+  ${mTabs('examenes', [['personas', `Personas · ${lista.length}`], ['graficos', 'Gráficos'], ['tablas', 'Por clínica y procedencia']], tab)}
+  <div class="m-cuerpo">
+  ${tab === 'graficos' ? html`
   <section class="grid-2">
     <article class="card"><h2 class="card-title">Resultado</h2>${bars(porEstado, { dim: 'estado', selected: filters.estado, total: filtrar('estado').length, chart: 'ex-estado' })}</article>
     <article class="card"><h2 class="card-title">Envíos por mes</h2>
@@ -102,13 +100,16 @@ export function render(el) {
       </div></article>
   </section>
 
+` : ''}
+  ${tab === 'tablas' ? html`
   ${tablaPor('Por clínica', 'Clínica', getters.clinica, rows, (c) => (c.clinica_localidad ? c.clinica_localidad : null))}
   ${tablaPor('Por procedencia', 'Procedencia', getters.procedencia, rows)}
 
+` : ''}
+  ${tab === 'personas' ? html`
   <section class="card">
     <div class="list-head"><h2 class="card-title">Personas <small class="muted">${lista.length}</small></h2>
       <div class="list-actions">
-        <label class="search"><span class="sr-only">Buscar</span><input type="search" id="ex-search" placeholder="Buscar nombre, DNI, clínica, sede…" value="${search}"></label>
         <button class="btn btn--sm" data-act="ex-excel">Excel</button></div></div>
     <div class="table-wrap"><table class="tbl tbl--compact is-clickable">
       <thead><tr><th>Nombre</th><th>Procedencia</th><th>Área · Posición</th><th>Clínica</th><th>Recorrido</th><th>Estado</th><th class="num">Días</th></tr></thead>
@@ -123,7 +124,8 @@ export function render(el) {
           <td><span class="pill pill--sm pill--${e.color}">${e.label}</span>${e.trasInterconsulta ? html`<small class="muted block">tras interconsulta</small>` : ''}</td>
           <td class="num">${d ? html`<b>${d.dias}</b>${d.abierto ? html`<small class="muted block">abierto</small>` : ''}` : ''}</td></tr>`;
       })}</tbody></table></div>
-  </section>`);
+  </section>` : ''}
+  </div>`);
   animateIn(el);
   const s = el.querySelector('#ex-search');
   s?.addEventListener('input', () => { search = s.value; const p = s.selectionStart; render(el); const x = el.querySelector('#ex-search'); x.focus(); x.setSelectionRange(p, p); });

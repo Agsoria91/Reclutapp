@@ -13,6 +13,7 @@ import {
 
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
+import { icono } from '../components/iconos.js';
 
 const DIMS = ['yacimiento', 'sector', 'encuadre', 'estado', 'pendiente'];
 const filters = Object.fromEntries(DIMS.map((d) => [d, new Set(d === 'estado' ? ['activo'] : [])]));
@@ -21,6 +22,9 @@ let page = 1;
 // Dotación por mes: quiénes estaban en la empresa en los meses elegidos
 let meses = new Set(loadLocal('reclutapp.nom.meses', []));
 let openMulti = null;
+// vista moderna (estilo IRIS): sub-pestaña y panel de filtros
+let subTab = loadLocal('reclutapp.nom.tab', 'resumen');
+let filtrosAbiertos = false;
 const finDeMes = (m) => { const [y, mm] = m.split('-').map(Number); return new Date(Date.UTC(y, mm, 0)).toISOString().slice(0, 10); };
 // estaba en el mes m: ingresó antes de que termine y no se fue antes de que empiece
 const enMes = (n, m) => !!n.fecha_ingreso && n.fecha_ingreso <= finDeMes(m)
@@ -101,62 +105,7 @@ export function render(el) {
   const pfProx = base.filter((n) => n.fin_pf && n.fin_pf >= hoy && daysBetween(hoy, n.fin_pf) <= 60).length;
   const recientes = base.filter((n) => n.fecha_ingreso && daysBetween(n.fecha_ingreso, hoy) <= 90).length;
 
-  el.innerHTML = String(html`
-  <section class="page-head"><div><h1>Nómina EFiS</h1></div>
-    <div class="head-actions">
-      <label class="btn">Reimportar planilla<input type="file" id="nom-file" accept=".csv,text/csv" hidden></label>
-      <button class="btn" data-act="export">Exportar CSV</button>
-      <button class="btn" data-act="new">+ Alta</button>
-    </div>
-  </section>
-  <section class="filters card">
-    ${filterGroup({ dim: 'yacimiento', label: 'Yacimiento', options: opts('yacimiento'), selected: filters.yacimiento, allLabel: 'Todos' })}
-    ${filterGroup({ dim: 'sector', label: 'Sector', options: opts('sector'), selected: filters.sector, allLabel: 'Todos' })}
-    ${filterGroup({ dim: 'encuadre', label: 'Encuadre', options: opts('encuadre'), selected: filters.encuadre, allLabel: 'Todos' })}
-    ${filterGroup({ dim: 'pendiente', label: 'Pendiente', options: opts('pendiente'), selected: filters.pendiente, allLabel: 'Todos' })}
-    ${meses.size ? '' : filterGroup({ dim: 'estado', label: 'Estado', options: opts('estado'), selected: filters.estado, allLabel: 'Todos' })}
-    <div class="filters-row">
-      ${multiSelectFilter({ dim: 'mes', label: 'Dotación en el mes', options: mesesDisponibles().map((m) => [m, filterRowsSinEstado().filter((n) => enMes(n, m)).length]), selected: meses, allLabel: 'Hoy', presets: presetsMeses(mesesDisponibles()), open: openMulti === 'mes', labelOf: (m) => fmtMonth(m) })}
-    </div>
-  </section>
-  <section class="kpis kpis--6">
-    ${kpi(meses.size ? (meses.size === 1 ? `Dotación ${fmtMonth([...meses][0])}` : 'Personas en el período') : 'Personas', base.length, { tone: 'blue', big: true, id: 'n-tot' })}
-    ${kpi('Ingresos últimos 90 días', recientes, { tone: 'green', id: 'n-rec' })}
-    ${kpi('DDJJ pendiente', base.filter((n) => !okVal(n.ddjj)).length, { tone: 'orange', id: 'n-ddjj' })}
-    ${kpi('Kit pendiente', base.filter((n) => !okVal(n.regalo_kit)).length, { tone: 'orange', id: 'n-kit' })}
-    ${kpi('Plazo fijo vence ≤ 60 días', pfProx, { tone: pfProx ? 'red' : '', id: 'n-pf' })}
-    ${kpi('Edad promedio', Math.round(base.map(edad).filter(Boolean).reduce((a, b, _, arr) => a + b / arr.length, 0)) || 0, { id: 'n-edad' })}
-  </section>
-  ${coberturaDotacion()}
-  ${meses.size ? dotacionPorMes() : ''}
-  <section class="grid-2">
-    <article class="card"><h2 class="card-title">Por yacimiento</h2>${bars(countBy(filterRows('yacimiento'), getters.yacimiento), { dim: 'yacimiento', selected: filters.yacimiento, chart: 'n-yac', limit: 12 })}</article>
-    <article class="card"><h2 class="card-title">Por sector</h2>${bars(countBy(filterRows('sector'), getters.sector), { color: 'green', dim: 'sector', selected: filters.sector, chart: 'n-sec', limit: 12 })}</article>
-  </section>
-  <section class="card">
-    <header class="list-head"><h2 class="card-title">Personal <small class="muted">${rows.length}</small></h2>
-      <label class="search"><input type="search" id="nom-search" placeholder="Buscar nombre, DNI, Nº pers., POS, función, jefe…" value="${search}"></label></header>
-    ${rows.length ? html`<div class="table-wrap"><table class="tbl is-clickable">
-      <thead><tr><th>Nombre</th><th>DNI</th><th class="hide-sm">Nº pers.</th><th class="hide-sm">Yac. · Sector</th><th class="hide-sm">Función</th><th class="hide-sm">Cat.</th><th class="hide-sm">Diagrama</th><th class="hide-sm">Jefe</th><th>Ingreso</th><th class="hide-sm num">Edad</th><th>Pend.</th></tr></thead>
-      <tbody>${shown.map((n) => {
-        const pend = pendientes(n).filter((p) => p !== 'Al día');
-        return html`<tr data-id="${n.id}" tabindex="0" class="${n.estado === 'baja' ? 'is-off' : ''}">
-          <td data-th="Nombre"><strong>${n.nombre}</strong>${n.origen === 'app' ? html` <span class="tag tag--match">alta app</span>` : ''}${n.estado === 'baja' ? html` <span class="tag tag--late">baja</span>` : ''}</td>
-          <td data-th="DNI" class="mono">${n.dni || ''}</td>
-          <td data-th="Nº pers." class="hide-sm mono">${n.nro_pers || ''}</td>
-          <td data-th="Yac." class="hide-sm">${[n.yacimiento, n.sector].filter(Boolean).join(' · ')}</td>
-          <td data-th="Función" class="hide-sm">${n.funcion || n.titling || ''}</td>
-          <td data-th="Cat." class="hide-sm">${n.categoria || ''}</td>
-          <td data-th="Diagrama" class="hide-sm">${n.diagrama || ''}</td>
-          <td data-th="Jefe" class="hide-sm">${n.jefe || ''}</td>
-          <td data-th="Ingreso">${fmtDate(n.fecha_ingreso)}</td>
-          <td data-th="Edad" class="hide-sm num">${edad(n) ?? ''}</td>
-          <td data-th="Pend.">${pend.map((p) => html`<span class="tag tag--late">${p}</span> `)}</td>
-        </tr>`;
-      })}</tbody></table></div>
-      ${rows.length > shown.length ? html`<div class="center"><button class="btn btn--ghost" data-act="more">Ver más (${rows.length - shown.length})</button></div>` : ''}`
-      : mascot('empty')}
-  </section>`);
+  el.innerHTML = String(vistaModerna({ base, rows, shown, recientes, pfProx }));
   animateIn(el);
 
   if (!el._bound) {
@@ -170,6 +119,10 @@ export function render(el) {
       if (f) { toggleFilter(filters, f.dataset.filter, f.dataset.value); page = 1; render(el); return; }
       const act = e.target.closest('[data-act]')?.dataset.act;
       if (act === 'more') { page++; render(el); return; }
+      if (act === 'm-filtros') { filtrosAbiertos = !filtrosAbiertos; render(el); return; }
+      if (act === 'm-tab') { subTab = e.target.closest('[data-tab]').dataset.tab; saveLocal('reclutapp.nom.tab', subTab); render(el); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+      if (act === 'm-pend') { filters.pendiente = new Set([e.target.closest('[data-value]').dataset.value]); subTab = 'listado'; page = 1; render(el); return; }
+      if (act === 'm-limpiar') { DIMS.forEach((d) => { filters[d] = new Set(d === 'estado' ? ['activo'] : []); }); meses = new Set(); saveLocal('reclutapp.nom.meses', []); page = 1; render(el); return; }
       if (act === 'export') return exportCSV(currentRows(el));
       if (act === 'new') return openPersona(null);
       const tr = e.target.closest('tr[data-id]');
@@ -322,12 +275,16 @@ function silllaPasaFiltros(p, except) {
 }
 const faltantesFiltrados = (corte, except) => faltantesAlCorte(state.positions, corte, { candidatos: state.candidates }).filter((p) => silllaPasaFiltros(p, except));
 
-function coberturaDotacion() {
+function datosCobertura() {
   const ult = [...meses].sort().pop();
   const corte = ult ? corteMes(ult) : todayISO();
   const personas = ult ? filterRowsSinEstado().filter((n) => enMes(n, ult)) : filterRows(null);
   const falt = faltantesFiltrados(corte);
-  const req = personas.length + falt.length;
+  return { ult, corte, personas, falt, req: personas.length + falt.length };
+}
+
+function coberturaDotacion() {
+  const { ult, corte, personas, falt, req } = datosCobertura();
   const enProceso = falt.filter((p) => p.candidato_nombre && p.stage !== 'ingresado').length;
   const ingresaronDespues = falt.filter((p) => p.stage === 'ingresado').length;
   // Por yacimiento: dotación (nómina) + faltantes (sillas), sin el filtro de yacimiento para comparar todos
@@ -358,4 +315,126 @@ function coberturaDotacion() {
       </table></div>
     </div>
   </section>`;
+}
+
+function tablaPersonal(rows, shown) {
+  return rows.length ? html`<div class="table-wrap"><table class="tbl is-clickable">
+      <thead><tr><th>Nombre</th><th>DNI</th><th class="hide-sm">Nº pers.</th><th class="hide-sm">Yac. · Sector</th><th class="hide-sm">Función</th><th class="hide-sm">Cat.</th><th class="hide-sm">Diagrama</th><th class="hide-sm">Jefe</th><th>Ingreso</th><th class="hide-sm num">Edad</th><th>Pend.</th></tr></thead>
+      <tbody>${shown.map((n) => {
+        const pend = pendientes(n).filter((p) => p !== 'Al día');
+        return html`<tr data-id="${n.id}" tabindex="0" class="${n.estado === 'baja' ? 'is-off' : ''}">
+          <td data-th="Nombre"><strong>${n.nombre}</strong>${n.origen === 'app' ? html` <span class="tag tag--match">alta app</span>` : ''}${n.estado === 'baja' ? html` <span class="tag tag--late">baja</span>` : ''}</td>
+          <td data-th="DNI" class="mono">${n.dni || ''}</td>
+          <td data-th="Nº pers." class="hide-sm mono">${n.nro_pers || ''}</td>
+          <td data-th="Yac." class="hide-sm">${[n.yacimiento, n.sector].filter(Boolean).join(' · ')}</td>
+          <td data-th="Función" class="hide-sm">${n.funcion || n.titling || ''}</td>
+          <td data-th="Cat." class="hide-sm">${n.categoria || ''}</td>
+          <td data-th="Diagrama" class="hide-sm">${n.diagrama || ''}</td>
+          <td data-th="Jefe" class="hide-sm">${n.jefe || ''}</td>
+          <td data-th="Ingreso">${fmtDate(n.fecha_ingreso)}</td>
+          <td data-th="Edad" class="hide-sm num">${edad(n) ?? ''}</td>
+          <td data-th="Pend.">${pend.map((p) => html`<span class="tag tag--late">${p}</span> `)}</td>
+        </tr>`;
+      })}</tbody></table></div>
+      ${rows.length > shown.length ? html`<div class="center"><button class="btn btn--ghost" data-act="more">Ver más (${rows.length - shown.length})</button></div>` : ''}`
+      : mascot('empty');
+}
+
+// ---------------------------------------------------------------------------
+// Vista moderna (maqueta, solo con el estilo IRIS): barra de búsqueda con
+// filtros plegados, 4 indicadores y sub-pestañas Resumen / Gráficos / Listado.
+// ---------------------------------------------------------------------------
+function chispa(serie) {
+  if (serie.length < 2) return '';
+  const W = 120; const H = 36; const v = serie.map(([, n]) => n); const max = Math.max(...v); const min = Math.min(...v);
+  const pts = v.map((n, i) => `${((i / (v.length - 1)) * W).toFixed(1)},${(H - 4 - ((n - min) / Math.max(1, max - min)) * (H - 8)).toFixed(1)}`).join(' ');
+  return raw(`<svg class="mk-chispa" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,${H} ${pts} ${W},${H}" class="mk-chispa-a"/><polyline points="${pts}" class="mk-chispa-l"/></svg>`);
+}
+
+function vistaModerna({ base, rows, shown, recientes, pfProx }) {
+  const activos = DIMS.filter((d) => d !== 'estado').reduce((n, d) => n + filters[d].size, 0) + meses.size;
+  const chips = [...DIMS.filter((d) => d !== 'estado').flatMap((d) => [...filters[d]].map((v) => [d, v]))];
+  const ultimos = mesesDisponibles().slice(0, 12).reverse();
+  const sinEstado = filterRowsSinEstado();
+  const serie = ultimos.map((m) => [m, sinEstado.filter((n) => enMes(n, m)).length]);
+  const delta = serie.length > 1 ? serie[serie.length - 1][1] - serie[serie.length - 2][1] : null;
+  const cob = datosCobertura();
+  const pc = porc(cob.personas.length, cob.req);
+  const pend = [['DDJJ', base.filter((n) => !okVal(n.ddjj)).length], ['Kit', base.filter((n) => !okVal(n.regalo_kit)).length],
+    ['Teléfono', base.filter((n) => !n.telefono).length], ['CUIL', base.filter((n) => !n.cuil).length]];
+  const tab = ['resumen', 'graficos', 'listado'].includes(subTab) ? subTab : 'resumen';
+  const titulo = meses.size ? (meses.size === 1 ? `Dotación ${fmtMonth([...meses][0])}` : 'Personas en el período') : 'Personas en nómina';
+  const num = (v, k) => raw(`<span class="kpi-value mk-num" data-n="${v}" data-k="mk-${k}">${fmtInt(v)}</span>`);
+
+  return html`
+  <section class="m-head">
+    <div><h1>Nómina</h1><p>${fmtInt(base.length)} personas ${meses.size ? 'en el período elegido' : 'activas'}${activos ? ` · ${activos} filtro${activos === 1 ? '' : 's'}` : ''}</p></div>
+    <div class="m-acciones">
+      <label class="btn btn--ghost">Reimportar<input type="file" id="nom-file" accept=".csv,text/csv" hidden></label>
+      <button class="btn btn--ghost" data-act="export">Exportar</button>
+      <button class="btn btn--primary" data-act="new">+ Alta</button>
+    </div>
+  </section>
+
+  <section class="m-barra">
+    <label class="m-buscar">${icono('buscar')}<input type="search" id="nom-search" placeholder="Buscar por nombre, DNI, Nº pers., función o jefe" value="${search}"></label>
+    <button type="button" class="m-btn-filtros ${filtrosAbiertos ? 'is-on' : ''}" data-act="m-filtros" aria-expanded="${filtrosAbiertos}">${icono('filtro')} Filtros${activos ? html`<b>${activos}</b>` : ''}</button>
+    ${multiSelectFilter({ dim: 'mes', label: 'Dotación en', options: mesesDisponibles().map((m) => [m, sinEstado.filter((n) => enMes(n, m)).length]), selected: meses, allLabel: 'Hoy', presets: presetsMeses(mesesDisponibles()), open: openMulti === 'mes', labelOf: (m) => fmtMonth(m) })}
+  </section>
+  ${chips.length ? html`<div class="m-chips">${chips.map(([d, v]) => html`<button type="button" class="m-chip" data-filter="${d}" data-value="${v}">${v} <span aria-hidden="true">✕</span></button>`)}
+    <button type="button" class="m-limpiar" data-act="m-limpiar">Limpiar todo</button></div>` : ''}
+  <section class="m-panel ${filtrosAbiertos ? 'is-open' : ''}" ${filtrosAbiertos ? '' : raw('hidden')}>
+    ${filterGroup({ dim: 'yacimiento', label: 'Yacimiento', options: opts('yacimiento'), selected: filters.yacimiento, allLabel: 'Todos' })}
+    ${filterGroup({ dim: 'sector', label: 'Sector', options: opts('sector'), selected: filters.sector, allLabel: 'Todos' })}
+    ${filterGroup({ dim: 'encuadre', label: 'Encuadre', options: opts('encuadre'), selected: filters.encuadre, allLabel: 'Todos' })}
+    ${filterGroup({ dim: 'pendiente', label: 'Pendiente', options: opts('pendiente'), selected: filters.pendiente, allLabel: 'Todos' })}
+    ${meses.size ? '' : filterGroup({ dim: 'estado', label: 'Estado', options: opts('estado'), selected: filters.estado, allLabel: 'Todos' })}
+  </section>
+
+  <section class="mk-grid">
+    <div class="mk mk--main">
+      <div class="mk-top"><span class="mk-ico">${icono('personas')}</span><span class="mk-lbl">${titulo}</span></div>
+      <div class="mk-row">${num(base.length, 'tot')}${chispa(serie)}</div>
+      <span class="mk-sub">${delta != null ? html`<b class="${delta >= 0 ? 'is-up' : 'is-down'}">${delta >= 0 ? '▲' : '▼'} ${Math.abs(delta)}</b> vs mes anterior` : ''}</span>
+    </div>
+    <div class="mk">
+      <div class="mk-top"><span class="mk-ico">${icono('cobertura')}</span><span class="mk-lbl">Cobertura de la dotación</span></div>
+      <div class="mk-row"><span class="mk-num">${pc}<small>%</small></span></div>
+      <span class="mk-barra"><span style="width:${pc}%"></span></span>
+      <span class="mk-sub"><b>${cob.falt.length}</b> ${cob.ult ? 'faltaban' : 'faltan'} tomar de ${fmtInt(cob.req)}</span>
+    </div>
+    <div class="mk">
+      <div class="mk-top"><span class="mk-ico">${icono('alta')}</span><span class="mk-lbl">Ingresos 90 días</span></div>
+      <div class="mk-row">${num(recientes, 'rec')}</div>
+      <span class="mk-sub">${porc(recientes, base.length)}% de la dotación</span>
+    </div>
+    <div class="mk ${pfProx ? 'mk--alerta' : ''}">
+      <div class="mk-top"><span class="mk-ico">${icono('reloj')}</span><span class="mk-lbl">Plazos fijos ≤ 60 días</span></div>
+      <div class="mk-row">${num(pfProx, 'pf')}</div>
+      <span class="mk-sub">${pfProx ? 'revisar renovaciones' : 'sin vencimientos'}</span>
+    </div>
+  </section>
+
+  <nav class="m-tabs" aria-label="Vistas de nómina">
+    ${[['resumen', 'Resumen'], ['graficos', 'Gráficos'], ['listado', `Listado · ${fmtInt(rows.length)}`]].map(([k, l]) => html`<button type="button" class="m-tab ${tab === k ? 'is-on' : ''}" data-act="m-tab" data-tab="${k}" aria-pressed="${tab === k}">${l}</button>`)}
+  </nav>
+
+  <div class="m-cuerpo">
+  ${tab === 'resumen' ? html`
+    ${coberturaDotacion()}
+    <section class="card m-pend"><h2 class="card-title">Documentación pendiente</h2>
+      <ul class="m-pend-list">${pend.map(([k, n]) => html`<li><button type="button" data-act="m-pend" data-value="${k}">
+        <span class="mk-ico mk-ico--sm">${icono('documento')}</span><span class="m-pend-k">${k}</span>
+        <span class="m-pend-bar"><span style="width:${porc(n, base.length)}%"></span></span>
+        <b>${fmtInt(n)}</b><small>${porc(n, base.length)}%</small>${icono('flecha', 'ico ico--sm')}</button></li>`)}</ul>
+    </section>` : ''}
+  ${tab === 'graficos' ? html`
+    ${meses.size ? dotacionPorMes() : ''}
+    <section class="grid-2">
+      <article class="card"><h2 class="card-title">Por yacimiento</h2>${bars(countBy(filterRows('yacimiento'), getters.yacimiento), { dim: 'yacimiento', selected: filters.yacimiento, chart: 'n-yac', limit: 12 })}</article>
+      <article class="card"><h2 class="card-title">Por sector</h2>${bars(countBy(filterRows('sector'), getters.sector), { color: 'green', dim: 'sector', selected: filters.sector, chart: 'n-sec', limit: 12 })}</article>
+    </section>
+    <section class="card"><h2 class="card-title">Encuadre</h2>${bars(countBy(filterRows('encuadre'), getters.encuadre), { dim: 'encuadre', selected: filters.encuadre })}</section>` : ''}
+  ${tab === 'listado' ? html`<section class="card m-lista">${tablaPersonal(rows, shown)}</section>` : ''}
+  </div>`;
 }

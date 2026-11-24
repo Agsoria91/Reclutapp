@@ -11,6 +11,7 @@ import {
 import { historialSilla } from '../components/historial.js';
 import { avisarCambioDeEtapa } from '../components/avisos.js';
 import { mascot } from '../components/mascot.js';
+import { mHead, mBarra, mChips, mPanel, mKpis, mTabs, subTab } from '../components/moderno.js';
 import { openAssignFromPosition } from './asignar.js';
 import { convenioFields, bindConvenio, convenioLabel } from '../components/ingreso.js';
 
@@ -99,55 +100,47 @@ export function render(el) {
   }
   const sortedGroups = [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es'));
   const allOpen = sortedGroups.length && sortedGroups.every(([g]) => openGroups.has(g));
+  const tab = subTab('posiciones', ['mapa', 'meses'], 'mapa');
 
   el.innerHTML = String(html`
-  <section class="page-head">
-    <div>
-      <h1>Mapa de posiciones</h1>
-    </div>
-    <div class="head-actions">
-      ${staff ? html`<button class="btn" data-act="new">+ Nueva silla</button>` : ''}
-      <a class="btn btn--primary" href="#/reunion${linkReunion()}">Modo reunión</a>
-    </div>
-  </section>
-
+  ${mHead({ titulo: 'Posiciones', sub: `${k.total} sillas · ${pct(k.cubiertas, k.total)}% cubiertas`, acciones: html`
+    ${staff ? html`<button class="btn btn--ghost" data-act="new">+ Nueva silla</button>` : ''}
+    <a class="btn btn--primary" href="#/reunion${linkReunion()}">Modo reunión</a>` })}
   ${staff ? avisoPosSap() : ''}
-  <section class="filters card">
+  ${mBarra({ seccion: 'posiciones', buscar: { id: 'pos-search', placeholder: 'Buscar puesto, persona o POS SAP', valor: search },
+    nFiltros: ['area', 'sector', 'stage', 'cobertura', 'procedencia'].reduce((n, d) => n + posFilters[d].size, 0) + (soloPendientes ? 1 : 0),
+    extra: multiSelectFilter({ dim: 'mes', label: 'Mes objetivo', options: optionsFor('mes'), selected: posFilters.mes, presets: monthPresets(), open: openMulti === 'mes', labelOf: mesLabel }) })}
+  ${mChips([...['area', 'sector', 'stage', 'cobertura', 'procedencia', 'mes'].flatMap((d) => [...posFilters[d]].map((v) => ({ dim: d, valor: v, texto: d === 'mes' ? mesLabel(v) : d === 'stage' ? (state.stageMap[v]?.label || v) : v }))),
+    ...(soloPendientes ? [{ attrs: 'data-act="pos-solo-pend"', texto: 'Solo pendientes' }] : [])], 'pos-clear')}
+  ${mPanel('posiciones', html`
     ${filterGroup({ dim: 'area', label: 'Área', options: optionsFor('area'), selected: posFilters.area })}
     ${filterGroup({ dim: 'sector', label: 'Sector', options: optionsFor('sector'), selected: posFilters.sector, allLabel: 'Todos' })}
     <div class="filters-row">
       ${multiSelectFilter({ dim: 'stage', label: 'Estado', options: optionsFor('stage'), selected: posFilters.stage, presets: stagePresets(), open: openMulti === 'stage' })}
       ${selectFilter({ dim: 'cobertura', label: 'Cobertura', options: optionsFor('cobertura'), selected: posFilters.cobertura, allLabel: 'Todas' })}
       ${multiSelectFilter({ dim: 'procedencia', label: 'Procedencia', options: optionsFor('procedencia'), selected: posFilters.procedencia, allLabel: 'Todas', open: openMulti === 'procedencia' })}
-      <label class="search"><span class="sr-only">Buscar</span>
-        <input type="search" id="pos-search" placeholder="Buscar puesto, persona, POS SAP…" value="${search}">
-      </label>
-      ${multiSelectFilter({ dim: 'mes', label: 'Mes objetivo', options: optionsFor('mes'), selected: posFilters.mes, presets: monthPresets(), open: openMulti === 'mes', labelOf: mesLabel })}
       <label class="check"><input type="checkbox" id="pos-pend" ${raw(soloPendientes ? 'checked' : '')}> Solo pendientes</label>
-    </div>
-  </section>
-
-  <section class="kpis kpis--6">
-    ${kpi('Sillas', k.total, { id: 'pos-total' })}
-    ${kpi('Cubiertas', k.cubiertas, { sub: `${pct(k.cubiertas, k.total)}% · ${cubInternos} por mov. interno, ${k.cubiertas - cubInternos} por búsqueda`, tone: 'green', id: 'pos-cub' })}
-    ${kpi('Faltan cubrir', k.pendientes, { tone: 'blue', big: true, id: 'pos-pend' })}
-    ${kpi('En proceso', k.enProceso, { tone: 'navy', sub: 'con candidato', id: 'pos-proc' })}
-    ${kpi('Sin candidato', k.sinCandidato, { tone: 'orange', id: 'pos-sin' })}
-    ${kpi('Vencidas', k.vencidas, { sub: 'mes objetivo pasado', tone: k.vencidas ? 'red' : '', id: 'pos-venc' })}
-  </section>
-
-  <section class="card">
+    </div>`)}
+  ${mKpis([
+    { icono: 'posiciones', label: 'Sillas cubiertas', valor: k.cubiertas, id: 'pos-cub', barra: pct(k.cubiertas, k.total),
+      sub: html`<b>${pct(k.cubiertas, k.total)}%</b> de ${k.total} · ${cubInternos} por mov. interno` },
+    { icono: 'reloj', label: 'Faltan cubrir', valor: k.pendientes, id: 'pos-pend', sub: html`<b>${k.enProceso}</b> en proceso · <b>${k.sinCandidato}</b> sin candidato` },
+    { icono: 'candidatos', label: 'Sin candidato', valor: k.sinCandidato, id: 'pos-sin', tono: k.sinCandidato ? 'aviso' : '', sub: 'sillas a buscar' },
+    { icono: 'documento', label: 'Vencidas', valor: k.vencidas, id: 'pos-venc', tono: k.vencidas ? 'alerta' : 'ok', sub: 'mes objetivo pasado' },
+  ])}
+  ${mTabs('posiciones', [['mapa', `Mapa · ${rows.length}`], ['meses', 'Por mes objetivo']], tab)}
+  <div class="m-cuerpo">
+  ${tab === 'meses' ? html`<section class="card">
     <h2 class="card-title">Faltan cubrir, por mes objetivo</h2>
     ${pend.length ? pendingTable(pend, k.pendientes) : html`<p class="muted">No quedan posiciones pendientes con estos filtros.</p>`}
-  </section>
-
-  <section class="card groups-card">
+  </section>` : html`<section class="card groups-card">
     <header class="list-head">
       <h2 class="card-title">Sillas por área y sector <small class="muted">${rows.length}</small></h2>
       ${sortedGroups.length ? html`<button class="btn btn--ghost btn--sm" data-act="toggle-all">${allOpen ? 'Contraer todo' : 'Expandir todo'}</button>` : ''}
     </header>
     ${rows.length ? html`<div class="groups">${sortedGroups.map(([key, ps]) => groupBlock(key, ps, today, staff))}</div>` : mascot('empty')}
-  </section>
+  </section>`}
+  </div>
   ${staff ? datalists() : ''}
   `);
 
@@ -312,6 +305,8 @@ function onClick(e) {
   if (f) { toggleFilter(posFilters, f.dataset.filter, f.dataset.value); persist(); render(el); return; }
   const act = e.target.closest('[data-act]')?.dataset.act;
   if (act === 'new') { openEditor(null); return; }
+  if (act === 'pos-clear') { Object.keys(posFilters).forEach((d) => { posFilters[d] = new Set(); }); soloPendientes = false; persist(); render(el); return; }
+  if (act === 'pos-solo-pend') { soloPendientes = false; persist(); render(el); return; }
   if (act === 'sap-ocultar') { saveLocal('reclutapp.pos.sapOculto', firmaRep(posSapRepetidas())); render(el); return; }
   if (act === 'toggle-all') {
     const keys = [...el.querySelectorAll('details[data-g]')].map((d) => d.dataset.g);

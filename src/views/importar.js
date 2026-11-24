@@ -18,7 +18,7 @@ export function render(el) {
   if (el._init) return;
   el._init = true;
   el.innerHTML = String(html`
-    <section class="page-head"><div><h1>Importar planillas</h1></div></section>
+    <section class="m-head"><div><h1>Importar planillas</h1></div></section>
     <section class="card">
       <label class="dropzone" id="dz">
         <input type="file" id="csv-file" accept=".csv,text/csv" hidden>

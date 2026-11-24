@@ -11,6 +11,7 @@ import {
 } from '../components/ui.js';
 import { avisoBar, pendientesCard, openAvisoDrawer, openPlantillas, avisarCambioDeEtapa } from '../components/avisos.js';
 import { mascot } from '../components/mascot.js';
+import { mHead, mBarra, mChips, mPanel, mKpis, mTabs, subTab } from '../components/moderno.js';
 import { openAssignFromCandidate } from './asignar.js';
 import { celebrate } from './posiciones.js';
 import { preingresoFields } from '../components/ingreso.js';
@@ -116,37 +117,30 @@ export function render(el) {
   const mesMax = Math.max(1, ...meses.map((m) => m[1]));
 
   const chips = DIMS.flatMap((d) => [...filters[d]].map((v) => [d, v]));
+  const tab = subTab('candidatos', staff ? ['listado', 'graficos', 'reporte'] : ['graficos', 'reporte'], staff ? 'listado' : 'graficos');
 
   el.innerHTML = String(html`
-  <section class="page-head">
-    <div>
-      <h1>Candidatos PP</h1>
-    </div>
-    ${staff ? html`<div class="head-actions"><button class="btn" data-act="carga-masiva">Carga masiva</button><button class="btn" data-act="new">+ Nuevo candidato</button></div>` : ''}
-  </section>
-
-  ${staff ? pendientesCard() : ''}
-  <section class="filters card">
+  ${mHead({ titulo: 'Candidatos', sub: `${fmtInt(kg.total)} candidatos PP · ${fmtInt(kg.activos)} en proceso`,
+    acciones: staff ? html`<button class="btn btn--ghost" data-act="carga-masiva">Carga masiva</button><button class="btn btn--primary" data-act="new">+ Nuevo candidato</button>` : '' })}
+  ${mBarra({ seccion: 'candidatos', buscar: staff ? { id: 'cand-search', placeholder: 'Buscar nombre, DNI, mail o teléfono', valor: search } : null,
+    nFiltros: chips.length })}
+  ${mChips([...(grupo && grupo !== 'todos' ? [{ attrs: 'data-kpi="todos"', texto: grupo === 'proceso' ? 'En proceso' : grupo === 'ingresados' ? 'Ingresados' : 'Cancelados' }] : []),
+    ...chips.filter(([d]) => !(grupo && d === 'stage')).map(([d, v]) => ({ dim: d, valor: v, texto: `${DIM_LABEL[d]}: ${d === 'mes' && v !== 'Sin fecha' ? fmtMonth(v) : v}` }))], 'clear')}
+  ${mPanel('candidatos', html`
     ${filterGroup({ dim: 'area', label: 'Área', options: pillOptions('area'), selected: filters.area })}
     ${filterGroup({ dim: 'sector', label: 'Sector', options: pillOptions('sector'), selected: filters.sector, allLabel: 'Todos' })}
-    <div class="active-filters ${chips.length ? '' : 'is-empty'}" aria-live="polite">
-      ${chips.length ? html`<span class="muted small">Filtrando por:</span>
-        ${grupo && grupo !== 'todos' ? html`<button type="button" class="chip chip--on" data-kpi="todos" title="Quitar">Mostrando: <b>${grupo === 'proceso' ? 'En proceso' : grupo === 'ingresados' ? 'Ingresados' : 'Cancelados'}</b> ✕</button>` : ''}
-        ${chips.filter(([d]) => !(grupo && d === 'stage')).map(([d, v]) => html`<button type="button" class="chip chip--on" data-filter="${d}" data-value="${v}" title="Quitar">${DIM_LABEL[d]}: <b>${d === 'mes' && v !== 'Sin fecha' ? fmtMonth(v) : v}</b> ✕</button>`)}
-        <button type="button" class="btn btn--ghost btn--sm" data-act="clear">Limpiar todo</button>`
-      : html`<span class="muted small">Sin filtros: mostrando los ${fmtInt(state.candidates.length)} candidatos.</span>`}
-    </div>
-  </section>
-
-  <section class="kpis kpis--6">
-    ${kpi('Candidatos', kg.total, { id: 'c-total', act: 'todos', selected: grupo === 'todos', hint: 'Ver todos' })}
-    ${kpi('En proceso', kg.activos, { tone: 'blue', big: true, id: 'c-act', act: 'proceso', selected: grupo === 'proceso' })}
-    ${kpi('Ingresados', kg.ingresados, { tone: 'green', sub: `${kg.conversion}% de conversión`, id: 'c-ing', act: 'ingresados', selected: grupo === 'ingresados' })}
-    ${kpi('Avance vs necesidad', pct(k.cubiertas, k.necesidad), { suffix: '%', tone: 'navy', sub: `${k.cubiertas} de ${k.necesidad} sillas cubiertas`, id: 'c-av' })}
-    ${kpi('Días promedio postulado', k.diasPromedioActivos ?? '—', { sub: 'activos, desde CV recibido', id: 'c-dias' })}
-    ${kpi('Días CV → ingreso', k.diasPromedioIngreso ?? '—', { sub: 'promedio ingresados', id: 'c-ding' })}
-  </section>
-
+    <p class="muted small" style="margin:0">Etapa, origen, localidad, motivo y mes se filtran tocando los gráficos.</p>`)}
+  ${mKpis([
+    { icono: 'candidatos', label: 'En proceso', valor: kg.activos, id: 'c-act', act: 'proceso', sel: grupo === 'proceso', serie: meses.map(([m, n]) => [m, n]),
+      sub: html`de <b>${fmtInt(kg.total)}</b> candidatos` },
+    { icono: 'alta', label: 'Ingresados', valor: kg.ingresados, id: 'c-ing', tono: 'ok', act: 'ingresados', sel: grupo === 'ingresados', sub: `${kg.conversion}% de conversión` },
+    { icono: 'cobertura', label: 'Avance vs necesidad', valor: pct(k.cubiertas, k.necesidad), sufijo: '%', id: 'c-av', barra: pct(k.cubiertas, k.necesidad), sub: html`<b>${k.cubiertas}</b> de ${k.necesidad} sillas cubiertas` },
+    { icono: 'reloj', label: 'Días promedio postulado', valor: k.diasPromedioActivos ?? '—', id: 'c-dias', sub: `CV → ingreso: ${k.diasPromedioIngreso ?? '—'} días` },
+  ])}
+  ${mTabs('candidatos', [...(staff ? [['listado', 'Listado']] : []), ['graficos', 'Gráficos'], ['reporte', 'Reporte']], tab)}
+  <div class="m-cuerpo">
+  ${tab === 'listado' ? html`${pendientesCard()}${listSection(today, all)}` : ''}
+  ${tab === 'graficos' ? html`
   <section class="card">
     <h2 class="card-title">CV recibidos por mes</h2>
     <div class="cols" role="group" aria-label="CV recibidos por mes">
@@ -184,6 +178,8 @@ export function render(el) {
     </article>
   </section>
 
+  ` : ''}
+  ${tab === 'reporte' ? html`
   <section class="card" id="reporte">
     <header class="report-head">
       <div><h2 class="card-title" style="margin:0">Reporte: ${tituloSeleccion()}</h2>
@@ -198,7 +194,8 @@ export function render(el) {
     ${pivotTable(pv, { rowLabel: dimLabel(repFilas) })}
   </section>
 
-  ${staff ? listSection(today, all) : ''}
+  ` : ''}
+  </div>
   `);
   bind(el);
   animateIn(el);
@@ -228,7 +225,6 @@ function listSection(today, all) {
     <header class="list-head">
       <h2 class="card-title">Listado <small class="muted">${rows.length} candidatos</small></h2>
       <div class="list-actions">
-        <label class="search"><input type="search" id="cand-search" placeholder="Buscar nombre, DNI, mail, teléfono…" value="${search}"></label>
         <button class="btn btn--sm btn--excel" data-act="fichas" title="Una fila por persona con silla, datos personales, talles, etapas y nómina">Excel fichas completas ↓ (${rows.length})</button>
       </div>
     </header>
