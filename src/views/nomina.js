@@ -105,44 +105,7 @@ export function render(el) {
   const pfProx = base.filter((n) => n.fin_pf && n.fin_pf >= hoy && daysBetween(hoy, n.fin_pf) <= 60).length;
   const recientes = base.filter((n) => n.fecha_ingreso && daysBetween(n.fecha_ingreso, hoy) <= 90).length;
 
-  if (document.documentElement.dataset.estilo === 'iris') el.innerHTML = String(vistaModerna({ base, rows, shown, recientes, pfProx }));
-  else el.innerHTML = String(html`
-  <section class="page-head"><div><h1>Nómina EFiS</h1></div>
-    <div class="head-actions">
-      <label class="btn">Reimportar planilla<input type="file" id="nom-file" accept=".csv,text/csv" hidden></label>
-      <button class="btn" data-act="export">Exportar CSV</button>
-      <button class="btn" data-act="new">+ Alta</button>
-    </div>
-  </section>
-  <section class="filters card">
-    ${filterGroup({ dim: 'yacimiento', label: 'Yacimiento', options: opts('yacimiento'), selected: filters.yacimiento, allLabel: 'Todos' })}
-    ${filterGroup({ dim: 'sector', label: 'Sector', options: opts('sector'), selected: filters.sector, allLabel: 'Todos' })}
-    ${filterGroup({ dim: 'encuadre', label: 'Encuadre', options: opts('encuadre'), selected: filters.encuadre, allLabel: 'Todos' })}
-    ${filterGroup({ dim: 'pendiente', label: 'Pendiente', options: opts('pendiente'), selected: filters.pendiente, allLabel: 'Todos' })}
-    ${meses.size ? '' : filterGroup({ dim: 'estado', label: 'Estado', options: opts('estado'), selected: filters.estado, allLabel: 'Todos' })}
-    <div class="filters-row">
-      ${multiSelectFilter({ dim: 'mes', label: 'Dotación en el mes', options: mesesDisponibles().map((m) => [m, filterRowsSinEstado().filter((n) => enMes(n, m)).length]), selected: meses, allLabel: 'Hoy', presets: presetsMeses(mesesDisponibles()), open: openMulti === 'mes', labelOf: (m) => fmtMonth(m) })}
-    </div>
-  </section>
-  <section class="kpis kpis--6">
-    ${kpi(meses.size ? (meses.size === 1 ? `Dotación ${fmtMonth([...meses][0])}` : 'Personas en el período') : 'Personas', base.length, { tone: 'blue', big: true, id: 'n-tot' })}
-    ${kpi('Ingresos últimos 90 días', recientes, { tone: 'green', id: 'n-rec' })}
-    ${kpi('DDJJ pendiente', base.filter((n) => !okVal(n.ddjj)).length, { tone: 'orange', id: 'n-ddjj' })}
-    ${kpi('Kit pendiente', base.filter((n) => !okVal(n.regalo_kit)).length, { tone: 'orange', id: 'n-kit' })}
-    ${kpi('Plazo fijo vence ≤ 60 días', pfProx, { tone: pfProx ? 'red' : '', id: 'n-pf' })}
-    ${kpi('Edad promedio', Math.round(base.map(edad).filter(Boolean).reduce((a, b, _, arr) => a + b / arr.length, 0)) || 0, { id: 'n-edad' })}
-  </section>
-  ${coberturaDotacion()}
-  ${meses.size ? dotacionPorMes() : ''}
-  <section class="grid-2">
-    <article class="card"><h2 class="card-title">Por yacimiento</h2>${bars(countBy(filterRows('yacimiento'), getters.yacimiento), { dim: 'yacimiento', selected: filters.yacimiento, chart: 'n-yac', limit: 12 })}</article>
-    <article class="card"><h2 class="card-title">Por sector</h2>${bars(countBy(filterRows('sector'), getters.sector), { color: 'green', dim: 'sector', selected: filters.sector, chart: 'n-sec', limit: 12 })}</article>
-  </section>
-  <section class="card">
-    <header class="list-head"><h2 class="card-title">Personal <small class="muted">${rows.length}</small></h2>
-      <label class="search"><input type="search" id="nom-search" placeholder="Buscar nombre, DNI, Nº pers., POS, función, jefe…" value="${search}"></label></header>
-    ${tablaPersonal(rows, shown)}
-  </section>`);
+  el.innerHTML = String(vistaModerna({ base, rows, shown, recientes, pfProx }));
   animateIn(el);
 
   if (!el._bound) {

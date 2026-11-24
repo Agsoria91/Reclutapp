@@ -19,7 +19,7 @@ export function render(el) {
   if (el._init) return;
   el._init = true;
   el.innerHTML = String(html`
-    <section class="page-head"><div><h1>Usuarios</h1></div></section>
+    <section class="m-head"><div><h1>Usuarios</h1></div></section>
     <section class="card">
       <form id="u-form" class="form-grid">
         <label class="field"><span>Correo corporativo</span><input name="email" type="email" required autocomplete="off" placeholder="nombre@tecpetrol.com"></label>

@@ -8,6 +8,7 @@ import { sb } from '../lib/supabase.js';
 import { fmtDate, todayISO, norm } from '../lib/format.js';
 import { kpi, openDrawer, closeDrawer, toast, formData, field, confirmDialog, stagePill, animateIn } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
+import { mHead, mKpis } from '../components/moderno.js';
 import { preingresoFields, preingresoProgress } from '../components/ingreso.js';
 import { celebrate } from './posiciones.js';
 import { openAssignFromCandidate } from './asignar.js';
@@ -25,13 +26,13 @@ export function render(el) {
   const completos = sillas.filter((x) => x.c && !x.prog.missing.length).length;
 
   el.innerHTML = String(html`
-  <section class="page-head"><div><h1>Próximos ingresos</h1></div></section>
-  <section class="kpis kpis--6">
-    ${kpi('Próximos ingresos', sillas.length + sinSilla.length, { tone: 'blue', big: true, id: 'pi-tot' })}
-    ${kpi('Datos completos', completos, { tone: 'green', id: 'pi-ok' })}
-    ${kpi('Con datos faltantes', sillas.length - completos, { tone: 'orange', id: 'pi-falta' })}
-    ${kpi('Sin silla asignada', sinSilla.length, { tone: sinSilla.length ? 'red' : '', id: 'pi-sin' })}
-  </section>
+  ${mHead({ titulo: 'Próximos ingresos', sub: `${sillas.length + sinSilla.length} personas por ingresar` })}
+  ${mKpis([
+    { icono: 'ingresos', label: 'Próximos ingresos', valor: sillas.length + sinSilla.length, id: 'pi-tot', sub: html`<b>${sillas.filter((x) => x.p.fecha_ingreso).length}</b> con fecha confirmada` },
+    { icono: 'alta', label: 'Datos completos', valor: completos, id: 'pi-ok', tono: 'ok', barra: sillas.length ? Math.round((completos / sillas.length) * 100) : 0, sub: 'listos para el alta' },
+    { icono: 'documento', label: 'Con datos faltantes', valor: sillas.length - completos, id: 'pi-falta', tono: sillas.length - completos ? 'aviso' : '', sub: 'completar antes del ingreso' },
+    { icono: 'posiciones', label: 'Sin silla asignada', valor: sinSilla.length, id: 'pi-sin', tono: sinSilla.length ? 'alerta' : '', sub: 'en próximo ingreso' },
+  ])}
   ${sillas.length ? html`<section class="ing-grid">${sillas.map(({ p, c, prog }) => card(p, c, prog))}</section>`
     : mascot('empty', { title: 'Nadie en Próximo ingreso', text: 'Cuando una silla pase a "Próximo ingreso" va a aparecer acá.' })}
   ${sinSilla.length ? html`<section class="card"><h2 class="card-title">En Próximo ingreso sin silla</h2>

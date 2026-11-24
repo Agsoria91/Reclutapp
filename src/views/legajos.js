@@ -3,6 +3,7 @@ import { state, loadAll } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
 import { fmtDate, fmtMoney, fmtInt, norm, fmtMonth } from '../lib/format.js';
 import { applyFilters, countBy } from '../lib/kpis.js';
+import { mHead, mBarra, mChips, mPanel, mKpis, mTabs, subTab } from '../components/moderno.js';
 import {
   filterGroup, toggleFilter, kpi, bars, animateIn, openDrawer, closeDrawer, toast, formData, field, pickField,
 } from '../components/ui.js';
@@ -33,32 +34,33 @@ export function render(el) {
   const opts = (dim) => countBy(applyFilters(state.hires, { ...filters, [dim]: new Set() }, getters), getters[dim])
     .sort((a, b) => String(a[0]).localeCompare(String(b[0]), 'es'));
 
+  const tab = subTab('legajos', ['listado', 'graficos'], 'listado');
   el.innerHTML = String(html`
-  <section class="page-head">
-    <div><h1>Legajos de ingresados</h1></div>
-    <div class="head-actions">
-      <button class="btn" data-act="export">Exportar CSV</button>
-      <button class="btn" data-act="new">+ Alta manual</button>
-    </div>
-  </section>
-  <section class="filters card">
+  ${mHead({ titulo: 'Legajos', sub: `${fmtInt(activos.length)} activos · personas que ingresaron por una silla`, acciones: html`
+    <button class="btn btn--ghost" data-act="export">Exportar CSV</button>
+    <button class="btn btn--primary" data-act="new">+ Alta manual</button>` })}
+  ${mBarra({ seccion: 'legajos', buscar: { id: 'hire-search', placeholder: 'Buscar nombre, DNI o puesto', valor: search }, nFiltros: ['area', 'sector', 'estado'].flatMap((d) => [...filters[d]].map((v) => ({ dim: d, valor: v }))).length })}
+  ${mChips(['area', 'sector', 'estado'].flatMap((d) => [...filters[d]].map((v) => ({ dim: d, valor: v }))))}
+  ${mPanel('legajos', html`
     ${filterGroup({ dim: 'area', label: 'Área', options: opts('area'), selected: filters.area })}
     ${filterGroup({ dim: 'sector', label: 'Sector', options: opts('sector'), selected: filters.sector, allLabel: 'Todos' })}
-    ${filterGroup({ dim: 'estado', label: 'Estado', options: opts('estado'), selected: filters.estado, allLabel: 'Todos' })}
-  </section>
-  <section class="kpis">
-    ${kpi('Activos', fmtInt(activos.length), { tone: 'green', big: true })}
-    ${kpi('Bajas', fmtInt(base.length - activos.length), { tone: 'red' })}
-    ${kpi('Sin fecha de ingreso', fmtInt(base.filter((h) => !h.fecha_ingreso).length), { tone: 'orange', sub: 'a completar' })}
-    ${kpi('Sin DNI', fmtInt(base.filter((h) => !h.dni).length), { tone: 'orange', sub: 'a completar' })}
-  </section>
+    ${filterGroup({ dim: 'estado', label: 'Estado', options: opts('estado'), selected: filters.estado, allLabel: 'Todos' })}`)}
+  ${mKpis([
+    { icono: 'legajos', label: 'Legajos activos', valor: activos.length, id: 'l-act', sub: html`de <b>${fmtInt(base.length)}</b> ingresados` },
+    { icono: 'documento', label: 'Bajas', valor: base.length - activos.length, id: 'l-baj', tono: base.length - activos.length ? 'alerta' : '' },
+    { icono: 'reloj', label: 'Sin fecha de ingreso', valor: base.filter((h) => !h.fecha_ingreso).length, id: 'l-sf', tono: 'aviso', sub: 'a completar' },
+    { icono: 'nomina', label: 'Sin DNI', valor: base.filter((h) => !h.dni).length, id: 'l-sd', tono: 'aviso', sub: 'a completar' },
+  ])}
+  ${mTabs('legajos', [['listado', `Listado · ${rows.length}`], ['graficos', 'Gráficos']], tab)}
+  <div class="m-cuerpo">
+  ${tab === 'graficos' ? html`
   <section class="grid-2">
     <article class="card"><h2 class="card-title">Ingresos por mes</h2>${porMes.length ? bars(porMes, { color: 'green', limit: 12 }) : html`<p class="muted">Sin fechas.</p>`}</article>
     <article class="card"><h2 class="card-title">Activos por área</h2>${bars(countBy(activos, (h) => h.yacimiento || '—'), { color: 'blue' })}</article>
   </section>
+` : html`
   <section class="card">
-    <header class="list-head"><h2 class="card-title">Legajos <small class="muted">${rows.length}</small></h2>
-      <label class="search"><input type="search" id="hire-search" placeholder="Buscar nombre, DNI, puesto…" value="${search}"></label></header>
+    <header class="list-head"><h2 class="card-title">Legajos <small class="muted">${rows.length}</small></h2></header>
     ${rows.length ? html`<div class="table-wrap"><table class="tbl is-clickable">
       <thead><tr><th>Nombre</th><th>DNI</th><th>Ingreso</th><th class="hide-sm">Área · Sector</th><th class="hide-sm">Silla</th><th class="hide-sm">Convenio · Cat.</th><th class="hide-sm">Jefe</th><th class="hide-sm num">Básico</th><th>Estado</th></tr></thead>
       <tbody>${rows.map((h) => html`<tr data-id="${h.id}" tabindex="0">
@@ -72,7 +74,8 @@ export function render(el) {
         <td data-th="Básico" class="hide-sm num">${fmtMoney(h.basico)}</td>
         <td data-th="Estado"><span class="pill pill--sm pill--${h.estado === 'activo' ? 'green' : 'neutral'}">${h.estado === 'activo' ? 'Activo' : 'Baja'}</span></td>
       </tr>`)}</tbody></table></div>` : mascot('empty')}
-  </section>`);
+  </section>`}
+  </div>`);
 
   if (!el._bound) {
     el._bound = true;

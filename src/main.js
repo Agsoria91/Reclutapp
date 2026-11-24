@@ -26,6 +26,7 @@ import { descargarRespaldo, diasDesdeRespaldo } from './lib/respaldo.js';
 import { descargarExcel } from './lib/reporteExcel.js';
 import { initFolds } from './components/folds.js';
 import { icono } from './components/iconos.js';
+import { initModerno } from './components/moderno.js';
 
 const ROUTES = {
   posiciones: { view: posiciones, label: 'Posiciones' },
@@ -51,7 +52,9 @@ function applyTheme(t) {
   if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
   else delete document.documentElement.dataset.theme;
 }
-applyTheme(loadLocal('reclutapp.theme', null));
+// Diseño de la app: estilo IRIS (guía UX BI Tecpetrol) con paleta EFiS, siempre en claro.
+document.documentElement.dataset.estilo = 'iris';
+applyTheme('light');
 function toggleTheme() {
   const dark = document.documentElement.dataset.theme === 'dark' ||
     (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
@@ -77,6 +80,7 @@ const app = $('#app');
 const INICIALES = { posiciones: 'PO', candidatos: 'CA', entrevistas: 'EN', dashboardpj: 'PJ', examenes: 'EX', ingresos: 'IN', legajos: 'LE', nomina: 'NO', importar: 'IM', usuarios: 'US' };
 let current = { name: null, container: null };
 initFolds(app, () => current.name);
+initModerno(() => draw());
 
 function shell(name) {
   const r = ROUTES[name];
@@ -85,7 +89,7 @@ function shell(name) {
   return html`
   <a href="#view" class="skip">Saltar al contenido</a>
   <header class="topbar">
-    <button type="button" class="menu-btn" id="btn-menu" aria-label="Abrir menú de secciones" aria-expanded="false" aria-controls="menu-secciones"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    ${navItems.length ? html`<button type="button" class="menu-btn" id="btn-menu" aria-label="Abrir menú de secciones" aria-expanded="false" aria-controls="menu-secciones"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>` : ''}
     <a class="brand" href="#/posiciones" aria-label="Inicio">
       <img src="./brand/efis-isologo.svg" alt="EFiS Energy Field Services" class="brand-logo brand-logo--color">
       <img src="./brand/efis-isologo-negativo.svg" alt="" aria-hidden="true" class="brand-logo brand-logo--mono">
