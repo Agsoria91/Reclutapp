@@ -8,7 +8,7 @@ import { decodeBytes } from '../lib/csv.js';
 import { parseVacantesCSV, estadoInfo, esVacante } from '../lib/vacantesPj.js';
 import {
   filterGroup, toggleFilter, kpi, bars, saveLocal, loadLocal, serializeFilters, restoreFilters,
-  pivot, pivotTable, confirmDialog, toast, prevSize, animateIn, multiSelectFilter, bento, seriePorMes,
+  pivot, pivotTable, confirmDialog, toast, prevSize, animateIn, multiSelectFilter,
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 import { generoDe } from '../lib/genero.js';
@@ -154,7 +154,23 @@ export function render(el) {
       <button type="button" class="btn btn--ghost btn--sm" data-act="pj-clear">Limpiar todo</button></div>` : ''}
   </section>
 
-  ${bentoPJ({ sinGrupo, n, rows, vacantes, atrasadas, edadProm, proximos })}
+  <section class="kpis kpis--6">
+    ${kpi('Búsquedas', n('todas'), { act: 'todas', selected: grupo === 'todas', big: true, id: 'pj-tot' })}
+    ${kpi('Abiertas', n('abiertas'), { act: 'abiertas', selected: grupo === 'abiertas', tone: 'blue', sub: `${pct(n('abiertas'), n('todas'))}% del total`, id: 'pj-ab' })}
+    ${kpi('En proceso', n('proceso'), { act: 'proceso', selected: grupo === 'proceso', tone: 'navy', sub: generoTexto(sinGrupo.filter(GRUPOS.proceso[1])), id: 'pj-pro' })}
+    ${kpi('En espera', n('espera'), { act: 'espera', selected: grupo === 'espera', tone: 'orange', sub: 'on hold / pend. definición', id: 'pj-esp' })}
+    ${kpi('Cerradas', n('cerradas'), { act: 'cerradas', selected: grupo === 'cerradas', tone: 'green', sub: `${pct(n('cerradas'), n('todas'))}% cubiertas`, id: 'pj-cer' })}
+    ${kpi('Sin estado', n('sin'), { act: 'sin', selected: grupo === 'sin', tone: n('sin') ? 'red' : '', sub: 'completar en la planilla', id: 'pj-sin' })}
+  </section>
+
+  <section class="kpis kpis--6 pj-kpis2">
+    ${kpi('Vacantes sin persona', vacantes.length, { sub: 'abiertas con “Vacante”', id: 'pj-vac' })}
+    ${kpi('Atrasadas', atrasadas.length, { tone: atrasadas.length ? 'red' : '', sub: 'abiertas con fecha de línea pasada', id: 'pj-atr' })}
+    ${kpi('Antigüedad promedio', edadProm ?? '—', { suffix: edadProm != null ? ' d' : '', sub: 'días abiertas desde la solicitud', id: 'pj-edad' })}
+    ${kpi('Próximos ingresos', proximos.length, { tone: 'green', sub: 'con fecha potencial futura', id: 'pj-prox' })}
+    ${kpi('Insourcing', rows.filter((v) => norm(v.proceso) === 'insourcing').length, { sub: 'de la selección', id: 'pj-ins' })}
+    ${kpi('Mov. internos', rows.filter((v) => norm(v.proceso) === 'movimiento interno').length, { sub: 'de la selección', id: 'pj-mi' })}
+  </section>
 
   <section class="grid-2">
     <article class="card"><h2 class="card-title">Por estado</h2>${bars(porEstado, { dim: 'estado', selected: filters.estado, total: filtrar('estado').length, limit: 12, chart: 'pj-estado' })}</article>
@@ -353,32 +369,4 @@ function generoTexto(rows) {
   }
   if (!c.M && !c.F && !c.sd) return 'sin personas asignadas';
   return `${c.M} masc. · ${c.F} fem.${c.sd ? ` · ${c.sd} s/d` : ''}${est ? ' (estimado por nombre)' : ''}`;
-}
-
-function bentoPJ({ sinGrupo, n, rows, vacantes, atrasadas, edadProm, proximos }) {
-  const serie = seriePorMes(sinGrupo, (v) => v.fecha_solicitud);
-  const sel = (g) => grupo === g;
-  return bento({
-    hero: {
-      label: 'Búsquedas PJ', value: n('todas'), id: 'pj-tot', act: 'todas', selected: false,
-      serie, serieLabel: 'búsquedas por mes de solicitud',
-      chips: [{ text: `${pct(n('cerradas'), n('todas'))}% cerradas`, tone: 'good' }],
-      foot: [html`Insourcing <b>${rows.filter((v) => norm(v.proceso) === 'insourcing').length}</b>`, html`Mov. internos <b>${rows.filter((v) => norm(v.proceso) === 'movimiento interno').length}</b>`],
-    },
-    tiles: [
-      { label: 'Abiertas', wide: true, act: 'abiertas', selected: sel('abiertas'), meter: 100 - pct(atrasadas.length, n('abiertas')),
-        body: html`<div class="bt-cob-row"><span class="bt-big">${n('abiertas')}</span>
-          <span class="bt-cob-txt"><b>${atrasadas.length}</b> atrasadas<br><b>${vacantes.length}</b> vacantes sin persona</span></div>` },
-      { label: 'En proceso', value: n('proceso'), id: 'pj-pro', act: 'proceso', selected: sel('proceso'), sub: generoTexto(sinGrupo.filter(GRUPOS.proceso[1])) },
-      { label: 'En espera', value: n('espera'), id: 'pj-esp', tone: n('espera') ? 'warn' : '', act: 'espera', selected: sel('espera'), sub: 'on hold / pend. definición' },
-      { label: 'Cerradas', value: n('cerradas'), id: 'pj-cer', tone: 'good', act: 'cerradas', selected: sel('cerradas'), sub: `${pct(n('cerradas'), n('todas'))}% cubiertas` },
-      { label: 'Sin estado', value: n('sin'), id: 'pj-sin', tone: n('sin') ? 'alert' : '', act: 'sin', selected: sel('sin'), sub: 'completar en la planilla' },
-      { label: 'Atrasadas', value: atrasadas.length, id: 'pj-atr', tone: atrasadas.length ? 'alert' : '', sub: 'abiertas con fecha de línea pasada' },
-      { label: 'Vacantes sin persona', value: vacantes.length, id: 'pj-vac', sub: 'abiertas con “Vacante”' },
-      { label: 'Antigüedad promedio', value: edadProm ?? '—', suffix: edadProm != null ? ' d' : '', id: 'pj-edad', sub: 'días abiertas desde la solicitud' },
-      { label: 'Próximos ingresos', value: proximos.length, id: 'pj-prox', tone: 'good', sub: 'con fecha potencial futura' },
-      { label: 'Búsquedas este mes', value: serie[serie.length - 1][1], id: 'pj-mes', sub: `${serie[serie.length - 2][1]} el mes anterior` },
-      { label: 'Insourcing', value: rows.filter((v) => norm(v.proceso) === 'insourcing').length, id: 'pj-ins', sub: 'de la selección' },
-    ],
-  });
 }
