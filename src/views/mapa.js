@@ -91,6 +91,11 @@ function abanico(m, marcas) {
   }
 }
 
+// Áreas de concesión (GeoJSON oficial de la Secretaría de Energía, si está disponible).
+const AREAS = null;
+const nombreArea = (f) => f.properties?.nombre || f.properties?.NOMBRE || f.properties?.area || f.properties?.AREA || '';
+const esEfis = (f) => /fort[ií]n de piedra|los toldos|los bastos|agua salada/i.test(nombreArea(f));
+
 let mapa = null;
 let capaActual = loadLocal('reclutapp.mapa.capa', 'satelite');
 let vista3d = loadLocal('reclutapp.mapa.3d', true);
@@ -116,8 +121,10 @@ export function render(el) {
       <button type="button" data-zoom="1" aria-label="Acercar">+</button>
       <button type="button" data-zoom="-1" aria-label="Alejar">−</button>
       <button type="button" data-zoom="0" aria-label="Ver todos los yacimientos" title="Ver todos">⤢</button>
+      <button type="button" data-mover="arriba" aria-label="Mover el mapa hacia arriba" title="Mover hacia el norte">▲</button>
+      <button type="button" data-mover="abajo" aria-label="Mover el mapa hacia abajo" title="Mover hacia el sur">▼</button>
     </div>
-    <div class="mapa-atrib">${raw((CAPAS[capaActual] || CAPAS.satelite)[1])} · Leaflet</div>
+    <div class="mapa-atrib">${raw((CAPAS[capaActual] || CAPAS.satelite)[1])} · Límites &copy; Esri · Leaflet</div>
     <aside class="mapa-panel">
       <span class="mapa-kicker">EFiS · Cuenca Neuquina</span>
       <h1>Yacimientos</h1>
@@ -139,10 +146,23 @@ export function render(el) {
   const box = el.querySelector('#mapa-leaflet');
   const cont = el.querySelector('.mapa');
   if (window.innerWidth > 860) cont.style.height = `${Math.max(480, window.innerHeight - cont.getBoundingClientRect().top - window.scrollY)}px`;
-  mapa = L.map(box, { zoomControl: false, attributionControl: false, minZoom: 7, maxZoom: 15, zoomSnap: 1, zoomDelta: 1, wheelPxPerZoomLevel: 90 });
+  mapa = L.map(box, { zoomControl: false, attributionControl: false, dragging: true, inertia: true, keyboard: true, keyboardPanDelta: 120, minZoom: 7, maxZoom: 15, zoomSnap: 1, zoomDelta: 1, wheelPxPerZoomLevel: 90 });
   const [url, attr, extra] = CAPAS[capaActual] || CAPAS.satelite;
   box.dataset.capa = capaActual;
   L.tileLayer(url, { attribution: attr, maxZoom: 18, detectRetina: true, keepBuffer: 4, ...extra }).addTo(mapa);
+  // límites provinciales y nombres de lugares (capa transparente, sin el oscurecido del satélite)
+  mapa.createPane('referencia').style.zIndex = 320;
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+    { pane: 'referencia', maxZoom: 18, detectRetina: true, opacity: 0.85, className: 'mp-ref' }).addTo(mapa);
+  // áreas de concesión (límites y nombres difuminados), si el archivo de datos está cargado
+  if (AREAS) {
+    mapa.createPane('areas').style.zIndex = 330;
+    L.geoJSON(AREAS, {
+      pane: 'areas', interactive: false,
+      style: (f) => ({ color: esEfis(f) ? '#9CCB74' : '#E8EEEA', weight: esEfis(f) ? 1.8 : 1, opacity: esEfis(f) ? 0.9 : 0.35, fill: esEfis(f), fillColor: '#78B450', fillOpacity: 0.08, dashArray: esEfis(f) ? null : '4 4' }),
+      onEachFeature: (f, lyr) => { const n = nombreArea(f); if (n) lyr.bindTooltip(n, { permanent: true, direction: 'center', className: `mp-area-nombre ${esEfis(f) ? 'is-efis' : ''}`, pane: 'areas' }); },
+    }).addTo(mapa);
+  }
   const marcas = [];
   for (const y of ys) {
     const m = L.marker([y.lat, y.lon], { icon: L.divIcon({ className: 'mp-divicon', html: marcador(y), iconSize: [0, 0] }), keyboard: false, riseOnHover: true });
@@ -168,6 +188,8 @@ export function render(el) {
     el._mapa = true;
     el.addEventListener('click', (e) => {
       if (!el.querySelector('.mapa')) return;
+      const mv = e.target.closest('[data-mover]');
+      if (mv && mapa) { mapa.panBy([0, mv.dataset.mover === 'arriba' ? -180 : 180]); return; }
       const z = e.target.closest('[data-zoom]');
       if (z && mapa) { const v = Number(z.dataset.zoom); if (v > 0) mapa.zoomIn(); else if (v < 0) mapa.zoomOut(); else el._encuadrar?.(); return; }
       if (e.target.closest('[data-vista3d]')) { vista3d = !vista3d; saveLocal('reclutapp.mapa.3d', vista3d); render(el); return; }

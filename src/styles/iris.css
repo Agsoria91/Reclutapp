@@ -470,3 +470,11 @@
 .mapa-atrib { position: absolute; right: 360px; bottom: 6px; z-index: 900; font: 400 10px var(--font-sans); color: #8FA399; background: rgba(7, 11, 9, .6); padding: 2px 6px; border-radius: 4px; }
 .mapa-atrib a { color: #9CCB74; }
 @media (max-width: 860px) { .mapa-zoom { top: calc(68vh - 140px); bottom: auto; } .mapa-atrib { right: 6px; top: calc(68vh - 22px); bottom: auto; } }
+/* capa de referencia (límites provinciales y lugares) y nombres de áreas */
+.leaflet-pane .mp-ref { filter: drop-shadow(0 0 1px rgba(0, 0, 0, .8)); }
+.mp-area-nombre { background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; color: rgba(232, 238, 234, .38) !important;
+  font: 600 11px var(--font-sans) !important; letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; text-shadow: 0 1px 2px rgba(0, 0, 0, .8); }
+.mp-area-nombre::before { display: none !important; }
+.mp-area-nombre.is-efis { color: rgba(156, 203, 116, .8) !important; }
+.mapa .leaflet-container { cursor: grab; } .mapa .leaflet-dragging .leaflet-container, .mapa .leaflet-container:active { cursor: grabbing; }
+.mapa-zoom button[data-mover] { font-size: 13px; }
