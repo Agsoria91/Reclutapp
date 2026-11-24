@@ -3,13 +3,12 @@
 // RRHH: además candidatos, próximos ingresos, legajos y nómina completa.
 import { state } from './store.js';
 import { todayISO, fmtDate, fmtMonth } from './format.js';
-import { positionKpis, pendingByTarget, candidateKpis, interviewStats, reached, monthKey, isCovered, hasPerson } from './kpis.js';
+import { positionKpis, pendingByTarget, reached, monthKey, isCovered, hasPerson } from './kpis.js';
 import { pivot } from '../components/ui.js';
 import { preingresoProgress, convenioLabel } from '../components/ingreso.js';
 
 const lbl = (code) => state.stageMap[code]?.label || code;
 const pctN = (a, b) => (b ? a / b : null); // fracción: Excel la muestra como %
-const pctS = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '—'); // texto, para la hoja Resumen
 
 function pivotSheet(name, title, rows, rowFn, colFn, rowLabel) {
   const p = pivot(rows, rowFn, colFn);
@@ -98,34 +97,9 @@ export function armarLibro() {
   const staff = state.isStaff;
   const P = state.positions;
   const C = state.candidates;
-  const SM = state.stageMap;
   const pk = positionKpis(P, hoy);
-  const ck = candidateKpis(C, SM, P, hoy);
-  const ik = interviewStats(C, SM);
   const ingresados = C.filter((c) => c.stage === 'ingresado');
   const sheets = [];
-
-  // 1) Resumen
-  const resumen = [
-    ['Posiciones (sillas)', null], ['Sillas totales', pk.total], ['Cubiertas', pk.cubiertas], ['% cubiertas', pctS(pk.cubiertas, pk.total)],
-    ['Faltan cubrir', pk.pendientes], ['  · con candidato en proceso', pk.enProceso], ['  · sin candidato', pk.sinCandidato], ['Vencidas (mes objetivo pasado)', pk.vencidas],
-    [null, null], ['Candidatos PP', null], ['Candidatos', ck.total], ['En proceso', ck.activos], ['Ingresados', ck.ingresados], ['Cancelados', ck.cancelados],
-    ['Conversión (ingresados / candidatos)', pctS(ck.ingresados, ck.total)], ['Días promedio postulado (activos)', ck.diasPromedioActivos], ['Días promedio CV → ingreso', ck.diasPromedioIngreso],
-    [null, null], ['Entrevistas', null], ['Entrevistas realizadas', ik.entrevistados], ['Aprobaron la entrevista', ik.aprobados],
-    ['Efectividad (aprobadas / entrevistas)', pctS(ik.aprobados, ik.entrevistados)], ['Llegaron al examen médico', ik.examen], ['Ingresaron', ik.ingresados],
-    ['Ingresos / entrevistas', pctS(ik.ingresados, ik.entrevistados)], ['Bajas post-entrevista', ik.bajasPost],
-  ];
-  if (staff) {
-    const prox = P.filter((p) => p.stage === 'proximo_ingreso').length;
-    resumen.push([null, null], ['Personal', null], ['Personas en nómina (activas)', state.nomina.filter((n) => n.estado === 'activo').length],
-      ['Ingresos por silla (legajos)', state.nomina.filter((n) => n.position_id || n.candidate_id).length], ['Próximos ingresos', prox]);
-  }
-  sheets.push({
-    name: 'Resumen', title: `Reclutamiento EFiS — Resumen al ${fmtDate(hoy)}`,
-    note: staff ? 'Incluye datos personales: uso interno de RRHH.' : 'Vista de lectura: sin datos personales.',
-    columns: [{ header: 'Indicador', width: 44 }, { header: 'Valor', width: 14 }],
-    rows: resumen.map(([k, v]) => [k, v]),
-  });
 
   // 2) Faltan cubrir por mes
   const pend = pendingByTarget(P, hoy);
@@ -159,32 +133,6 @@ export function armarLibro() {
   sheets.push(pivotSheet('Ingresos por origen', 'Ingresados por origen y área', ingresados, (c) => c.procedencia, (c) => c.area, 'Origen'));
   sheets.push(pivotSheet('Ingresos por localidad', 'Ingresados por localidad y área', ingresados, (c) => c.localidad, (c) => c.area, 'Localidad'));
   sheets.push(pivotSheet('Candidatos por origen', 'Todos los candidatos por origen y etapa', C, (c) => c.procedencia, (c) => lbl(c.stage), 'Origen'));
-
-  // 6) Efectividad de entrevistas
-  const efe = [];
-  for (const [dim, nombre, fn] of [['area', 'Área', (c) => c.area], ['sector', 'Sector', (c) => c.servicio], ['procedencia', 'Origen', (c) => c.procedencia]]) {
-    const g = new Map();
-    for (const c of C) { const k = fn(c) || 'Sin dato'; if (!g.has(k)) g.set(k, []); g.get(k).push(c); }
-    for (const [k, rs] of [...g].sort((a, b) => b[1].length - a[1].length)) {
-      const s = interviewStats(rs, SM);
-      if (s.entrevistados) efe.push([nombre, k, s.entrevistados, s.aprobados, pctN(s.aprobados, s.entrevistados), s.examen, s.ingresados, pctN(s.ingresados, s.entrevistados), s.bajasPost]);
-    }
-  }
-  sheets.push({
-    name: 'Efectividad entrevistas', title: 'Efectividad de entrevistas', note: 'Un candidato cancelado cuenta hasta la instancia a la que llegó.',
-    columns: [{ header: 'Por', width: 9 }, { header: 'Valor', width: 24 }, { header: 'Entrevistas', width: 11 }, { header: 'Aprobadas', width: 10 },
-      { header: 'Efectividad', width: 11, pct: true }, { header: 'Examen', width: 9 }, { header: 'Ingresos', width: 9 }, { header: '% ingreso', width: 10, pct: true }, { header: 'Bajas', width: 8 }],
-    rows: efe,
-    totalRow: ['Total', '', ik.entrevistados, ik.aprobados, pctN(ik.aprobados, ik.entrevistados), ik.examen, ik.ingresados, pctN(ik.ingresados, ik.entrevistados), ik.bajasPost],
-  });
-
-  // 7) Embudo por etapa
-  sheets.push({
-    name: 'Embudo por etapa', title: 'Candidatos por etapa',
-    columns: [{ header: 'Etapa', width: 24 }, { header: 'Candidatos', width: 11 }, { header: '%', width: 8, pct: true }],
-    rows: state.stages.filter((s) => s.code !== 'sin_candidato').map((s) => { const n = C.filter((c) => c.stage === s.code).length; return [s.label, n, pctN(n, C.length)]; }),
-    totalRow: ['Total', C.length, C.length ? 1 : null],
-  });
 
   if (!staff) return sheets;
 
@@ -231,8 +179,6 @@ export function armarLibro() {
     name: 'Nómina', title: `Nómina EFiS al ${fmtDate(hoy)}`,
     columns: nomCols.map(([header, width]) => ({ header, width })), rows: nom.map(nomRow),
   });
-  sheets.push(pivotSheet('Nómina por yacimiento', 'Nómina activa por yacimiento y encuadre', nom.filter((n) => n.estado === 'activo'), (n) => n.yacimiento, (n) => n.encuadre, 'Yacimiento'));
-  sheets.push(pivotSheet('Nómina por localidad', 'Nómina activa por localidad y yacimiento', nom.filter((n) => n.estado === 'activo'), (n) => n.localidad, (n) => n.yacimiento, 'Localidad'));
   return sheets;
 }
 
