@@ -3,14 +3,14 @@
 // 'torre' = torre de perforación (desarrollo no convencional),
 // 'ciguena' = cigüeña / bombeo mecánico (convencional),
 // 'cfp' = planta de procesamiento (CPF / EPF; `instalaciones` detalla cuáles),
-// 'camion' = unidad móvil, 'oficina' = base administrativa.
+// 'camion' = unidad móvil, 'arena' = centro de distribución de arena, 'oficina' = base administrativa.
 export const YACIMIENTOS = [
   // Centros de los polígonos oficiales (Subsecretaría de Hidrocarburos de Neuquén, capa Hidrocarburos:Areas)
   { codigo: 'FDP', nombre: 'Fortín de Piedra', lon: -69.07, lat: -38.55, tipo: 'cfp', instalaciones: 'CPF' },
   { codigo: 'LT2E', nombre: 'Los Toldos II Este', lon: -69.153, lat: -37.444, tipo: 'cfp', instalaciones: 'CPF · EPF' },
   { codigo: 'LT1N', nombre: 'Los Toldos I Norte', lon: -69.44, lat: -37.623, tipo: 'torre' },
-  // CDA opera dentro de Los Toldos II Este (se dibuja apenas al lado para que no se superponga)
-  { codigo: 'CDA', nombre: 'CDA · Los Toldos II Este', lon: -69.10, lat: -37.415, tipo: 'torre' },
+  // CDA: centro de distribución de arena, en Los Toldos II Este (se dibuja apenas al lado para que no se superponga)
+  { codigo: 'CDA', nombre: 'Centro de distribución de arena', lon: -69.10, lat: -37.415, tipo: 'arena' },
   // unidad móvil de transporte de arena: sin lugar fijo, se ubica junto a Los Toldos
   { codigo: 'TLM', nombre: 'TLM · transporte de arena', lon: -69.28, lat: -37.54, tipo: 'camion', movil: true },
   { codigo: 'LBAS', nombre: 'Los Bastos', lon: -68.64, lat: -38.904, tipo: 'ciguena' },
