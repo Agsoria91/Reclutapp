@@ -24,7 +24,7 @@ const ICONO = {
   camion: '<path d="M3 21V11h14v10M17 15h6l4 4v2h-24"/><circle cx="9" cy="23.5" r="2.3"/><circle cx="23" cy="23.5" r="2.3"/><path d="M5.5 11l3-4h5l3 4"/>',
   oficina: '<rect x="7" y="6" width="18" height="22" rx="1.5"/><path d="M11 11h3M18 11h3M11 16h3M18 16h3M11 21h3M18 21h3M14 28v-3h4v3"/>',
 };
-const TIPO = { torre: 'Torre de perforación', ciguena: 'Cigüeña · bombeo mecánico', cfp: 'Planta de facilidades (CFP)', camion: 'Unidad móvil · transporte de arena', oficina: 'Base administrativa' };
+const TIPO = { torre: 'Torre de perforación', ciguena: 'Cigüeña · bombeo mecánico', cfp: 'Planta de procesamiento (CPF / EPF)', camion: 'Unidad móvil · transporte de arena', oficina: 'Base administrativa' };
 const svg = (t, w = 1.6) => `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONO[t]}</svg>`;
 const norm = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -47,7 +47,7 @@ function marcador(y) {
     <span class="mp-ico">${svg(y.tipo)}</span>
     <span class="mp-tag"><b>${y.codigo}</b>${p != null ? `<i>${p}%</i>` : ''}</span>
     <span class="mp-ficha">
-      <strong>${esc(y.nombre)}</strong><small>${TIPO[y.tipo]}${nota}</small>
+      <strong>${esc(y.nombre)}</strong><small>${y.instalaciones ? `Planta de procesamiento · ${y.instalaciones}` : TIPO[y.tipo]}${nota}</small>
       ${y.total ? `<span class="mp-ficha-bar"><span style="width:${p}%"></span></span>
       <span class="mp-ficha-nums"><span><b>${y.total}</b> sillas</span><span><b>${y.cub}</b> cubiertas</span><span><b>${y.faltan}</b> faltan</span></span>`
         : '<span class="mp-ficha-nums"><span>Sin sillas en el mapa de posiciones</span></span>'}
@@ -109,7 +109,7 @@ export function render(el) {
     mapa.invalidateSize();
     const ancho = box.clientWidth;
     mapa.fitBounds(L.latLngBounds(ys.map((y) => [y.lat, y.lon])), {
-      paddingTopLeft: [60, 70], paddingBottomRight: [ancho > 860 ? 380 : 30, 60], maxZoom: 9,
+      paddingTopLeft: [60, 90], paddingBottomRight: [ancho > 860 ? 380 : 30, 60], maxZoom: 9,
     });
   };
   encuadrar();
@@ -129,6 +129,11 @@ export function render(el) {
       if (p && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); abrirYacimiento(datos().find((y) => y.codigo === p.dataset.yac)); }
     });
     el.addEventListener('mouseover', (e) => {
+      const pt = e.target.closest('.mp-pt');
+      if (pt) {
+        const caja = el.querySelector('#mapa-leaflet')?.getBoundingClientRect();
+        if (caja) pt.classList.toggle('ficha-abajo', pt.getBoundingClientRect().top - caja.top < 210);
+      }
       const b = e.target.closest('.mapa-lista [data-yac]');
       el.querySelectorAll('.mp-pt').forEach((p) => p.classList.toggle('is-hover', !!b && p.dataset.yac === b.dataset.yac));
       el.querySelectorAll('.mp-divicon').forEach((d) => { d.style.zIndex = d.querySelector('.is-hover') ? 2000 : ''; });

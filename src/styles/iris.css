@@ -399,3 +399,4 @@
 .mapa-leaflet[data-capa="satelite"] .leaflet-tile-pane { filter: brightness(.58) saturate(.85) contrast(1.08); }
 .mapa-leaflet[data-capa="oscuro"] .leaflet-tile-pane { filter: none; }
 .mapa-leaflet::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 450; background: radial-gradient(ellipse at 40% 50%, transparent 55%, rgba(4, 8, 6, .55)); }
+.mp-pt.ficha-abajo .mp-ficha { bottom: auto; top: calc(100% + 8px); }
