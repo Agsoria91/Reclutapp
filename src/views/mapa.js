@@ -105,7 +105,48 @@ const CON_NOMBRE = (() => {
 // vista del mapa que dejó la persona (se conserva al relectura de datos)
 let vista = null;
 
+function panelHtml(ys, tot, conSillas) {
+  return html`<aside class="mapa-panel">
+      <span class="mapa-kicker">EFiS · Cuenca Neuquina</span>
+      <h1>Yacimientos</h1>
+      <div class="mapa-tot"><b>${pct(tot.cub, tot.total)}%</b><span>${tot.cub} de ${tot.total} sillas cubiertas</span></div>
+      <div class="mapa-capas" role="group" aria-label="Tipo de mapa">
+        ${[['satelite', 'Satélite'], ['oscuro', 'Mapa']].map(([k, t]) => html`<button type="button" data-capa="${k}" class="${capaActual === k ? 'is-on' : ''}">${t}</button>`)}
+        <span class="mapa-capas-sep"></span>
+        <button type="button" data-vista3d class="${vista3d ? 'is-on' : ''}" aria-pressed="${vista3d}">3D</button>
+      </div>
+      <ul class="mapa-lista">${conSillas.map((y) => html`<li><button type="button" data-yac="${y.codigo}">
+        <span class="ml-ico mp-pt--${y.tipo}">${raw(svg(y.tipo, 1.8))}</span>
+        <span class="ml-txt"><b>${y.codigo}</b><small>${y.nombre}</small></span>
+        <span class="ml-bar"><span style="width:${pct(y.cub, y.total)}%"></span></span>
+        <span class="ml-num">${y.cub}/${y.total}</span></button></li>`)}</ul>
+      <div class="mapa-ref">${['torre', 'ciguena', 'cfp', 'camion'].map((t) => html`<span class="mp-pt--${t}">${raw(svg(t, 1.8))}${TIPO[t]}</span>`)}</div>
+    </aside>`;
+}
+
+// Rueda y touchpad como en Google Maps: dos dedos desplazan el mapa; pellizco
+// (o Ctrl + rueda) y la rueda del mouse acercan/alejan sobre el puntero.
+function ruedaComoGoogle(m, box) {
+  let acum = 0; let ultimo = 0;
+  box.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const punto = m.mouseEventToContainerPoint(e);
+    const deTouchpad = !e.ctrlKey && (e.deltaX !== 0 || !Number.isInteger(e.deltaY) || (e.deltaMode === 0 && Math.abs(e.deltaY) < 40));
+    if (deTouchpad) { m.panBy([e.deltaX, e.deltaY], { animate: false }); return; }
+    acum += e.deltaY * (e.deltaMode === 1 ? 33 : 1);
+    const umbral = e.ctrlKey ? 40 : 60;
+    const ahora = performance.now();
+    if (Math.abs(acum) < umbral || ahora - ultimo < 220) return;
+    ultimo = ahora;
+    const z = m.getZoom() + (acum < 0 ? 1 : -1);
+    acum = 0;
+    m.setZoomAround(punto, Math.max(m.getMinZoom(), Math.min(m.getMaxZoom(), z)));
+  }, { passive: false });
+}
+
 let mapa = null;
+let firmaMapa = '';
+let marcasPorCodigo = new Map();
 let capaActual = loadLocal('reclutapp.mapa.capa', 'satelite');
 let vista3d = loadLocal('reclutapp.mapa.3d', true);
 
@@ -122,7 +163,17 @@ export function render(el) {
   const tot = ys.reduce((a, y) => ({ total: a.total + y.total, cub: a.cub + y.cub }), { total: 0, cub: 0 });
   const conSillas = ys.filter((y) => y.total).sort((a, b) => b.total - a.total);
 
+  const firma = `${capaActual}|${vista3d}`;
+  if (mapa && firma === firmaMapa && el.contains(mapa.getContainer())) {
+    // solo cambian los números: se actualizan el panel y los puntos, el mapa queda quieto
+    const viejo = el.querySelector('.mapa-panel');
+    if (viejo) viejo.outerHTML = String(panelHtml(ys, tot, conSillas));
+    for (const y of ys) marcasPorCodigo.get(y.codigo)?.setIcon(L.divIcon({ className: 'mp-divicon', html: marcador(y), iconSize: [0, 0] }));
+    el._acomodar?.();
+    return;
+  }
   if (mapa) { mapa.remove(); mapa = null; }
+  firmaMapa = firma;
   el.innerHTML = String(html`<div class="mapa ${vista3d ? 'is-3d' : ''}">
     <div class="mapa-cielo" aria-hidden="true"></div>
     <div class="mapa-leaflet" id="mapa-leaflet" aria-label="Mapa de la cuenca neuquina con los yacimientos de EFiS"></div>
@@ -134,28 +185,18 @@ export function render(el) {
       <button type="button" data-mover="abajo" aria-label="Mover el mapa hacia abajo" title="Mover hacia el sur">▼</button>
     </div>
     <div class="mapa-atrib">${raw((CAPAS[capaActual] || CAPAS.satelite)[1])} · Límites &copy; Esri · Áreas: Subsecretaría de Hidrocarburos de Neuquén · Leaflet</div>
-    <aside class="mapa-panel">
-      <span class="mapa-kicker">EFiS · Cuenca Neuquina</span>
-      <h1>Yacimientos</h1>
-      <div class="mapa-tot"><b>${pct(tot.cub, tot.total)}%</b><span>${tot.cub} de ${tot.total} sillas cubiertas</span></div>
-      <div class="mapa-capas" role="group" aria-label="Tipo de mapa">
-        ${[['satelite', 'Satélite'], ['oscuro', 'Mapa']].map(([k, t]) => html`<button type="button" data-capa="${k}" class="${capaActual === k ? 'is-on' : ''}">${t}</button>`)}
-        <span class="mapa-capas-sep"></span>
-        <button type="button" data-vista3d class="${vista3d ? 'is-on' : ''}" aria-pressed="${vista3d}">3D</button>
-      </div>
-      <ul class="mapa-lista">${conSillas.map((y) => html`<li><button type="button" data-yac="${y.codigo}">
-        <span class="ml-ico mp-pt--${y.tipo}">${raw(svg(y.tipo, 1.8))}</span>
-        <span class="ml-txt"><b>${y.codigo}</b><small>${y.nombre}</small></span>
-        <span class="ml-bar"><span style="width:${pct(y.cub, y.total)}%"></span></span>
-        <span class="ml-num">${y.cub}/${y.total}</span></button></li>`)}</ul>
-      <div class="mapa-ref">${['torre', 'ciguena', 'cfp', 'camion'].map((t) => html`<span class="mp-pt--${t}">${raw(svg(t, 1.8))}${TIPO[t]}</span>`)}</div>
-    </aside>
+    ${panelHtml(ys, tot, conSillas)}
   </div>`);
 
   const box = el.querySelector('#mapa-leaflet');
   const cont = el.querySelector('.mapa');
   if (window.innerWidth > 860) cont.style.height = `${Math.max(480, window.innerHeight - cont.getBoundingClientRect().top - window.scrollY)}px`;
-  mapa = L.map(box, { zoomControl: false, attributionControl: false, dragging: true, inertia: true, keyboard: true, keyboardPanDelta: 120, minZoom: 7, maxZoom: 15, zoomSnap: 1, zoomDelta: 1, wheelPxPerZoomLevel: 90 });
+  mapa = L.map(box, {
+    zoomControl: false, attributionControl: false, minZoom: 7, maxZoom: 15, zoomSnap: 1, zoomDelta: 1,
+    dragging: true, inertia: true, inertiaDeceleration: 2200, inertiaMaxSpeed: 1800, easeLinearity: 0.2,
+    keyboard: true, keyboardPanDelta: 140, doubleClickZoom: false, boxZoom: false, scrollWheelZoom: false, tapHold: false,
+  });
+  ruedaComoGoogle(mapa, box);
   const [url, attr, extra] = CAPAS[capaActual] || CAPAS.satelite;
   box.dataset.capa = capaActual;
   L.tileLayer(url, { attribution: attr, maxZoom: 18, detectRetina: true, keepBuffer: 4, ...extra }).addTo(mapa);
@@ -173,13 +214,16 @@ export function render(el) {
     }).addTo(mapa);
   }
   const marcas = [];
+  marcasPorCodigo = new Map();
   for (const y of ys) {
     const m = L.marker([y.lat, y.lon], { icon: L.divIcon({ className: 'mp-divicon', html: marcador(y), iconSize: [0, 0] }), keyboard: false, riseOnHover: true });
-    m.on('click', () => abrirYacimiento(y));
+    m.on('click', () => abrirYacimiento(datos().find((x) => x.codigo === y.codigo)));
     m.addTo(mapa);
     marcas.push(m);
+    marcasPorCodigo.set(y.codigo, m);
   }
   const acomodar = () => abanico(mapa, marcas);
+  el._acomodar = acomodar;
   mapa.on('zoomend moveend', acomodar);
   const encuadrar = () => {
     if (!mapa) return;
@@ -189,7 +233,7 @@ export function render(el) {
       paddingTopLeft: [60, vista3d ? 150 : 90], paddingBottomRight: [ancho > 860 ? 380 : 30, vista3d ? 190 : 60], maxZoom: 9,
     });
   };
-  const marcarZoom = () => { box.dataset.zoom = String(mapa.getZoom()); };
+  const marcarZoom = () => { box.dataset.nivel = String(mapa.getZoom()); };
   mapa.on('zoomend', marcarZoom);
   mapa.on('moveend', () => { if (mapa) vista = { c: mapa.getCenter(), z: mapa.getZoom() }; });
   const iniciar = () => {
@@ -208,7 +252,7 @@ export function render(el) {
       if (!el.querySelector('.mapa')) return;
       const mv = e.target.closest('[data-mover]');
       if (mv && mapa) { mapa.panBy([0, mv.dataset.mover === 'arriba' ? -180 : 180]); return; }
-      const z = e.target.closest('[data-zoom]');
+      const z = e.target.closest('button[data-zoom]');
       if (z && mapa) { const v = Number(z.dataset.zoom); if (v > 0) mapa.zoomIn(); else if (v < 0) mapa.zoomOut(); else el._encuadrar?.(); return; }
       if (e.target.closest('[data-vista3d]')) { vista3d = !vista3d; saveLocal('reclutapp.mapa.3d', vista3d); render(el); return; }
       const c = e.target.closest('[data-capa]');
