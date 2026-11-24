@@ -9,7 +9,7 @@ import { decodeBytes } from '../lib/csv.js';
 import { parseNominaCSV } from '../lib/importers.js';
 import {
   filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, formData, field, confirmDialog, animateIn, pickField,
-  multiSelectFilter, loadLocal, saveLocal, bento,
+  multiSelectFilter, loadLocal, saveLocal,
 
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
@@ -119,7 +119,14 @@ export function render(el) {
       ${multiSelectFilter({ dim: 'mes', label: 'Dotación en el mes', options: mesesDisponibles().map((m) => [m, filterRowsSinEstado().filter((n) => enMes(n, m)).length]), selected: meses, allLabel: 'Hoy', presets: presetsMeses(mesesDisponibles()), open: openMulti === 'mes', labelOf: (m) => fmtMonth(m) })}
     </div>
   </section>
-  ${bentoNomina(base, recientes, pfProx)}
+  <section class="kpis kpis--6">
+    ${kpi(meses.size ? (meses.size === 1 ? `Dotación ${fmtMonth([...meses][0])}` : 'Personas en el período') : 'Personas', base.length, { tone: 'blue', big: true, id: 'n-tot' })}
+    ${kpi('Ingresos últimos 90 días', recientes, { tone: 'green', id: 'n-rec' })}
+    ${kpi('DDJJ pendiente', base.filter((n) => !okVal(n.ddjj)).length, { tone: 'orange', id: 'n-ddjj' })}
+    ${kpi('Kit pendiente', base.filter((n) => !okVal(n.regalo_kit)).length, { tone: 'orange', id: 'n-kit' })}
+    ${kpi('Plazo fijo vence ≤ 60 días', pfProx, { tone: pfProx ? 'red' : '', id: 'n-pf' })}
+    ${kpi('Edad promedio', Math.round(base.map(edad).filter(Boolean).reduce((a, b, _, arr) => a + b / arr.length, 0)) || 0, { id: 'n-edad' })}
+  </section>
   ${coberturaDotacion()}
   ${meses.size ? dotacionPorMes() : ''}
   <section class="grid-2">
@@ -315,16 +322,12 @@ function silllaPasaFiltros(p, except) {
 }
 const faltantesFiltrados = (corte, except) => faltantesAlCorte(state.positions, corte, { candidatos: state.candidates }).filter((p) => silllaPasaFiltros(p, except));
 
-function datosCobertura() {
+function coberturaDotacion() {
   const ult = [...meses].sort().pop();
   const corte = ult ? corteMes(ult) : todayISO();
   const personas = ult ? filterRowsSinEstado().filter((n) => enMes(n, ult)) : filterRows(null);
   const falt = faltantesFiltrados(corte);
-  return { ult, corte, personas, falt, req: personas.length + falt.length };
-}
-
-function coberturaDotacion() {
-  const { ult, corte, personas, falt, req } = datosCobertura();
+  const req = personas.length + falt.length;
   const enProceso = falt.filter((p) => p.candidato_nombre && p.stage !== 'ingresado').length;
   const ingresaronDespues = falt.filter((p) => p.stage === 'ingresado').length;
   // Por yacimiento: dotación (nómina) + faltantes (sillas), sin el filtro de yacimiento para comparar todos
@@ -356,43 +359,3 @@ function coberturaDotacion() {
     </div>
   </section>`;
 }
-
-// ---------------------------------------------------------------------------
-// Encabezado en grilla "bento": el dato principal grande con su evolución y
-// los indicadores secundarios alrededor. Los pendientes filtran al hacer clic.
-// ---------------------------------------------------------------------------
-function bentoNomina(base, recientes, pfProx) {
-  const sinEstado = filterRowsSinEstado();
-  const ultimos = mesesDisponibles().slice(0, 12).reverse();
-  const serie = ultimos.map((m) => [m, sinEstado.filter((n) => enMes(n, m)).length]);
-  const ref = meses.size ? [...meses].sort().pop() : ultimos[ultimos.length - 1];
-  const iRef = serie.findIndex(([m]) => m === ref);
-  const delta = iRef > 0 ? serie[iRef][1] - serie[iRef - 1][1] : null;
-  const edadProm = Math.round(base.map(edad).filter(Boolean).reduce((a, b, _, arr) => a + b / arr.length, 0)) || null;
-  const cob = datosCobertura();
-  const pctCob = porc(cob.personas.length, cob.req);
-  const enc = countBy(base, (n) => n.encuadre || 'Sin dato');
-  const ddjj = base.filter((n) => !okVal(n.ddjj)).length;
-  const kit = base.filter((n) => !okVal(n.regalo_kit)).length;
-  return bento({
-    hero: {
-      label: meses.size ? (meses.size === 1 ? `Dotación ${fmtMonth([...meses][0])}` : 'Personas en el período') : 'Personas en nómina',
-      value: base.length, id: 'n-tot', serie, marcados: meses, serieLabel: 'dotación por mes',
-      chips: [delta != null && { text: `${delta >= 0 ? '+' : '−'}${Math.abs(delta)} vs ${fmtMonth(serie[iRef - 1][0], { short: true })}`, tone: delta >= 0 ? 'up' : 'down' }],
-      foot: [edadProm ? html`Edad promedio <b>${edadProm}</b>` : '', filters.yacimiento.size || filters.sector.size || filters.encuadre.size ? 'Con filtros aplicados' : 'Toda la empresa'],
-    },
-    tiles: [
-      { label: `Cobertura de la dotación requerida${cob.ult ? ` · al ${fmtDate(cob.corte)}` : ''}`, wide: true, meter: pctCob,
-        body: html`<div class="bt-cob-row"><span class="bt-big">${pctCob}<small>%</small></span>
-          <span class="bt-cob-txt"><b>${fmtInt(cob.falt.length)}</b> ${cob.ult ? 'faltaban' : 'faltan'} tomar<br>requerida <b>${fmtInt(cob.req)}</b></span></div>` },
-      { label: 'Ingresos últimos 90 días', value: recientes, id: 'n-rec', sub: `${pctTxt(recientes, base.length)} de la dotación` },
-      { label: 'Plazo fijo vence ≤ 60 días', value: pfProx, id: 'n-pf', tone: pfProx ? 'alert' : '', sub: pfProx ? 'revisar renovaciones' : 'sin vencimientos' },
-      { label: 'Encuadre', wide: true,
-        body: html`<div class="bt-stack">${enc.map(([k, v], i) => html`<span class="bt-stack-${i}" style="flex:${v}" title="${k} ${v}"></span>`)}</div>
-          <ul class="bt-legend">${enc.map(([k, v], i) => html`<li><i class="bt-stack-${i}"></i>${k} <b>${fmtInt(v)}</b> <small>${pctTxt(v, base.length)}</small></li>`)}</ul>` },
-      { label: 'DDJJ pendiente', value: ddjj, id: 'n-ddjj', tone: 'warn', filter: ['pendiente', 'DDJJ'], selected: filters.pendiente.has('DDJJ'), sub: `${pctTxt(ddjj, base.length)} de la dotación` },
-      { label: 'Kit pendiente', value: kit, id: 'n-kit', tone: 'warn', filter: ['pendiente', 'Kit'], selected: filters.pendiente.has('Kit'), sub: `${pctTxt(kit, base.length)} de la dotación` },
-    ],
-  });
-}
-const pctTxt = (a, b) => `${porc(a, b)}%`;

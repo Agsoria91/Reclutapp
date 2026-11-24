@@ -3,7 +3,7 @@
 import { html } from '../lib/html.js';
 import { state } from '../lib/store.js';
 import { fmtDate, fmtMonth, todayISO, norm, pct } from '../lib/format.js';
-import { filterGroup, toggleFilter, kpi, bars, saveLocal, loadLocal, serializeFilters, restoreFilters, animateIn, prevSize, bento, seriePorMes } from '../components/ui.js';
+import { filterGroup, toggleFilter, kpi, bars, saveLocal, loadLocal, serializeFilters, restoreFilters, animateIn, prevSize } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 import { estadoMedico, esApto, clinicaCanon, diasExamen, hitosExamen, ESTADOS_MEDICOS } from '../components/examen.js';
 
@@ -79,7 +79,14 @@ export function render(el) {
       <button type="button" class="btn btn--ghost btn--sm" data-act="ex-clear">Limpiar todo</button></div>` : ''}
   </section>
 
-  ${bentoExamenes(sinGrupo, n, conResultado, dias)}
+  <section class="kpis kpis--6">
+    ${kpi('Enviados a examen', n('todos'), { act: 'todos', selected: grupo === 'todos', big: true, id: 'ex-tot' })}
+    ${kpi('Pendientes de resultado', n('pendiente'), { act: 'pendiente', selected: grupo === 'pendiente', tone: 'blue', id: 'ex-pen' })}
+    ${kpi('Aptos', n('aptos'), { act: 'aptos', selected: grupo === 'aptos', tone: 'green', sub: `${pct(n('aptos'), conResultado.length)}% de los resultados`, id: 'ex-apt' })}
+    ${kpi('No aptos', n('noaptos'), { act: 'noaptos', selected: grupo === 'noaptos', tone: n('noaptos') ? 'red' : '', sub: 'definitivos y temporales', id: 'ex-noa' })}
+    ${kpi('En interconsulta', n('interconsulta'), { act: 'interconsulta', selected: grupo === 'interconsulta', tone: 'navy', id: 'ex-int' })}
+    ${kpi('Días hasta la aptitud', dias ?? '—', { suffix: dias != null ? ' d' : '', sub: 'promedio, desde el envío', id: 'ex-dias' })}
+  </section>
 
   <section class="grid-2">
     <article class="card"><h2 class="card-title">Resultado</h2>${bars(porEstado, { dim: 'estado', selected: filters.estado, total: filtrar('estado').length, chart: 'ex-estado' })}</article>
@@ -173,28 +180,4 @@ async function excel() {
     rows: rows.map((c) => { const d = diasExamen(c); return [c.nombre, c.dni, c.procedencia, c.area, c._silla?.puesto || c.posicion, clinicaCanon(c.clinica), c.clinica_localidad,
       c.epo, c.aptitud_recibida, c.aptitud, c.interconsulta, c.interconsulta_cierre, c.interconsulta_obs, estadoMedico(c).label, d?.dias ?? null]; }),
   }]);
-}
-
-function bentoExamenes(sinGrupo, n, conResultado, dias) {
-  const serie = seriePorMes(sinGrupo, (c) => c.epo);
-  const pAptos = pct(n('aptos'), conResultado.length);
-  return bento({
-    hero: {
-      label: 'Enviados a examen', value: n('todos'), id: 'ex-tot', act: 'todos', selected: false,
-      serie, serieLabel: 'envíos por mes',
-      chips: [{ text: `${serie[serie.length - 1][1]} este mes` }],
-      foot: [html`Con resultado <b>${conResultado.length}</b>`, html`Días hasta la aptitud <b>${dias ?? '—'}</b>`],
-    },
-    tiles: [
-      { label: 'Aptos', wide: true, act: 'aptos', selected: grupo === 'aptos', meter: pAptos,
-        body: html`<div class="bt-cob-row"><span class="bt-big">${n('aptos')}</span>
-          <span class="bt-cob-txt"><b>${pAptos}%</b> de los resultados<br>recibidos</span></div>` },
-      { label: 'Pendientes de resultado', value: n('pendiente'), id: 'ex-pen', act: 'pendiente', selected: grupo === 'pendiente' },
-      { label: 'En interconsulta', value: n('interconsulta'), id: 'ex-int', tone: n('interconsulta') ? 'warn' : '', act: 'interconsulta', selected: grupo === 'interconsulta' },
-      { label: 'No aptos', value: n('noaptos'), id: 'ex-noa', tone: n('noaptos') ? 'alert' : '', act: 'noaptos', selected: grupo === 'noaptos', sub: 'definitivos y temporales' },
-      { label: 'Días hasta la aptitud', value: dias ?? '—', suffix: dias != null ? ' d' : '', id: 'ex-dias', sub: 'promedio desde el envío' },
-      { label: 'Enviados este mes', value: serie[serie.length - 1][1], id: 'ex-mes', sub: `${serie[serie.length - 2][1]} el mes anterior` },
-      { label: 'Resultados recibidos', value: conResultado.length, id: 'ex-res', sub: `${pct(conResultado.length, n('todos'))}% de los enviados` },
-    ],
-  });
 }

@@ -7,7 +7,7 @@ import {
   stagePill, filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, formData, field,
   confirmDialog, saveLocal, loadLocal, serializeFilters, restoreFilters, prevSize, pickField,
   pivot, pivotTable, pivotCSV, downloadCSV, rowsToCSV, dimSelect,
-  animateIn, bento, seriePorMes,
+  animateIn,
 } from '../components/ui.js';
 import { avisoBar, pendientesCard, openAvisoDrawer, openPlantillas, avisarCambioDeEtapa } from '../components/avisos.js';
 import { mascot } from '../components/mascot.js';
@@ -138,7 +138,14 @@ export function render(el) {
     </div>
   </section>
 
-  ${bentoCandidatos(kg, k, grupo)}
+  <section class="kpis kpis--6">
+    ${kpi('Candidatos', kg.total, { id: 'c-total', act: 'todos', selected: grupo === 'todos', hint: 'Ver todos' })}
+    ${kpi('En proceso', kg.activos, { tone: 'blue', big: true, id: 'c-act', act: 'proceso', selected: grupo === 'proceso' })}
+    ${kpi('Ingresados', kg.ingresados, { tone: 'green', sub: `${kg.conversion}% de conversión`, id: 'c-ing', act: 'ingresados', selected: grupo === 'ingresados' })}
+    ${kpi('Avance vs necesidad', pct(k.cubiertas, k.necesidad), { suffix: '%', tone: 'navy', sub: `${k.cubiertas} de ${k.necesidad} sillas cubiertas`, id: 'c-av' })}
+    ${kpi('Días promedio postulado', k.diasPromedioActivos ?? '—', { sub: 'activos, desde CV recibido', id: 'c-dias' })}
+    ${kpi('Días CV → ingreso', k.diasPromedioIngreso ?? '—', { sub: 'promedio ingresados', id: 'c-ding' })}
+  </section>
 
   <section class="card">
     <h2 class="card-title">CV recibidos por mes</h2>
@@ -460,30 +467,5 @@ export function openCandidate(id, { volver } = {}) {
     closeDrawer();
     await loadAll({ silent: true });
     openCandidate(c.id);
-  });
-}
-
-function bentoCandidatos(kg, k, grupo) {
-  const rMes = filterRows('mes');
-  const serie = seriePorMes(rMes, (c) => c.cv_recibido);
-  const esteMes = serie[serie.length - 1][1]; const anterior = serie[serie.length - 2][1];
-  return bento({
-    hero: {
-      label: 'Candidatos en proceso', value: kg.activos, id: 'c-act', act: 'proceso', selected: grupo === 'proceso',
-      serie, serieLabel: 'CV recibidos por mes',
-      chips: [{ text: `${esteMes} CV este mes`, tone: esteMes >= anterior ? 'up' : 'down' }],
-      foot: [html`Días promedio postulado <b>${k.diasPromedioActivos ?? '—'}</b>`, html`Días CV → ingreso <b>${k.diasPromedioIngreso ?? '—'}</b>`],
-    },
-    tiles: [
-      { label: 'Avance vs necesidad', wide: true, meter: pct(k.cubiertas, k.necesidad),
-        body: html`<div class="bt-cob-row"><span class="bt-big">${pct(k.cubiertas, k.necesidad)}<small>%</small></span>
-          <span class="bt-cob-txt"><b>${k.cubiertas}</b> de <b>${k.necesidad}</b><br>sillas cubiertas</span></div>` },
-      { label: 'Candidatos', value: kg.total, id: 'c-total', act: 'todos', selected: false, sub: 'total con los filtros' },
-      { label: 'Ingresados', value: kg.ingresados, id: 'c-ing', tone: 'good', act: 'ingresados', selected: grupo === 'ingresados', sub: `${kg.conversion}% de conversión` },
-      { label: 'Cancelados', value: kg.cancelados, id: 'c-can', act: 'cancelados', selected: grupo === 'cancelados', sub: 'no continuaron' },
-      { label: 'CV recibidos este mes', value: esteMes, id: 'c-mes', sub: `${anterior} el mes anterior` },
-      { label: 'Días promedio postulado', value: k.diasPromedioActivos ?? '—', id: 'c-dias', sub: 'activos, desde CV recibido' },
-      { label: 'Días CV → ingreso', value: k.diasPromedioIngreso ?? '—', id: 'c-ding', sub: 'promedio ingresados' },
-    ],
   });
 }
