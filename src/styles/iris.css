@@ -483,3 +483,6 @@
 .mapa-leaflet:is([data-nivel="9"], [data-nivel="10"], [data-nivel="11"], [data-nivel="12"], [data-nivel="13"], [data-nivel="14"], [data-nivel="15"]) .mp-area-nombre:not(.is-efis) { display: block; }
 .mapa-leaflet:is([data-nivel="10"], [data-nivel="11"], [data-nivel="12"], [data-nivel="13"], [data-nivel="14"], [data-nivel="15"]) .mp-area-nombre:not(.is-efis) { font-size: 11px !important; color: rgba(232, 238, 234, .4) !important; }
 .mp-area-nombre.is-efis { font-size: 10px !important; }
+/* centro de distribución de arena */
+.mp-pt--arena { color: #E3C27A; } .mp-pt--arena .mp-ico { border-color: #E3C27A; box-shadow: 0 0 0 4px rgba(227, 194, 122, .14), 0 8px 24px rgba(0, 0, 0, .55); }
+.ml-ico.mp-pt--arena { color: #E3C27A; } .mapa-ref span.mp-pt--arena svg { color: #E3C27A; }

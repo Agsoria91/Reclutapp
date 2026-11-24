@@ -23,9 +23,10 @@ const ICONO = {
   ciguena: '<path d="M5 12l20-5"/><path d="M25 7c2 0 3 2 2.4 4.2L25 15"/><path d="M14 9.5 10 28M14 9.5 18 28M8 28h12M25 15v13M23 28h4"/><circle cx="14" cy="9.5" r="1.3"/><path d="M5 12v4M4 16h3"/>',
   cfp: '<rect x="4" y="17" width="10" height="11" rx="1"/><path d="M4 21h10M17 28V14a3.5 3.5 0 0 1 7 0v14M25 28V18a3 3 0 0 1 6 0v10M2 28h29M8 17v-5h3v5"/><path d="M9.5 12c0-2 1.5-2.5 1.5-4.5"/>',
   camion: '<path d="M3 21V11h14v10M17 15h6l4 4v2h-24"/><circle cx="9" cy="23.5" r="2.3"/><circle cx="23" cy="23.5" r="2.3"/><path d="M5.5 11l3-4h5l3 4"/>',
+  arena: '<path d="M6 28V9l4-4 4 4v19"/><path d="M6 13h8M6 18h8M2 28h29"/><path d="M15 28c2-6 5-10 8-10s6 4 8 10"/><path d="M20 23h1.5M23.5 21.5h1.5M26 24h1.5"/>',
   oficina: '<rect x="7" y="6" width="18" height="22" rx="1.5"/><path d="M11 11h3M18 11h3M11 16h3M18 16h3M11 21h3M18 21h3M14 28v-3h4v3"/>',
 };
-const TIPO = { torre: 'Torre de perforación', ciguena: 'Cigüeña · bombeo mecánico', cfp: 'Planta de procesamiento (CPF / EPF)', camion: 'Unidad móvil · transporte de arena', oficina: 'Base administrativa' };
+const TIPO = { torre: 'Torre de perforación', ciguena: 'Cigüeña · bombeo mecánico', cfp: 'Planta de procesamiento (CPF / EPF)', camion: 'Unidad móvil · transporte de arena', arena: 'Centro de distribución de arena', oficina: 'Base administrativa' };
 const svg = (t, w = 1.6) => `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONO[t]}</svg>`;
 const norm = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -42,13 +43,12 @@ function datos() {
 
 function marcador(y) {
   const p = y.total ? pct(y.cub, y.total) : null;
-  const nota = y.movil ? ' · sin ubicación fija' : y.aConfirmar ? ' · ubicación a confirmar' : y.aproximada ? ' · ubicación aproximada' : '';
   return `<span class="mp-linea"></span><span class="mp-real"></span><div class="mp-pt mp-pt--${y.tipo} ${y.total ? '' : 'is-sin'}" data-yac="${y.codigo}" role="button" tabindex="0" aria-label="${esc(y.nombre)}">
     <span class="mp-pulso"></span>
     <span class="mp-ico">${svg(y.tipo)}</span>
     <span class="mp-tag"><b>${y.codigo}</b>${p != null ? `<i>${p}%</i>` : ''}</span>
     <span class="mp-ficha">
-      <strong>${esc(y.nombre)}</strong><small>${y.instalaciones ? `Planta de procesamiento · ${y.instalaciones}` : TIPO[y.tipo]}${nota}</small>
+      <strong>${esc(y.nombre)}</strong>
       ${y.total ? `<span class="mp-ficha-bar"><span style="width:${p}%"></span></span>
       <span class="mp-ficha-nums"><span><b>${y.total}</b> sillas</span><span><b>${y.cub}</b> cubiertas</span><span><b>${y.faltan}</b> faltan</span></span>`
         : '<span class="mp-ficha-nums"><span>Sin sillas en el mapa de posiciones</span></span>'}
@@ -120,7 +120,6 @@ function panelHtml(ys, tot, conSillas) {
         <span class="ml-txt"><b>${y.codigo}</b><small>${y.nombre}</small></span>
         <span class="ml-bar"><span style="width:${pct(y.cub, y.total)}%"></span></span>
         <span class="ml-num">${y.cub}/${y.total}</span></button></li>`)}</ul>
-      <div class="mapa-ref">${['torre', 'ciguena', 'cfp', 'camion'].map((t) => html`<span class="mp-pt--${t}">${raw(svg(t, 1.8))}${TIPO[t]}</span>`)}</div>
     </aside>`;
 }
 
