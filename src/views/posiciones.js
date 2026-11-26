@@ -518,9 +518,17 @@ function numerarSillas(data, cantidad) {
   return Array.from({ length: cantidad }, (_, i) => ({ ...data, puesto: `${base} ${max + i + 1}` }));
 }
 
-// Maestro de SAP: quién ocupa cada POS (solo RRHH)
-const ocupanteSap = (pos) => state.sap?.find((s) => s.pos === String(pos ?? '').trim()) || null;
+// Maestro de SAP: quién ocupa cada POS (solo RRHH). Si esa persona ya está de
+// baja en la nómina (el maestro de SAP puede estar desactualizado), la POS se
+// considera libre.
 const soloDigitos = (v) => String(v ?? '').replace(/\D/g, '');
+function ocupanteSap(pos) {
+  const s = state.sap?.find((x) => x.pos === String(pos ?? '').trim());
+  if (!s) return null;
+  const enNomina = state.nomina?.filter((n) => soloDigitos(n.dni) === s.dni) || [];
+  if (enNomina.length && enNomina.every((n) => n.estado === 'baja')) return null;
+  return s;
+}
 function dniDeSilla(p) {
   const c = p.candidate_id ? state.candidates.find((x) => x.id === p.candidate_id) : null;
   const n = state.nomina?.find((x) => x.position_id === p.id);
