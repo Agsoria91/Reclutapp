@@ -13,6 +13,10 @@ import { preingresoFields, preingresoProgress } from '../components/ingreso.js';
 import { celebrate } from './posiciones.js';
 import { openAssignFromCandidate } from './asignar.js';
 
+// Vista elegida desde un indicador: completos, con faltantes o sin silla
+let vista = null;
+export function elegirVista(k) { vista = k; }
+
 export function render(el) {
   if (!state.isStaff) { el.innerHTML = String(mascot('empty', { title: 'Solo RRHH', text: 'Iniciá sesión con un usuario de RRHH.' })); return; }
   if (state.loading && !state.positions.length) { el.innerHTML = String(mascot('loading')); return; }
@@ -24,17 +28,19 @@ export function render(el) {
     .sort((a, b) => (a.p.fecha_ingreso || '9999').localeCompare(b.p.fecha_ingreso || '9999') || a.prog.done - b.prog.done);
   const sinSilla = state.candidates.filter((c) => c.stage === 'proximo_ingreso' && !c._silla);
   const completos = sillas.filter((x) => x.c && !x.prog.missing.length).length;
+  const okDe = (x) => x.c && !x.prog.missing.length;
+  const visibles = vista === 'ok' ? sillas.filter(okDe) : vista === 'falta' ? sillas.filter((x) => !okDe(x)) : vista === 'sin' ? [] : sillas;
 
   el.innerHTML = String(html`
   ${mHead({ titulo: 'Próximos ingresos', sub: `${sillas.length + sinSilla.length} personas por ingresar` })}
   ${mKpis([
     { icono: 'ingresos', label: 'Próximos ingresos', valor: sillas.length + sinSilla.length, id: 'pi-tot', sub: html`<b>${sillas.filter((x) => x.p.fecha_ingreso).length}</b> con fecha confirmada` },
-    { icono: 'alta', label: 'Datos completos', valor: completos, id: 'pi-ok', tono: 'ok', barra: sillas.length ? Math.round((completos / sillas.length) * 100) : 0, sub: 'listos para el alta' },
-    { icono: 'documento', label: 'Con datos faltantes', valor: sillas.length - completos, id: 'pi-falta', tono: sillas.length - completos ? 'aviso' : '', sub: 'completar antes del ingreso' },
-    { icono: 'posiciones', label: 'Sin silla asignada', valor: sinSilla.length, id: 'pi-sin', tono: sinSilla.length ? 'alerta' : '', sub: 'en próximo ingreso' },
+    { icono: 'alta', label: 'Datos completos', valor: completos, id: 'pi-ok', tono: 'ok', attrs: 'data-ivista="ok"', sel: vista === 'ok', barra: sillas.length ? Math.round((completos / sillas.length) * 100) : 0, sub: 'listos para el alta' },
+    { icono: 'documento', label: 'Con datos faltantes', valor: sillas.length - completos, id: 'pi-falta', attrs: 'data-ivista="falta"', sel: vista === 'falta', tono: sillas.length - completos ? 'aviso' : '', sub: 'completar antes del ingreso' },
+    { icono: 'posiciones', label: 'Sin silla asignada', valor: sinSilla.length, id: 'pi-sin', attrs: 'data-ivista="sin"', sel: vista === 'sin', tono: sinSilla.length ? 'alerta' : '', sub: 'en próximo ingreso' },
   ])}
-  ${sillas.length ? html`<section class="ing-grid">${sillas.map(({ p, c, prog }) => card(p, c, prog))}</section>`
-    : mascot('empty', { title: 'Nadie en Próximo ingreso', text: 'Cuando una silla pase a "Próximo ingreso" va a aparecer acá.' })}
+  ${vista === 'sin' ? '' : visibles.length ? html`<section class="ing-grid">${visibles.map(({ p, c, prog }) => card(p, c, prog))}</section>`
+    : vista ? html`<p class="muted">No hay personas en esta vista.</p>` : mascot('empty', { title: 'Nadie en Próximo ingreso', text: 'Cuando una silla pase a "Próximo ingreso" va a aparecer acá.' })}
   ${sinSilla.length ? html`<section class="card"><h2 class="card-title">En Próximo ingreso sin silla</h2>
     <ul class="user-list">${sinSilla.map((c) => html`<li><span><strong>${c.nombre}</strong> <small class="muted">${[c.area, c.servicio, c.posicion].filter(Boolean).join(' · ')}</small></span>
       <button class="btn btn--sm btn--primary" data-act="seat" data-cid="${c.id}">Sentar en una silla</button></li>`)}</ul></section>` : ''}
@@ -44,6 +50,8 @@ export function render(el) {
   if (!el._bound) {
     el._bound = true;
     el.addEventListener('click', async (e) => {
+      const v = e.target.closest('[data-ivista]');
+      if (v) { vista = vista === v.dataset.ivista ? null : v.dataset.ivista; render(el); return; }
       const b = e.target.closest('[data-act]');
       if (!b) return;
       const p = state.positions.find((x) => x.id === b.dataset.pid);

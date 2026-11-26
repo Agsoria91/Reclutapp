@@ -2,7 +2,7 @@ import { html, raw, $ } from '../lib/html.js';
 import { state, loadAll, stageOrder } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
 import { fmtInt, pct, todayISO, norm, daysBetween, fmtMonth } from '../lib/format.js';
-import { countBy, candidateKpis, sectorMatches } from '../lib/kpis.js';
+import { countBy, candidateKpis, sectorMatches, diasEnEtapa, estaDemorado } from '../lib/kpis.js';
 import {
   stagePill, filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, formData, field,
   confirmDialog, saveLocal, loadLocal, serializeFilters, restoreFilters, prevSize, pickField,
@@ -213,6 +213,12 @@ function avancePorArea() {
   return [...m.entries()].map(([a, [c, t]]) => [`${a} (${c}/${t})`, pct(c, t), null, a]).sort((a, b) => b[1] - a[1]);
 }
 
+// Días en la etapa actual, con color según el plazo
+function diasTag(c, today) {
+  const d = diasEnEtapa(c, today);
+  return d ? html`<span class="dias dias--${d.nivel}" title="Desde ${d.desde.split('-').reverse().join('/')} · plazo ${d.plazo} días">${d.dias} d</span>` : '';
+}
+
 // Lo que hay que hacer con cada candidato según su etapa y sus fechas
 export function proximoPaso(c, today = todayISO()) {
   const sinSilla = !c._silla && ['apto', 'proximo_ingreso'].includes(c.stage);
@@ -234,12 +240,15 @@ const fmtDia = (d) => d.slice(8, 10) + '/' + d.slice(5, 7);
 
 // Filtros rápidos del listado
 let rapido = loadLocal('reclutapp.cand.rapido', 'todos');
+// para entrar al listado con un filtro rápido ya elegido (desde "Para hoy")
+export function elegirRapido(k) { rapido = k; saveLocal('reclutapp.cand.rapido', k); }
 const RAPIDOS = [
   ['todos', 'Todos', () => true],
   ['avisar', 'Pendientes de avisar', (c, ids) => ids.has(c.id)],
   ['entrevista', 'En entrevista', (c) => ['cv_recibido', 'entrevista', 'entrevista_aprobada'].includes(c.stage)],
   ['medico', 'Examen médico', (c) => ['examen_medico', 'apto'].includes(c.stage)],
   ['ingreso', 'Próximo ingreso', (c) => c.stage === 'proximo_ingreso'],
+  ['demorados', 'Demorados', (c) => estaDemorado(c, todayISO())],
   ['sin-silla', 'En proceso sin silla', (c) => !c._silla && state.stageMap[c.stage]?.es_activa],
 ];
 
@@ -267,7 +276,7 @@ function listSection(today, all) {
     </header>
     <div class="chips-rapidos" role="group" aria-label="Filtro rápido">${RAPIDOS.map(([k, t]) => html`<button type="button" class="chip-rap ${rapido === k ? 'is-on' : ''}" data-rapido="${k}" aria-pressed="${rapido === k}">${t} <span>${nRap[k]}</span></button>`)}</div>
     ${rows.length ? html`<div class="table-wrap"><table class="tbl tbl--cand tbl--tarjetas is-clickable">
-      <thead><tr><th>Nombre</th><th>Etapa</th><th class="hide-sm">Área · Servicio</th><th class="hide-sm">Posición</th><th class="hide-sm">Procedencia</th><th class="hide-sm">Próximo paso</th><th>Silla</th><th class="hide-sm num">Días</th><th class="hide-sm">CV</th></tr></thead>
+      <thead><tr><th>Nombre</th><th>Etapa</th><th class="hide-sm">Área · Servicio</th><th class="hide-sm">Posición</th><th class="hide-sm">Procedencia</th><th class="hide-sm">Próximo paso</th><th>Silla</th><th class="num">En etapa</th><th class="hide-sm">CV</th></tr></thead>
       <tbody>${shown.map((c) => html`<tr data-id="${c.id}" tabindex="0">
         <td data-th="Nombre"><strong>${c.nombre}</strong>${entDe(c) > 1 ? html` <span class="tag" title="Tiene otras entrevistas">${entDe(c)} entrevistas</span>` : ''}</td>
         <td data-th="Etapa">${stagePill(c.stage, { small: true })}</td>
@@ -276,7 +285,7 @@ function listSection(today, all) {
         <td data-th="Procedencia" class="hide-sm">${c.procedencia || ''}</td>
         <td data-th="Próximo paso" class="hide-sm prox-paso">${proximoPaso(c, today)}</td>
         <td data-th="Silla">${c._silla ? html`<span class="seat-chip" title="${c._silla.yacimiento} · ${c._silla.sector || ''}">${c._silla.puesto}</span>` : html`<span class="muted">—</span>`}</td>
-        <td data-th="Días" class="hide-sm num">${state.stageMap[c.stage]?.es_activa ? daysBetween(c.cv_recibido || c.created_origen, today) ?? '' : ''}</td>
+        <td data-th="En etapa" class="num">${diasTag(c, today)}</td>
         <td data-th="CV" class="hide-sm">${c.cv_path ? raw('<span class="tag tag--match">CV</span>') : ''}</td>
       </tr>`)}</tbody></table></div>
       ${rows.length > shown.length ? html`<div class="center"><button class="btn btn--ghost" data-act="more">Ver más (${rows.length - shown.length})</button></div>` : ''}`
@@ -359,6 +368,7 @@ export function openCandidate(id, { volver } = {}) {
     <form id="cand-form" class="ficha-form">
       <div class="ficha-pane" data-pane="proceso">
         ${c.id ? etapasLinea(c) : ''}
+        ${(() => { const d = c.id && diasEnEtapa(c, todayISO()); return d ? html`<p class="etapa-dias etapa-dias--${d.nivel}">${d.dias} días en ${state.stageMap[c.stage]?.label || c.stage} <span>· desde ${d.desde.split('-').reverse().join('/')} · plazo ${d.plazo} días</span></p>` : ''; })()}
         ${c.id ? html`<div class="seat-box">
           <div><span class="muted">Silla</span>
             <div class="seat-name">${c._silla ? html`${c._silla.puesto} <small class="muted">· ${c._silla.yacimiento} · ${c._silla.sector || ''}</small>` : html`<span class="muted">Sin silla asignada</span>`}</div>

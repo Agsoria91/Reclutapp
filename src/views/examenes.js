@@ -12,6 +12,7 @@ const DIMS = ['clinica', 'procedencia', 'area', 'sector', 'estado', 'mes'];
 const KEY = 'reclutapp.ex.filters';
 const filters = restoreFilters(loadLocal(KEY, {}), DIMS);
 let grupo = loadLocal('reclutapp.ex.grupo', 'todos');
+export function elegirGrupo(g) { grupo = g; saveLocal('reclutapp.ex.grupo', g); }
 let search = '';
 const canon = (v) => { const t = String(v ?? '').trim(); return t ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : 'Sin dato'; };
 const getters = {

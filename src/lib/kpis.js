@@ -204,3 +204,22 @@ export function faltantesAlCorte(positions, corte, { candidatos = [] } = {}) {
     return !!f && f > corte;
   });
 }
+
+// ---------------------------------------------------------------------------
+// Días en la etapa actual. "CV recibido" no cuenta (el proceso todavía no se
+// inició); desde la entrevista el reloj corre desde la última fecha del
+// proceso cargada. Al llegar al plazo queda en aviso; al doble, en alerta.
+// ---------------------------------------------------------------------------
+export const PLAZOS_ETAPA = { entrevista: 7, entrevista_aprobada: 7, validacion_rrll: 10, propuesta: 7, examen_medico: 10, apto: 10 };
+
+export function diasEnEtapa(c, today) {
+  const plazo = PLAZOS_ETAPA[c?.stage];
+  if (!plazo) return null;
+  const fechas = [c.en_entrevista, c.validacion_rrll, c.epo, c.aptitud_recibida, c.interconsulta, c.interconsulta_cierre]
+    .filter((f) => f && f <= today).sort();
+  if (!fechas.length) return null;
+  const desde = fechas[fechas.length - 1];
+  const dias = daysBetween(desde, today);
+  return { dias, desde, plazo, nivel: dias >= plazo * 2 ? 'alerta' : dias >= plazo ? 'aviso' : 'ok' };
+}
+export const estaDemorado = (c, today) => ['aviso', 'alerta'].includes(diasEnEtapa(c, today)?.nivel);
