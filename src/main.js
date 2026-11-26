@@ -1,7 +1,5 @@
-import '@fontsource-variable/martian-mono/standard.css';
 import './styles/tokens.css';
 import './styles/app.css';
-import './styles/plano.css';
 import './styles/iris.css';
 import { html, raw, $ } from './lib/html.js';
 import { sb } from './lib/supabase.js';

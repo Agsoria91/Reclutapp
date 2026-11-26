@@ -158,16 +158,32 @@ export function animateIn(root) {
 // Drawer lateral (edición) y diálogo modal
 // ---------------------------------------------------------------------------
 let drawerCleanup = null;
-export function openDrawer(content, { title = '', wide = false, onClose } = {}) {
+// "Modificado el … por …" (solo RRHH): el nombre se pide a la base una vez por usuario
+const nombresUsuario = new Map();
+function ultimaModif(root, row) {
+  const el = root.querySelector('.ult-mod');
+  if (!el || !row?.updated_at) return;
+  const cuando = new Date(row.updated_at).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  el.textContent = `Modificado el ${cuando}`;
+  const uid = row.updated_by;
+  if (!uid) return;
+  const poner = (n) => { if (n) el.textContent = `Modificado el ${cuando} por ${n}`; };
+  if (nombresUsuario.has(uid)) return poner(nombresUsuario.get(uid));
+  import('../lib/supabase.js').then(({ sb }) => sb.rpc('nombre_de_usuario', { p_uid: uid }))
+    .then(({ data }) => { nombresUsuario.set(uid, data || null); poner(data); }).catch(() => {});
+}
+
+export function openDrawer(content, { title = '', wide = false, onClose, modificado } = {}) {
   closeDrawer();
   const root = document.createElement('div');
   root.className = 'drawer-root';
   root.innerHTML = String(html`<div class="drawer-backdrop" data-close></div>
     <aside class="drawer ${wide ? 'drawer--wide' : ''}" role="dialog" aria-modal="true" aria-label="${title}">
-      <header class="drawer-head"><h2>${title}</h2><button class="icon-btn" data-close aria-label="Cerrar">${raw('&times;')}</button></header>
+      <header class="drawer-head"><div class="drawer-tit"><h2>${title}</h2>${modificado?.updated_at ? raw('<p class="ult-mod"></p>') : ''}</div><button class="icon-btn" data-close aria-label="Cerrar">${raw('&times;')}</button></header>
       <div class="drawer-body">${content}</div>
     </aside>`);
   document.body.appendChild(root);
+  ultimaModif(root, modificado);
   const prevFocus = document.activeElement;
   const onKey = (e) => { if (e.key === 'Escape') closeDrawer(); };
   root.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeDrawer(); });

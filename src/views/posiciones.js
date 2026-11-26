@@ -406,7 +406,7 @@ export function openEditor(id) {
         <button type="button" class="btn btn--ghost" data-close>Cancelar</button>
         <button type="submit" class="btn btn--primary">Guardar</button>
       </div>
-    </form>`, { title: p.id ? `${p.puesto} · ${p.yacimiento}` : 'Nueva silla', wide: true });
+    </form>`, { title: p.id ? `${p.puesto} · ${p.yacimiento}` : 'Nueva silla', wide: true, modificado: p.id ? p : null });
 
   bindConvenio(root.querySelector('#pos-form'));
   root.querySelector('#pos-form').addEventListener('submit', async (e) => {

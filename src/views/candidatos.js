@@ -423,7 +423,7 @@ export function openCandidate(id, { volver } = {}) {
         <button type="submit" class="btn btn--primary">Guardar</button>
       </div>
     </form>
-  `, { title: c.id ? c.nombre : 'Nuevo candidato', wide: true });
+  `, { title: c.id ? c.nombre : 'Nuevo candidato', wide: true, modificado: c.id ? c : null });
 
   const form = root.querySelector('#cand-form');
   const verPane = (k) => {

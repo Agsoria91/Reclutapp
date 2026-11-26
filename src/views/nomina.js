@@ -126,10 +126,16 @@ export function render(el) {
       if (act === 'm-limpiar') { DIMS.forEach((d) => { filters[d] = new Set(d === 'estado' ? ['activo'] : []); }); meses = new Set(); saveLocal('reclutapp.nom.meses', []); page = 1; render(el); return; }
       if (act === 'export') return exportCSV(currentRows(el));
       if (act === 'new') return openPersona(null);
+      const ds = e.target.closest('[data-sap-silla]');
+      if (ds) { import('./posiciones.js').then((m) => m.openEditor(ds.dataset.sapSilla)); return; }
+      const dp = e.target.closest('[data-sap-persona]');
+      if (dp) { openPersona(dp.dataset.sapPersona); return; }
       const tr = e.target.closest('tr[data-id]');
       if (tr) openPersona(tr.dataset.id);
     });
     el.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('tr[data-id]')) openPersona(e.target.dataset.id); });
+    // recordar qué listas de diferencias con SAP quedaron abiertas al redibujar
+    el.addEventListener('toggle', (e) => { const k = e.target.dataset?.sapGrupo; if (k) { if (e.target.open) sapAbiertos.add(k); else sapAbiertos.delete(k); } }, true);
     el.addEventListener('change', (e) => {
       const mo = e.target.closest('[data-multi-opt]');
       if (mo) { if (mo.checked) meses.add(mo.value); else meses.delete(mo.value); saveLocal('reclutapp.nom.meses', [...meses]); openMulti = 'mes'; page = 1; render(el); return; }
@@ -187,7 +193,7 @@ function openPersona(id) {
         <button type="button" class="btn btn--ghost" data-close>Cancelar</button>
         <button type="submit" class="btn btn--primary">Guardar</button>
       </div>
-    </form>`, { title: n.id ? n.nombre : 'Alta en nómina', wide: true });
+    </form>`, { title: n.id ? n.nombre : 'Alta en nómina', wide: true, modificado: n.id ? n : null });
   root.querySelector('#nom-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = formData(e.target);
@@ -282,6 +288,33 @@ function datosCobertura() {
   const personas = ult ? filterRowsSinEstado().filter((n) => enMes(n, ult)) : filterRows(null);
   const falt = faltantesFiltrados(corte);
   return { ult, corte, personas, falt, req: personas.length + falt.length };
+}
+
+// Diferencias entre la app y el maestro de SAP (solo RRHH)
+const sapAbiertos = new Set();
+const digitos = (v) => String(v ?? '').replace(/\D/g, '');
+function diferenciasSap() {
+  if (!state.sap?.length) return '';
+  const dniSap = new Set(state.sap.map((x) => x.dni));
+  const dniNom = new Set(state.nomina.map((n) => digitos(n.dni)).filter(Boolean));
+  const activos = state.nomina.filter((n) => n.estado === 'activo');
+  const grupos = [
+    ['sillas', 'Sillas cubiertas sin POS SAP', state.positions.filter((p) => ['ingresado', 'proximo_ingreso'].includes(p.stage) && !String(p.pos_sap || '').trim())
+      .sort((a, b) => (a.candidato_nombre || '').localeCompare(b.candidato_nombre || '', 'es'))
+      .map((p) => html`<li><button type="button" data-sap-silla="${p.id}"><b>${p.candidato_nombre || '—'}</b> <small>${p.puesto} · ${p.yacimiento}${p.sector ? ` · ${p.sector}` : ''}</small></button></li>`)],
+    ['nosap', 'Activos en nómina que no figuran en SAP', activos.filter((n) => digitos(n.dni) && !dniSap.has(digitos(n.dni)))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+      .map((n) => html`<li><button type="button" data-sap-persona="${n.id}"><b>${n.nombre}</b> <small>${[n.yacimiento, n.sector, n.fecha_ingreso ? 'ingreso ' + fmtDate(n.fecha_ingreso) : ''].filter(Boolean).join(' · ')}</small></button></li>`)],
+    ['nonom', 'En SAP pero no en la nómina', state.sap.filter((x) => !dniNom.has(x.dni))
+      .map((x) => html`<li><span><b>${x.nombre || '—'}</b> <small>POS ${x.pos}${x.puesto ? ` · ${x.puesto}` : ''}</small></span></li>`)],
+    ['sinpos', 'Activos en nómina sin POS', activos.filter((n) => !String(n.pos || '').trim())
+      .map((n) => html`<li><button type="button" data-sap-persona="${n.id}"><b>${n.nombre}</b> <small>${[n.yacimiento, n.sector].filter(Boolean).join(' · ')}</small></button></li>`)],
+  ].filter(([, , xs]) => xs.length);
+  if (!grupos.length) return '';
+  return html`<section class="card dif-sap"><h2 class="card-title">Diferencias con SAP <small class="muted">${grupos.reduce((a, [, , xs]) => a + xs.length, 0)}</small></h2>
+    ${grupos.map(([k, t, xs]) => html`<details data-sap-grupo="${k}" ${raw(sapAbiertos.has(k) ? 'open' : '')}>
+      <summary><span>${t}</span><b>${xs.length}</b></summary><ul>${xs}</ul></details>`)}
+  </section>`;
 }
 
 function coberturaDotacion() {
@@ -423,6 +456,7 @@ function vistaModerna({ base, rows, shown, recientes, pfProx }) {
   <div class="m-cuerpo">
   ${tab === 'resumen' ? html`
     ${coberturaDotacion()}
+    ${diferenciasSap()}
     <section class="card m-pend"><h2 class="card-title">Documentación pendiente</h2>
       <ul class="m-pend-list">${pend.map(([k, n]) => html`<li><button type="button" data-act="m-pend" data-value="${k}">
         <span class="mk-ico mk-ico--sm">${icono('documento')}</span><span class="m-pend-k">${k}</span>
