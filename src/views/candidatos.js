@@ -266,7 +266,7 @@ function listSection(today, all) {
       </div>
     </header>
     <div class="chips-rapidos" role="group" aria-label="Filtro rápido">${RAPIDOS.map(([k, t]) => html`<button type="button" class="chip-rap ${rapido === k ? 'is-on' : ''}" data-rapido="${k}" aria-pressed="${rapido === k}">${t} <span>${nRap[k]}</span></button>`)}</div>
-    ${rows.length ? html`<div class="table-wrap"><table class="tbl tbl--cand is-clickable">
+    ${rows.length ? html`<div class="table-wrap"><table class="tbl tbl--cand tbl--tarjetas is-clickable">
       <thead><tr><th>Nombre</th><th>Etapa</th><th class="hide-sm">Área · Servicio</th><th class="hide-sm">Posición</th><th class="hide-sm">Procedencia</th><th class="hide-sm">Próximo paso</th><th>Silla</th><th class="hide-sm num">Días</th><th class="hide-sm">CV</th></tr></thead>
       <tbody>${shown.map((c) => html`<tr data-id="${c.id}" tabindex="0">
         <td data-th="Nombre"><strong>${c.nombre}</strong>${entDe(c) > 1 ? html` <span class="tag" title="Tiene otras entrevistas">${entDe(c)} entrevistas</span>` : ''}</td>

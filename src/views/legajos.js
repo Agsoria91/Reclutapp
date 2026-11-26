@@ -61,7 +61,7 @@ export function render(el) {
 ` : html`
   <section class="card">
     <header class="list-head"><h2 class="card-title">Legajos <small class="muted">${rows.length}</small></h2></header>
-    ${rows.length ? html`<div class="table-wrap"><table class="tbl is-clickable">
+    ${rows.length ? html`<div class="table-wrap"><table class="tbl tbl--tarjetas is-clickable">
       <thead><tr><th>Nombre</th><th>DNI</th><th>Ingreso</th><th class="hide-sm">Área · Sector</th><th class="hide-sm">Silla</th><th class="hide-sm">Convenio · Cat.</th><th class="hide-sm">Jefe</th><th class="hide-sm num">Básico</th><th>Estado</th></tr></thead>
       <tbody>${rows.map((h) => html`<tr data-id="${h.id}" tabindex="0">
         <td data-th="Nombre"><strong>${h.nombre}</strong>${h.tipo_cobertura === 'Movimiento interno' ? html` <span class="tag tag--int">interno</span>` : ''}</td>

@@ -319,7 +319,7 @@ function coberturaDotacion() {
 }
 
 function tablaPersonal(rows, shown) {
-  return rows.length ? html`<div class="table-wrap"><table class="tbl is-clickable">
+  return rows.length ? html`<div class="table-wrap"><table class="tbl tbl--tarjetas is-clickable">
       <thead><tr><th>Nombre</th><th>DNI</th><th class="hide-sm">Nº pers.</th><th class="hide-sm">Yac. · Sector</th><th class="hide-sm">Función</th><th class="hide-sm">Cat.</th><th class="hide-sm">Diagrama</th><th class="hide-sm">Jefe</th><th>Ingreso</th><th class="hide-sm num">Edad</th><th>Pend.</th></tr></thead>
       <tbody>${shown.map((n) => {
         const pend = pendientes(n).filter((p) => p !== 'Al día');
