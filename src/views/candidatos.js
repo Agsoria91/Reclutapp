@@ -352,6 +352,9 @@ function bind(el) {
 // ---------------------------------------------------------------------------
 // Ficha del candidato (solo RRHH)
 // ---------------------------------------------------------------------------
+// fecha de cada etapa: al volver atrás se ofrece borrar las posteriores
+const FECHAS_ETAPA = [['en_entrevista', 'entrevista', 'la fecha de entrevista'], ['validacion_rrll', 'validacion_rrll', 'la validación RRLL'],
+  ['epo', 'examen_medico', 'el envío a examen'], ['aptitud_recibida', 'apto', 'la aptitud'], ['fecha_ingreso', 'proximo_ingreso', 'la fecha de ingreso']];
 const MOTIVOS = ['No Califica', 'CV No Califica', 'Rechaza Propuesta', 'Secundario Incompleto', 'No Apto Medico', 'Sin vacante disponible', 'No se presenta', 'Otro'];
 
 // `volver`: si se abrió desde otra pantalla (p. ej. la silla), a dónde volver al terminar.
@@ -477,6 +480,14 @@ export function openCandidate(id, { volver } = {}) {
     data.cancelado = data.stage === 'cancelado';
     data.entrevista_ok = stageOrder(data.stage) >= stageOrder('entrevista_aprobada') && !data.cancelado;
     data.listo_ingreso = ['proximo_ingreso', 'ingresado'].includes(data.stage);
+    // volver a una etapa anterior: ofrecer borrar las fechas de las etapas posteriores
+    if (c.id && data.stage !== 'cancelado' && stageOrder(data.stage) < stageOrder(c.stage)) {
+      const posteriores = FECHAS_ETAPA.filter(([campo, etapa]) => stageOrder(etapa) > stageOrder(data.stage) && data[campo]);
+      if (posteriores.length && await confirmDialog(`Vuelve a "${state.stageMap[data.stage]?.label}". ¿Borro también ${posteriores.map(([, , l]) => l).join(', ')}?`, { ok: 'Borrar fechas', cancel: 'Dejarlas' })) {
+        posteriores.forEach(([campo]) => { data[campo] = null; });
+        if (posteriores.some(([campo]) => campo === 'aptitud_recibida')) data.aptitud = null;
+      }
+    }
     if (data.stage === 'cancelado' && c.stage !== 'cancelado' && sigueEnOtroProceso(c)) {
       const sigue = otrasEntrevistas(c).filter((x) => x.stage !== 'cancelado');
       toast(`Se cancela solo esta entrevista. Sigue en proceso para ${sigue.map((x) => x.servicio || x.area || x.posicion || 'otra entrevista').join(', ')}.`);
