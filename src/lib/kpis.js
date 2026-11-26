@@ -209,14 +209,18 @@ export function faltantesAlCorte(positions, corte, { candidatos = [] } = {}) {
 // Días en la etapa actual. "CV recibido" no cuenta (el proceso todavía no se
 // inició); desde la entrevista el reloj corre desde la última fecha del
 // proceso cargada. Al llegar al plazo queda en aviso; al doble, en alerta.
+// Si hay un turno agendado a futuro, no corre (queda "agendado").
 // ---------------------------------------------------------------------------
 export const PLAZOS_ETAPA = { entrevista: 7, entrevista_aprobada: 7, validacion_rrll: 10, propuesta: 7, examen_medico: 10, apto: 10 };
 
 export function diasEnEtapa(c, today) {
   const plazo = PLAZOS_ETAPA[c?.stage];
   if (!plazo) return null;
-  const fechas = [c.en_entrevista, c.validacion_rrll, c.epo, c.aptitud_recibida, c.interconsulta, c.interconsulta_cierre]
-    .filter((f) => f && f <= today).sort();
+  const todas = [c.en_entrevista, c.validacion_rrll, c.epo, c.aptitud_recibida, c.interconsulta, c.interconsulta_cierre].filter(Boolean);
+  // un turno agendado (entrevista, examen, interconsulta) todavía no ocurrió: no hay demora
+  const agendado = todas.filter((f) => f > today).sort()[0];
+  if (agendado) return { dias: null, agendado, plazo, nivel: 'agendado' };
+  const fechas = todas.sort();
   if (!fechas.length) return null;
   const desde = fechas[fechas.length - 1];
   const dias = daysBetween(desde, today);

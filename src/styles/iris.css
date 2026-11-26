@@ -715,3 +715,4 @@
 .hoy--aviso { background: var(--ir-aviso-bg); color: #8A4B00; }
 .hoy--alerta { background: var(--ir-alerta-bg); color: var(--ir-bad); }
 [data-theme="dark"] .hoy--aviso { color: #E8B45F; }
+.dias--agendado { color: var(--ir-pri); border: 1px solid var(--ir-chipv-h); }
