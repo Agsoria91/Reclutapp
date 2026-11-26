@@ -362,6 +362,7 @@ export function openEditor(id) {
       ${field('Puesto', 'puesto', p.puesto, { required: true, span: p.id ? 2 : 1, hint: p.id ? '' : 'Con varias sillas se numeran solas (Puesto 1, 2, 3…)' })}
       ${p.id ? '' : field('Cantidad de sillas', 'cantidad', 1, { type: 'number', hint: 'Crea varias sillas iguales de una vez' })}
       ${field('POS SAP', 'pos_sap', p.pos_sap, { hint: 'Única por silla' })}
+      ${field('CECO', 'ceco', p.ceco)}
       ${pickField('Jefe directo', 'jefe_directo', p.jefe_directo, [state.positions.map((x) => x.jefe_directo), state.nomina.map((x) => x.jefe)])}
       ${pickField('Diagrama', 'diagrama', p.diagrama, [state.positions.map((x) => x.diagrama), state.nomina.map((x) => x.diagrama)])}
       ${field('Turno', 'turno', p.turno)}
@@ -400,6 +401,9 @@ export function openEditor(id) {
       if (cantidad > 1) { toast('La POS SAP es única por silla: creá las sillas sin POS SAP y cargala después en cada una.', 'error', 7000); return; }
       const otra = state.positions.find((x) => x.id !== p.id && String(x.pos_sap ?? '').trim() === sap);
       if (otra) { toast(`La POS SAP ${sap} ya está asignada a "${otra.puesto}" (${otra.yacimiento}${otra.sector ? ' · ' + otra.sector : ''}). Revisá el número.`, 'error', 8000); return; }
+      const enSap = ocupanteSap(sap);
+      const dniSilla = dniDeSilla({ ...p, ...data });
+      if (enSap && enSap.dni !== dniSilla && !(await confirmDialog(`La POS SAP ${sap} figura ocupada en SAP por ${enSap.nombre}${enSap.puesto ? ` (${enSap.puesto})` : ''}. ¿Guardarla igual?`, { ok: 'Guardar igual' }))) return;
     }
     const btn = e.submitter; btn.disabled = true;
     let q;
@@ -514,7 +518,16 @@ function numerarSillas(data, cantidad) {
   return Array.from({ length: cantidad }, (_, i) => ({ ...data, puesto: `${base} ${max + i + 1}` }));
 }
 
-// POS SAP repetidas ya cargadas (para corregir)
+// Maestro de SAP: quién ocupa cada POS (solo RRHH)
+const ocupanteSap = (pos) => state.sap?.find((s) => s.pos === String(pos ?? '').trim()) || null;
+const soloDigitos = (v) => String(v ?? '').replace(/\D/g, '');
+function dniDeSilla(p) {
+  const c = p.candidate_id ? state.candidates.find((x) => x.id === p.candidate_id) : null;
+  const n = state.nomina?.find((x) => x.position_id === p.id);
+  return soloDigitos(c?.dni || n?.dni) || null;
+}
+
+// POS SAP con problema: repetidas entre sillas, u ocupadas en SAP por otra persona
 export function posSapRepetidas() {
   const m = new Map();
   for (const x of state.positions) {
@@ -523,7 +536,13 @@ export function posSapRepetidas() {
     if (!m.has(k)) m.set(k, []);
     m.get(k).push(x);
   }
-  return [...m.entries()].filter(([, xs]) => xs.length > 1);
+  const reps = [...m.entries()].filter(([, xs]) => xs.length > 1);
+  for (const [k, xs] of m) {
+    if (xs.length > 1) continue;
+    const s = ocupanteSap(k);
+    if (s && s.dni !== dniDeSilla(xs[0])) reps.push([k, xs, s]);
+  }
+  return reps;
 }
 
 // Aviso compacto y desplegable de POS SAP repetidas. Se puede ocultar; vuelve a
@@ -533,8 +552,8 @@ function avisoPosSap() {
   const reps = posSapRepetidas();
   if (!reps.length || loadLocal('reclutapp.pos.sapOculto', '') === firmaRep(reps)) return '';
   return html`<details class="sap-aviso">
-    <summary><span class="pill pill--sm pill--orange">${reps.length} POS SAP repetida${reps.length === 1 ? '' : 's'}</span> <span class="muted small">ver detalle</span></summary>
-    <ul>${reps.map(([k, xs]) => html`<li><b>${k}</b> · ${xs.map((x) => `${x.puesto} (${x.yacimiento})`).join(' / ')}</li>`)}</ul>
+    <summary><span class="pill pill--sm pill--orange">${reps.length} POS SAP repetida${reps.length === 1 ? '' : 's'} u ocupada${reps.length === 1 ? '' : 's'} en SAP</span> <span class="muted small">ver detalle</span></summary>
+    <ul>${reps.map(([k, xs, s]) => html`<li><b>${k}</b> · ${xs.map((x) => `${x.puesto} (${x.yacimiento})${x.candidato_nombre ? ' · ' + x.candidato_nombre : ''}`).join(' / ')}${s ? html` · <span class="is-late-txt">ocupada en SAP por ${s.nombre}</span>` : ''}</li>`)}</ul>
     <button type="button" class="btn btn--ghost btn--sm" data-act="sap-ocultar">Ocultar aviso</button>
   </details>`;
 }

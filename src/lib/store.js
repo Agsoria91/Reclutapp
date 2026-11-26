@@ -19,6 +19,7 @@ export const state = {
   hires: [],
   nomina: [],
   historial: [],   // solo RRHH: quién pasó por cada silla
+  sap: [],         // solo RRHH: maestro de posiciones ocupadas de SAP
   avisos: [],      // solo RRHH: avisos enviados a candidatos
   plantillas: [],  // solo RRHH: textos de los avisos
   loadedAt: null,
@@ -47,13 +48,13 @@ export async function refreshAuth() {
 export async function loadAll({ silent = false } = {}) {
   // Sin cuenta habilitada no se pide NADA a la base (y la base tampoco lo daría).
   if (!state.canRead) {
-    set({ stages: [], stageMap: {}, positions: [], candidates: [], hires: [], nomina: [], historial: [], avisos: [], plantillas: [], loading: false, error: null });
+    set({ stages: [], stageMap: {}, positions: [], candidates: [], hires: [], nomina: [], historial: [], avisos: [], plantillas: [], sap: [], loading: false, error: null });
     return;
   }
   if (!silent) set({ loading: true, error: null });
   try {
     const staff = state.isStaff;
-    const [stages, positions, candidates, terna, nomina, historial, avisos, plantillas] = await Promise.all([
+    const [stages, positions, candidates, terna, nomina, historial, avisos, plantillas, sap] = await Promise.all([
       fetchAll('stages', '*', 'orden'),
       fetchAll(staff ? 'positions' : 'positions_public'),
       fetchAll(staff ? 'candidates' : 'candidates_public'),
@@ -63,6 +64,8 @@ export async function loadAll({ silent = false } = {}) {
       staff ? fetchAll('position_history', '*', 'desde').catch((e) => { console.warn('historial', e); return []; }) : Promise.resolve([]),
       staff ? fetchAll('avisos', '*', 'enviado_at').catch(() => []) : Promise.resolve([]),
       staff ? fetchAll('plantillas_aviso', '*', 'orden').catch(() => []) : Promise.resolve([]),
+      // maestro de posiciones ocupadas de SAP (solo RRHH)
+      staff ? fetchAll('sap_posiciones', 'pos,dni,nombre,puesto,ceco', 'pos').catch(() => []) : Promise.resolve([]),
     ]);
     const stageMap = Object.fromEntries(stages.map((s) => [s.code, s]));
     // Legajos = la nómina filtrada a quienes ingresaron por una silla (mismo registro)
@@ -82,7 +85,7 @@ export async function loadAll({ silent = false } = {}) {
         c._ternas.push(p);
       }
     }
-    set({ stages, stageMap, positions, candidates, hires, nomina, historial, avisos, plantillas, loading: false, error: null, loadedAt: new Date() });
+    set({ stages, stageMap, positions, candidates, hires, nomina, historial, avisos, plantillas, sap, loading: false, error: null, loadedAt: new Date() });
   } catch (e) {
     console.error(e);
     set({ loading: false, error: e.message || String(e) });
