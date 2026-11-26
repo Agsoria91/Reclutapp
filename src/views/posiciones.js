@@ -13,6 +13,7 @@ import { avisarCambioDeEtapa } from '../components/avisos.js';
 import { mascot } from '../components/mascot.js';
 import { mHead, mBarra, mChips, mPanel, mKpis, mTabs, subTab } from '../components/moderno.js';
 import { openAssignFromPosition } from './asignar.js';
+import { paraHoy, irA } from '../components/paraHoy.js';
 import { convenioFields, bindConvenio, convenioLabel } from '../components/ingreso.js';
 
 const DIMS = ['area', 'sector', 'stage', 'cobertura', 'procedencia', 'mes'];
@@ -21,6 +22,18 @@ const saved = loadLocal(KEY, {});
 export const posFilters = restoreFilters(saved, DIMS);
 let search = '';
 let soloPendientes = !!saved.soloPendientes;
+// Vista elegida desde un indicador: pendientes, sin candidato o vencidas
+let vista = null;
+const VISTAS = {
+  pend: ['Faltan cubrir', (p) => !isCovered(p)],
+  sin: ['Sin candidato', (p) => !isCovered(p) && !hasPerson(p)],
+  venc: ['Vencidas', (p) => isLate(p, todayISO())],
+};
+// para entrar con una vista ya elegida (desde "Para hoy"): pendientes del mes en curso
+export function elegirVencenEsteMes() {
+  posFilters.mes = new Set([monthKey(todayISO())]); vista = 'pend'; soloPendientes = false;
+  persist();
+}
 
 export const posGetters = {
   area: (p) => p.yacimiento,
@@ -33,9 +46,10 @@ export const posGetters = {
   mes: (p) => monthKey(p.fecha_objetivo) || 'sin-fecha',
 };
 
-export function filteredPositions({ ignoreSearch = false } = {}) {
+export function filteredPositions({ ignoreSearch = false, ignoreVista = false } = {}) {
   let rows = applyFilters(state.positions, posFilters, posGetters);
   if (soloPendientes) rows = rows.filter((p) => !isCovered(p));
+  if (vista && !ignoreVista) rows = rows.filter(VISTAS[vista][1]);
   if (!ignoreSearch && search) {
     const q = norm(search);
     rows = rows.filter((p) => norm([p.puesto, p.candidato_nombre, p.pos_sap, p.sector].join(' ')).includes(q));
@@ -85,7 +99,7 @@ export function render(el) {
 
   const today = todayISO();
   const rows = filteredPositions();
-  const base = filteredPositions({ ignoreSearch: true });
+  const base = filteredPositions({ ignoreSearch: true, ignoreVista: true });
   const cubInternos = base.filter((p) => isCovered(p) && p.tipo_cobertura === 'Movimiento interno').length;
   const k = positionKpis(base, today);
   const pend = pendingByTarget(base, today);
@@ -108,12 +122,14 @@ export function render(el) {
     ${desdeMapa ? html`<button class="btn btn--ghost" data-act="volver-mapa">← Volver al mapa</button>` : ''}
     ${staff ? html`<button class="btn btn--ghost" data-act="new">+ Nueva silla</button>` : ''}
     <a class="btn btn--primary" href="#/reunion${linkReunion()}">Modo reunión</a>` })}
+  ${paraHoy()}
   ${staff ? avisoPosSap() : ''}
   ${mBarra({ seccion: 'posiciones', buscar: { id: 'pos-search', placeholder: 'Buscar puesto, persona o POS SAP', valor: search },
     nFiltros: ['area', 'sector', 'stage', 'cobertura', 'procedencia'].reduce((n, d) => n + posFilters[d].size, 0) + (soloPendientes ? 1 : 0),
     extra: multiSelectFilter({ dim: 'mes', label: 'Mes objetivo', options: optionsFor('mes'), selected: posFilters.mes, presets: monthPresets(), open: openMulti === 'mes', labelOf: mesLabel }) })}
   ${mChips([...['area', 'sector', 'stage', 'cobertura', 'procedencia', 'mes'].flatMap((d) => [...posFilters[d]].map((v) => ({ dim: d, valor: v, texto: d === 'mes' ? mesLabel(v) : d === 'stage' ? (state.stageMap[v]?.label || v) : v }))),
-    ...(soloPendientes ? [{ attrs: 'data-act="pos-solo-pend"', texto: 'Solo pendientes' }] : [])], 'pos-clear')}
+    ...(soloPendientes ? [{ attrs: 'data-act="pos-solo-pend"', texto: 'Solo pendientes' }] : []),
+    ...(vista ? [{ attrs: 'data-act="pos-vista-off"', texto: VISTAS[vista][0] }] : [])], 'pos-clear')}
   ${mPanel('posiciones', html`
     ${filterGroup({ dim: 'area', label: 'Área', options: optionsFor('area'), selected: posFilters.area })}
     ${filterGroup({ dim: 'sector', label: 'Sector', options: optionsFor('sector'), selected: posFilters.sector, allLabel: 'Todos' })}
@@ -126,9 +142,9 @@ export function render(el) {
   ${mKpis([
     { icono: 'posiciones', label: 'Sillas cubiertas', valor: k.cubiertas, id: 'pos-cub', barra: pct(k.cubiertas, k.total),
       sub: html`<b>${pct(k.cubiertas, k.total)}%</b> de ${k.total} · ${cubInternos} por mov. interno` },
-    { icono: 'reloj', label: 'Faltan cubrir', valor: k.pendientes, id: 'pos-pend', sub: html`<b>${k.enProceso}</b> en proceso · <b>${k.sinCandidato}</b> sin candidato` },
-    { icono: 'candidatos', label: 'Sin candidato', valor: k.sinCandidato, id: 'pos-sin', tono: k.sinCandidato ? 'aviso' : '', sub: 'sillas a buscar' },
-    { icono: 'documento', label: 'Vencidas', valor: k.vencidas, id: 'pos-venc', tono: k.vencidas ? 'alerta' : 'ok', sub: 'mes objetivo pasado' },
+    { icono: 'reloj', label: 'Faltan cubrir', valor: k.pendientes, id: 'pos-pend', attrs: 'data-vista="pend"', sel: vista === 'pend', sub: html`<b>${k.enProceso}</b> en proceso · <b>${k.sinCandidato}</b> sin candidato` },
+    { icono: 'candidatos', label: 'Sin candidato', valor: k.sinCandidato, id: 'pos-sin', attrs: 'data-vista="sin"', sel: vista === 'sin', tono: k.sinCandidato ? 'aviso' : '', sub: 'sillas a buscar' },
+    { icono: 'documento', label: 'Vencidas', valor: k.vencidas, id: 'pos-venc', attrs: 'data-vista="venc"', sel: vista === 'venc', tono: k.vencidas ? 'alerta' : 'ok', sub: 'mes objetivo pasado' },
   ])}
   ${mTabs('posiciones', [['mapa', `Mapa · ${rows.length}`], ['meses', 'Por mes objetivo']], tab)}
   <div class="m-cuerpo">
@@ -170,7 +186,7 @@ function groupBlock(key, ps, today, staff) {
   const faltan = ps.length - cub;
   const late = ps.filter((p) => isLate(p, today)).length;
   const proximo = ps.filter((p) => !isCovered(p) && p.fecha_objetivo).map((p) => p.fecha_objetivo).sort()[0];
-  const open = openGroups.has(key) || !!search;
+  const open = openGroups.has(key) || !!search || !!vista;
   ps.sort((a, b) => a.puesto.localeCompare(b.puesto, 'es', { numeric: true }));
   return html`<details class="group" data-g="${key}" ${raw(open ? 'open' : '')}>
     <summary class="group-head">
@@ -312,8 +328,13 @@ function onClick(e) {
     posFilters.area = new Set(v?.prev || []); persist(); saveLocal('reclutapp.desdeMapa', null);
     location.hash = '#/mapa'; return;
   }
-  if (act === 'pos-clear') { Object.keys(posFilters).forEach((d) => { posFilters[d] = new Set(); }); soloPendientes = false; persist(); render(el); return; }
+  if (act === 'pos-clear') { Object.keys(posFilters).forEach((d) => { posFilters[d] = new Set(); }); soloPendientes = false; vista = null; persist(); render(el); return; }
   if (act === 'pos-solo-pend') { soloPendientes = false; persist(); render(el); return; }
+  const hoy = e.target.closest('[data-hoy]');
+  if (hoy) { irA(hoy.dataset.hoy).then((r) => { if (r === 'redibujar') { saveLocal('reclutapp.tab.posiciones', 'mapa'); render(el); } }); return; }
+  if (act === 'pos-vista-off') { vista = null; render(el); return; }
+  const kv = e.target.closest('[data-vista]');
+  if (kv) { vista = vista === kv.dataset.vista ? null : kv.dataset.vista; render(el); return; }
   if (act === 'sap-ocultar') { saveLocal('reclutapp.pos.sapOculto', firmaRep(posSapRepetidas())); render(el); return; }
   if (act === 'toggle-all') {
     const keys = [...el.querySelectorAll('details[data-g]')].map((d) => d.dataset.g);
