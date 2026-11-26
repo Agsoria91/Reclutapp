@@ -82,7 +82,9 @@ export function selectFilter({ dim, label, options, selected, allLabel = 'Todos'
 // ([etiqueta, [valores]]), p. ej. "Todos menos Ingresado".
 export function multiSelectFilter({ dim, label, options, selected, allLabel = 'Todos', presets = [], open = false, labelOf = (v) => v }) {
   const sel = selected || new Set();
+  const igual = presets.find(([, vals]) => vals.length === sel.size && vals.every((v) => sel.has(v)));
   const summary = !sel.size ? allLabel
+    : igual && sel.size > 1 ? igual[0]
     : sel.size <= 2 ? [...sel].map(labelOf).join(' + ')
     : `${sel.size} seleccionados`;
   return html`<div class="fmulti"><span class="fmulti-label">${label}</span>
