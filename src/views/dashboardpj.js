@@ -187,7 +187,7 @@ export function render(el) {
   ${tab === 'busquedas' ? html`
   <section class="card">
     <div class="list-head"><h2 class="card-title">Búsquedas <small class="muted">${lista.length}</small></h2></div>
-    <div class="table-wrap"><table class="tbl tbl--compact tbl--pj">
+    <div class="table-wrap"><table class="tbl tbl--compact tbl--pj tbl--tarjetas">
       <thead><tr><th>S</th><th>Posición</th><th>Persona</th><th>Estado</th><th>Proceso</th><th>Dirección</th><th>Solicitud</th><th>Pot. ingreso</th><th>Pendientes</th></tr></thead>
       <tbody>${lista.map((v) => html`<tr class="${atrasada(v) ? 'is-late' : ''}">
         <td class="mono">${v.s}</td>

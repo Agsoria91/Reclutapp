@@ -111,7 +111,7 @@ export function render(el) {
     <div class="list-head"><h2 class="card-title">Personas <small class="muted">${lista.length}</small></h2>
       <div class="list-actions">
         <button class="btn btn--sm" data-act="ex-excel">Excel</button></div></div>
-    <div class="table-wrap"><table class="tbl tbl--compact is-clickable">
+    <div class="table-wrap"><table class="tbl tbl--compact tbl--tarjetas is-clickable">
       <thead><tr><th>Nombre</th><th>Procedencia</th><th>Área · Posición</th><th>Clínica</th><th>Recorrido</th><th>Estado</th><th class="num">Días</th></tr></thead>
       <tbody>${lista.map((c) => {
         const e = estadoMedico(c); const d = diasExamen(c);

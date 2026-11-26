@@ -92,6 +92,19 @@ const INICIALES = { mapa: 'MA', posiciones: 'PO', candidatos: 'CA', entrevistas:
 let current = { name: null, container: null };
 initFolds(app, () => current.name);
 initModerno(() => draw());
+// En celular las tablas de personas se ven como tarjetas: cada celda lleva el
+// nombre de su columna (data-th) para mostrarlo como etiqueta.
+function rotularTablas() {
+  for (const t of app.querySelectorAll('table.tbl--tarjetas:not([data-rot])')) {
+    const ths = [...t.querySelectorAll('thead th')].map((th) => th.textContent.trim());
+    t.querySelectorAll('tbody tr').forEach((tr) => [...tr.children].forEach((td, i) => { if (!td.dataset.th && ths[i]) td.dataset.th = ths[i]; }));
+    t.dataset.rot = '';
+  }
+}
+let rotPend = false;
+new MutationObserver(() => { if (!rotPend) { rotPend = true; queueMicrotask(() => { rotPend = false; rotularTablas(); }); } }).observe(app, { childList: true, subtree: true });
+// Barra inferior en celular: las secciones de uso diario + "Más" (menú completo)
+const INFERIOR = ['posiciones', 'candidatos', 'entrevistas', 'nomina', 'mapa'];
 
 function shell(name) {
   const r = ROUTES[name];
@@ -141,6 +154,13 @@ function shell(name) {
     Conviene guardar uno por semana en el OneDrive/Drive de RRHH.
     <button class="btn btn--sm" data-act="respaldo">Descargar respaldo</button></div>` : ''}
   <main id="view" class="view ${r.full ? 'view--mapa' : ''}" tabindex="-1"></main>
+  ${(() => {
+    const inf = INFERIOR.map((k) => navItems.find(([n]) => n === k)).filter(Boolean).slice(0, 4);
+    if (inf.length < 2) return '';
+    const mas = navItems.length > inf.length;
+    return html`<nav class="barra-inf" aria-label="Accesos rápidos">${inf.map(([k, v]) => html`<a href="#/${k}" class="${k === name ? 'is-on' : ''}" ${k === name ? html`aria-current="page"` : ''}>${icono(k)}<span>${v.label}</span></a>`)}
+      ${mas ? html`<button type="button" data-menu-abrir aria-controls="menu-secciones"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Más</span></button>` : ''}</nav>`;
+  })()}
   <footer class="foot"><span>EFiS · Energy Field Services — Recursos Humanos</span><span>Cuenca Neuquina · 38°57′S 68°04′O</span></footer>`;
 }
 
@@ -153,6 +173,7 @@ function route() {
   app.innerHTML = String(shell(name));
   const conLateral = !r.bare && !!document.querySelector('#menu-secciones .nav-grupo');
   document.documentElement.classList.toggle('con-lateral', conLateral);
+  document.documentElement.classList.toggle('con-barra-inf', !!document.querySelector('.barra-inf'));
   document.documentElement.classList.toggle('lateral-corto', conLateral && lateralCorto());
   const container = $('#view');
   current = { name, container, params };
@@ -165,6 +186,10 @@ function route() {
     if (abierto) document.querySelector('#menu-secciones a.is-active, #menu-secciones a')?.focus();
   });
   const cerrarMenu = () => document.documentElement.classList.remove('menu-abierto');
+  document.querySelector('[data-menu-abrir]')?.addEventListener('click', () => {
+    document.documentElement.classList.add('menu-abierto');
+    document.querySelector('#menu-secciones a.is-active, #menu-secciones a')?.focus();
+  });
   document.querySelector('[data-menu-cerrar]')?.addEventListener('click', cerrarMenu);
   $('#menu-secciones')?.addEventListener('click', (e) => { if (e.target.closest('a')) cerrarMenu(); });
   $('#btn-theme')?.addEventListener('click', toggleTheme);

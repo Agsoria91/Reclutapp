@@ -180,7 +180,7 @@ function groupBlock(key, ps, today, staff) {
       <span class="group-meta ${faltan ? '' : 'muted'}">${faltan ? html`faltan <b>${faltan}</b>` : 'completo'}</span>
       <span class="group-meta hide-sm ${late ? 'is-late-txt' : 'muted'}">${proximo ? html`objetivo ${fmtMonth(proximo, { short: true })}` : ''}</span>
     </summary>
-    <div class="table-wrap"><table class="tbl tbl--pos ${staff ? 'is-clickable' : ''}">
+    <div class="table-wrap"><table class="tbl tbl--pos tbl--tarjetas ${staff ? 'is-clickable' : ''}">
       <thead><tr>
         <th>Puesto</th><th>Persona asignada</th><th class="hide-sm">Procedencia</th><th class="hide-sm">Localidad</th>
         <th>Estado</th><th>Mes obj.</th>${staff ? html`<th class="hide-sm num">Básico</th>` : ''}
