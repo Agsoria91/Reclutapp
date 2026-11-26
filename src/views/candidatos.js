@@ -216,6 +216,7 @@ function avancePorArea() {
 // Días en la etapa actual, con color según el plazo
 function diasTag(c, today) {
   const d = diasEnEtapa(c, today);
+  if (d?.agendado) return html`<span class="dias dias--agendado" title="Turno agendado">${fmtDia(d.agendado)}</span>`;
   return d ? html`<span class="dias dias--${d.nivel}" title="Desde ${d.desde.split('-').reverse().join('/')} · plazo ${d.plazo} días">${d.dias} d</span>` : '';
 }
 
@@ -230,6 +231,7 @@ export function proximoPaso(c, today = todayISO()) {
     case 'propuesta': return 'Enviar a examen médico';
     case 'examen_medico':
       if (c.interconsulta && !c.interconsulta_cierre) return 'Cerrar interconsulta';
+      if (c.epo && c.epo > today) return `Examen ${fmtDia(c.epo)}`;
       return c.epo ? 'Esperar aptitud médica' : 'Enviar a examen médico';
     case 'apto': return sinSilla ? 'Asignar silla' : 'Definir fecha de ingreso';
     case 'proximo_ingreso': return sinSilla ? 'Asignar silla' : c.fecha_ingreso ? `Ingresa ${fmtDia(c.fecha_ingreso)}` : 'Definir fecha de ingreso';
@@ -368,7 +370,8 @@ export function openCandidate(id, { volver } = {}) {
     <form id="cand-form" class="ficha-form">
       <div class="ficha-pane" data-pane="proceso">
         ${c.id ? etapasLinea(c) : ''}
-        ${(() => { const d = c.id && diasEnEtapa(c, todayISO()); return d ? html`<p class="etapa-dias etapa-dias--${d.nivel}">${d.dias} días en ${state.stageMap[c.stage]?.label || c.stage} <span>· desde ${d.desde.split('-').reverse().join('/')} · plazo ${d.plazo} días</span></p>` : ''; })()}
+        ${(() => { const d = c.id && diasEnEtapa(c, todayISO()); return d?.agendado ? html`<p class="etapa-dias">${state.stageMap[c.stage]?.label || c.stage} <span>· turno agendado para el ${d.agendado.split('-').reverse().join('/')}</span></p>`
+          : d ? html`<p class="etapa-dias etapa-dias--${d.nivel}">${d.dias} días en ${state.stageMap[c.stage]?.label || c.stage} <span>· desde ${d.desde.split('-').reverse().join('/')} · plazo ${d.plazo} días</span></p>` : ''; })()}
         ${c.id ? html`<div class="seat-box">
           <div><span class="muted">Silla</span>
             <div class="seat-name">${c._silla ? html`${c._silla.puesto} <small class="muted">· ${c._silla.yacimiento} · ${c._silla.sector || ''}</small>` : html`<span class="muted">Sin silla asignada</span>`}</div>
