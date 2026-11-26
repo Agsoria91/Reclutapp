@@ -43,7 +43,7 @@ function datos() {
 
 function marcador(y) {
   const p = y.total ? pct(y.cub, y.total) : null;
-  return `<span class="mp-linea"></span><span class="mp-real"></span><div class="mp-pt mp-pt--${y.tipo} ${y.total ? '' : 'is-sin'}" data-yac="${y.codigo}" role="button" tabindex="0" aria-label="${esc(y.nombre)}">
+  return `<span class="mp-linea"></span><span class="mp-real"></span><div class="mp-pt mp-pt--${y.tipo} ${y.total ? '' : 'is-sin'} ${p != null && p < 20 && y.faltan > 0 ? 'is-critico' : ''}" data-yac="${y.codigo}" role="button" tabindex="0" aria-label="${esc(y.nombre)}">
     <span class="mp-pulso"></span>
     <span class="mp-ico">${svg(y.tipo)}</span>
     <span class="mp-tag"><b>${y.codigo}</b>${p != null ? `<i>${p}%</i>` : ''}</span>

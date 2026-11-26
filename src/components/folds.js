@@ -1,12 +1,9 @@
 // Tarjetas desplegables en todas las pestañas: clic en el título contrae o
-// despliega. Al abrir la app los gráficos arrancan contraídos; los listados
-// principales (los que tienen buscador) arrancan desplegados. El estado se
+// despliega. Todo arranca desplegado (los gráficos viven en su propia pestaña). El estado se
 // recuerda mientras la pestaña del navegador siga abierta, así un filtro
 // (que vuelve a dibujar la pantalla) no cierra lo que el usuario abrió.
 const abiertos = new Map(); // ruta|título -> true/false
 const SIN_PLEGAR = new Set(['usuarios', 'importar', 'login']);
-// Contenido principal de la pestaña: arranca desplegado aunque no tenga buscador.
-const PRINCIPALES = new Set(['posiciones|Sillas por área y sector']);
 
 const tituloDe = (h) => {
   const c = h.cloneNode(true);
@@ -24,7 +21,7 @@ function preparar(root, ruta) {
     let cab = h; while (cab.parentElement && cab.parentElement !== card) cab = cab.parentElement;
     if (cab.parentElement !== card) continue;
     const clave = `${ruta}|${tituloDe(h)}`;
-    if (!abiertos.has(clave)) abiertos.set(clave, PRINCIPALES.has(clave) || !!card.querySelector('input[type="search"]'));
+    if (!abiertos.has(clave)) abiertos.set(clave, true);
     card.dataset.fold = clave;
     cab.classList.add('fold-head');
     h.classList.add('fold-title');
