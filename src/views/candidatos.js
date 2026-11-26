@@ -9,7 +9,7 @@ import {
   pivot, pivotTable, pivotCSV, downloadCSV, rowsToCSV, dimSelect,
   animateIn,
 } from '../components/ui.js';
-import { avisoBar, pendientesCard, openAvisoDrawer, openPlantillas, avisarCambioDeEtapa } from '../components/avisos.js';
+import { avisoBar, pendientesCard, openAvisoDrawer, openPlantillas, avisarCambioDeEtapa, pendientesDeAviso } from '../components/avisos.js';
 import { mascot } from '../components/mascot.js';
 import { mHead, mBarra, mChips, mPanel, mKpis, mTabs, subTab } from '../components/moderno.js';
 import { openAssignFromCandidate } from './asignar.js';
@@ -213,8 +213,41 @@ function avancePorArea() {
   return [...m.entries()].map(([a, [c, t]]) => [`${a} (${c}/${t})`, pct(c, t), null, a]).sort((a, b) => b[1] - a[1]);
 }
 
+// Lo que hay que hacer con cada candidato según su etapa y sus fechas
+export function proximoPaso(c, today = todayISO()) {
+  const sinSilla = !c._silla && ['apto', 'proximo_ingreso'].includes(c.stage);
+  switch (c.stage) {
+    case 'cv_recibido': return 'Coordinar entrevista';
+    case 'entrevista': return c.en_entrevista && c.en_entrevista > today ? `Entrevista ${fmtDia(c.en_entrevista)}` : 'Definir resultado de la entrevista';
+    case 'entrevista_aprobada': return 'Validación RRLL';
+    case 'validacion_rrll': return 'Enviar propuesta';
+    case 'propuesta': return 'Enviar a examen médico';
+    case 'examen_medico':
+      if (c.interconsulta && !c.interconsulta_cierre) return 'Cerrar interconsulta';
+      return c.epo ? 'Esperar aptitud médica' : 'Enviar a examen médico';
+    case 'apto': return sinSilla ? 'Asignar silla' : 'Definir fecha de ingreso';
+    case 'proximo_ingreso': return sinSilla ? 'Asignar silla' : c.fecha_ingreso ? `Ingresa ${fmtDia(c.fecha_ingreso)}` : 'Definir fecha de ingreso';
+    default: return '';
+  }
+}
+const fmtDia = (d) => d.slice(8, 10) + '/' + d.slice(5, 7);
+
+// Filtros rápidos del listado
+let rapido = loadLocal('reclutapp.cand.rapido', 'todos');
+const RAPIDOS = [
+  ['todos', 'Todos', () => true],
+  ['avisar', 'Pendientes de avisar', (c, ids) => ids.has(c.id)],
+  ['entrevista', 'En entrevista', (c) => ['cv_recibido', 'entrevista', 'entrevista_aprobada'].includes(c.stage)],
+  ['medico', 'Examen médico', (c) => ['examen_medico', 'apto'].includes(c.stage)],
+  ['ingreso', 'Próximo ingreso', (c) => c.stage === 'proximo_ingreso'],
+  ['sin-silla', 'En proceso sin silla', (c) => !c._silla && state.stageMap[c.stage]?.es_activa],
+];
+
 function listSection(today, all) {
-  let rows = all;
+  const idsAvisar = new Set(pendientesDeAviso().map((c) => c.id));
+  if (!RAPIDOS.some(([k]) => k === rapido)) rapido = 'todos';
+  const nRap = Object.fromEntries(RAPIDOS.map(([k, , f]) => [k, all.filter((c) => f(c, idsAvisar)).length]));
+  let rows = all.filter((c) => RAPIDOS.find(([k]) => k === rapido)[2](c, idsAvisar));
   if (search) {
     const q = norm(search);
     rows = rows.filter((c) => norm([c.nombre, c.dni, c.mail, c.telefono, c.posicion, c.localidad].join(' ')).includes(q));
@@ -232,15 +265,16 @@ function listSection(today, all) {
         <button class="btn btn--sm btn--excel" data-act="fichas" title="Una fila por persona con silla, datos personales, talles, etapas y nómina">Excel fichas completas ↓ (${rows.length})</button>
       </div>
     </header>
+    <div class="chips-rapidos" role="group" aria-label="Filtro rápido">${RAPIDOS.map(([k, t]) => html`<button type="button" class="chip-rap ${rapido === k ? 'is-on' : ''}" data-rapido="${k}" aria-pressed="${rapido === k}">${t} <span>${nRap[k]}</span></button>`)}</div>
     ${rows.length ? html`<div class="table-wrap"><table class="tbl tbl--cand is-clickable">
-      <thead><tr><th>Nombre</th><th>Etapa</th><th class="hide-sm">Área · Servicio</th><th class="hide-sm">Posición</th><th class="hide-sm">Procedencia</th><th class="hide-sm">Localidad</th><th>Silla</th><th class="hide-sm num">Días</th><th class="hide-sm">CV</th></tr></thead>
+      <thead><tr><th>Nombre</th><th>Etapa</th><th class="hide-sm">Área · Servicio</th><th class="hide-sm">Posición</th><th class="hide-sm">Procedencia</th><th class="hide-sm">Próximo paso</th><th>Silla</th><th class="hide-sm num">Días</th><th class="hide-sm">CV</th></tr></thead>
       <tbody>${shown.map((c) => html`<tr data-id="${c.id}" tabindex="0">
         <td data-th="Nombre"><strong>${c.nombre}</strong>${entDe(c) > 1 ? html` <span class="tag" title="Tiene otras entrevistas">${entDe(c)} entrevistas</span>` : ''}</td>
         <td data-th="Etapa">${stagePill(c.stage, { small: true })}</td>
         <td data-th="Área" class="hide-sm">${[c.area, c.servicio].filter(Boolean).join(' · ')}</td>
         <td data-th="Posición" class="hide-sm">${c.posicion || ''}</td>
         <td data-th="Procedencia" class="hide-sm">${c.procedencia || ''}</td>
-        <td data-th="Localidad" class="hide-sm">${c.localidad || ''}</td>
+        <td data-th="Próximo paso" class="hide-sm prox-paso">${proximoPaso(c, today)}</td>
         <td data-th="Silla">${c._silla ? html`<span class="seat-chip" title="${c._silla.yacimiento} · ${c._silla.sector || ''}">${c._silla.puesto}</span>` : html`<span class="muted">—</span>`}</td>
         <td data-th="Días" class="hide-sm num">${state.stageMap[c.stage]?.es_activa ? daysBetween(c.cv_recibido || c.created_origen, today) ?? '' : ''}</td>
         <td data-th="CV" class="hide-sm">${c.cv_path ? raw('<span class="tag tag--match">CV</span>') : ''}</td>
@@ -280,6 +314,8 @@ function bind(el) {
         downloadCSV(`personas_${tituloSeleccion().replace(/[^\wáéíóúñ]+/gi, '_')}_${todayISO()}.csv`, rowsToCSV(cols, filterRows(null)));
         return;
       }
+      const rp = e.target.closest('[data-rapido]');
+      if (rp) { rapido = rp.dataset.rapido; saveLocal('reclutapp.cand.rapido', rapido); page = 1; render(el); return; }
       if (act === 'more') { page++; render(el); return; }
       if (act === 'new') { openCandidate(null); return; }
       if (act === 'carga-masiva') { import('./cargaMasiva.js').then((m) => m.openCargaMasiva()); return; }
@@ -317,45 +353,54 @@ export function openCandidate(id, { volver } = {}) {
   const root = openDrawer(html`
     ${volver ? html`<button type="button" class="btn btn--ghost btn--sm volver-silla" data-act="volver">← Volver a la silla</button>` : ''}
     ${c.id ? avisoBar(c) : ''}
-    ${c.id ? html`<div class="seat-box">
-      <div><span class="muted">Silla</span>
-        <div class="seat-name">${c._silla ? html`${c._silla.puesto} <small class="muted">· ${c._silla.yacimiento} · ${c._silla.sector || ''}</small>` : html`<span class="muted">Sin silla asignada</span>`}</div>
+    <nav class="ficha-tabs" role="tablist" aria-label="Secciones de la ficha">
+      ${[['proceso', 'Proceso y silla'], ['medico', 'Examen médico'], ['datos', 'Datos y CV']].map(([k, t], i) => html`<button type="button" role="tab" class="ficha-tab ${i === 0 ? 'is-on' : ''}" data-pane-tab="${k}" aria-selected="${i === 0}">${t}</button>`)}
+    </nav>
+    <form id="cand-form" class="ficha-form">
+      <div class="ficha-pane" data-pane="proceso">
+        ${c.id ? etapasLinea(c) : ''}
+        ${c.id ? html`<div class="seat-box">
+          <div><span class="muted">Silla</span>
+            <div class="seat-name">${c._silla ? html`${c._silla.puesto} <small class="muted">· ${c._silla.yacimiento} · ${c._silla.sector || ''}</small>` : html`<span class="muted">Sin silla asignada</span>`}</div>
+          </div>
+          <div class="seat-actions">
+            ${c.stage !== 'cancelado' ? html`<button type="button" class="btn btn--primary" data-act="seat">${c._silla ? 'Cambiar de silla' : 'Sentar en una silla'}</button>
+              <button type="button" class="btn" data-act="terna">Sumar a una terna</button>` : ''}
+          </div>
+          ${(c._ternas || []).filter((p) => p.candidate_id !== c.id).length ? html`<div class="field--wide small muted">También en la terna de:
+            ${(c._ternas || []).filter((p) => p.candidate_id !== c.id).map((p) => html`<span class="chip">${p.puesto} · ${p.yacimiento}${p.candidato_nombre ? ` (principal: ${p.candidato_nombre})` : ''}</span>`)}</div>` : ''}
+        </div>
+        ${entrevistasBox(c)}` : ''}
+        <div class="form-grid">
+          ${field('Nombre y apellido', 'nombre', c.nombre, { required: true, span: 2 })}
+          ${field('Etapa', 'stage', c.stage, { options: stageOpts, hint: c._silla ? 'Se refleja en su silla.' : '' })}
+          ${pickField('Área', 'area', c.area, [state.candidates.map((x) => x.area), state.positions.map((x) => x.yacimiento)])}
+          ${pickField('Servicio / Sector', 'servicio', c.servicio, state.candidates.map((x) => x.servicio))}
+          ${pickField('Posición', 'posicion', c.posicion, state.candidates.map((x) => x.posicion))}
+          ${pickField('Procedencia', 'procedencia', c.procedencia, [state.candidates.map((x) => x.procedencia), state.positions.map((x) => x.procedencia)])}
+          ${field('CV recibido', 'cv_recibido', c.cv_recibido, { type: 'date' })}
+          ${field('En entrevista', 'en_entrevista', c.en_entrevista, { type: 'date' })}
+          ${field('Validación RRLL', 'validacion_rrll', c.validacion_rrll, { type: 'date' })}
+          ${field('Fecha de ingreso', 'fecha_ingreso', c.fecha_ingreso, { type: 'date' })}
+          ${state.candidates.some((x) => 'fecha_baja' in x) ? field('Fecha de baja', 'fecha_baja', c.fecha_baja, { type: 'date', hint: 'Se completa sola al cancelar; corregila si la baja fue otro día.' }) : ''}
+          <fieldset class="field--wide"><legend>Motivos de baja (si se cancela)</legend>
+            <div class="checks">${MOTIVOS.map((m) => html`<label class="check"><input type="checkbox" name="motivo" value="${m}" ${raw(c.motivos_baja?.includes(m) ? 'checked' : '')}> ${m}</label>`)}</div>
+          </fieldset>
+          ${field('Comentarios', 'comentarios', c.comentarios, { type: 'textarea', span: 2 })}
+        </div>
       </div>
-      <div class="seat-actions">
-        ${c.stage !== 'cancelado' ? html`<button type="button" class="btn btn--primary" data-act="seat">${c._silla ? 'Cambiar de silla' : 'Sentar en una silla'}</button>
-          <button type="button" class="btn" data-act="terna">Sumar a una terna</button>` : ''}
+      <div class="ficha-pane" data-pane="medico" hidden><div class="form-grid">${examenFields(c)}</div></div>
+      <div class="ficha-pane" data-pane="datos" hidden>
+        ${c.id ? html`<div class="cv-box">
+          <span class="muted">CV</span>
+          ${c.cv_path ? html`<button type="button" class="btn btn--ghost" data-act="cv-open">Ver CV</button>
+            <button type="button" class="btn btn--ghost" data-act="cv-del">Quitar</button>` : html`<span class="muted">No hay CV cargado.</span>`}
+          <label class="btn">${c.cv_path ? 'Reemplazar' : 'Subir CV'}<input type="file" id="cv-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" hidden></label>
+          <small class="muted">PDF, Word o imagen · hasta 10 MB · solo visible para RRHH</small>
+        </div>` : ''}
+        <div class="form-grid">${preingresoFields(c)}</div>
       </div>
-      ${(c._ternas || []).filter((p) => p.candidate_id !== c.id).length ? html`<div class="field--wide small muted">También en la terna de:
-        ${(c._ternas || []).filter((p) => p.candidate_id !== c.id).map((p) => html`<span class="chip">${p.puesto} · ${p.yacimiento}${p.candidato_nombre ? ` (principal: ${p.candidato_nombre})` : ''}</span>`)}</div>` : ''}
-    </div>
-    ${entrevistasBox(c)}
-    <div class="cv-box">
-      <span class="muted">CV</span>
-      ${c.cv_path ? html`<button type="button" class="btn btn--ghost" data-act="cv-open">Ver CV</button>
-        <button type="button" class="btn btn--ghost" data-act="cv-del">Quitar</button>` : html`<span class="muted">No hay CV cargado.</span>`}
-      <label class="btn">${c.cv_path ? 'Reemplazar' : 'Subir CV'}<input type="file" id="cv-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" hidden></label>
-      <small class="muted">PDF, Word o imagen · hasta 10 MB · solo visible para RRHH</small>
-    </div>` : ''}
-
-    <form id="cand-form" class="form-grid">
-      ${field('Nombre y apellido', 'nombre', c.nombre, { required: true, span: 2 })}
-      ${field('Etapa', 'stage', c.stage, { options: stageOpts, hint: c._silla ? 'Se refleja en su silla.' : '' })}
-      ${pickField('Área', 'area', c.area, [state.candidates.map((x) => x.area), state.positions.map((x) => x.yacimiento)])}
-      ${pickField('Servicio / Sector', 'servicio', c.servicio, state.candidates.map((x) => x.servicio))}
-      ${pickField('Posición', 'posicion', c.posicion, state.candidates.map((x) => x.posicion))}
-      ${pickField('Procedencia', 'procedencia', c.procedencia, [state.candidates.map((x) => x.procedencia), state.positions.map((x) => x.procedencia)])}
-      ${preingresoFields(c)}
-      ${field('CV recibido', 'cv_recibido', c.cv_recibido, { type: 'date' })}
-      ${field('En entrevista', 'en_entrevista', c.en_entrevista, { type: 'date' })}
-      ${field('Validación RRLL', 'validacion_rrll', c.validacion_rrll, { type: 'date' })}
-      ${examenFields(c)}
-      ${field('Fecha de ingreso', 'fecha_ingreso', c.fecha_ingreso, { type: 'date' })}
-      ${state.candidates.some((x) => 'fecha_baja' in x) ? field('Fecha de baja', 'fecha_baja', c.fecha_baja, { type: 'date', hint: 'Se completa sola al cancelar; corregila si la baja fue otro día.' }) : ''}
-      <fieldset class="field--wide"><legend>Motivos de baja (si se cancela)</legend>
-        <div class="checks">${MOTIVOS.map((m) => html`<label class="check"><input type="checkbox" name="motivo" value="${m}" ${raw(c.motivos_baja?.includes(m) ? 'checked' : '')}> ${m}</label>`)}</div>
-      </fieldset>
-      ${field('Comentarios', 'comentarios', c.comentarios, { type: 'textarea', span: 2 })}
-      <div class="form-actions field--wide">
+      <div class="form-actions ficha-acciones">
         ${c.id ? html`<button type="button" class="btn btn--danger-ghost" data-act="delete">Eliminar</button>` : ''}
         <span class="spacer"></span>
         <button type="button" class="btn btn--ghost" data-close>Cancelar</button>
@@ -365,6 +410,19 @@ export function openCandidate(id, { volver } = {}) {
   `, { title: c.id ? c.nombre : 'Nuevo candidato', wide: true });
 
   const form = root.querySelector('#cand-form');
+  const verPane = (k) => {
+    root.querySelectorAll('.ficha-pane').forEach((p) => { p.hidden = p.dataset.pane !== k; });
+    root.querySelectorAll('[data-pane-tab]').forEach((b) => { const on = b.dataset.paneTab === k; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', String(on)); });
+  };
+  root.querySelector('.ficha-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-pane-tab]'); if (b) verPane(b.dataset.paneTab); });
+  // un dato inválido en otra pestaña: mostrar esa pestaña para poder corregirlo
+  form.addEventListener('invalid', (e) => { const p = e.target.closest('.ficha-pane'); if (p?.hidden) verPane(p.dataset.pane); }, true);
+  root.querySelector('.etapas')?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-etapa]'); if (!b) return;
+    form.elements.stage.value = b.dataset.etapa;
+    marcarEtapas(root, b.dataset.etapa);
+  });
+  form.elements.stage.addEventListener('change', () => marcarEtapas(root, form.elements.stage.value));
   // Fechas que mandan la etapa: se muestra al instante lo que la base va a aplicar.
   const HITO_CAMPOS = ['en_entrevista', 'validacion_rrll', 'epo', 'aptitud_recibida', 'aptitud', 'fecha_ingreso', 'interconsulta', 'interconsulta_cierre'];
   const hint = document.createElement('p');
@@ -428,6 +486,8 @@ export function openCandidate(id, { volver } = {}) {
   });
 
   bindExamen(root);
+  form.addEventListener('change', () => marcarEtapas(root, form.elements.stage.value));
+  marcarEtapas(root, c.stage);
   root.addEventListener('click', (e) => {
     const b = e.target.closest('[data-aviso-open]'); if (b) openAvisoDrawer(b.dataset.avisoOpen);
     if (volver && e.target.closest('[data-act="volver"]')) { closeDrawer(); volver(); }
@@ -546,4 +606,24 @@ async function sincronizarPersona(c, data) {
   if (!(await confirmDialog(`¿Actualizar también estos datos en sus otras ${otras.length === 1 ? 'entrevista' : `${otras.length} entrevistas`}?`, { ok: 'Actualizar' }))) return;
   const { error } = await sb.from('candidates').update(cambios).in('id', otras.map((x) => x.id));
   if (error) toast(error.message, 'error');
+}
+
+// Línea de etapas de la ficha: clic en una etapa la elige (se guarda con "Guardar")
+const ETAPAS_LINEA = () => state.stages.filter((x) => !['sin_candidato', 'cancelado'].includes(x.code));
+function etapasLinea(c) {
+  return html`<ol class="etapas" aria-label="Etapas">${ETAPAS_LINEA().map((x) => html`<li><button type="button" data-etapa="${x.code}" title="Pasar a ${x.label}">
+    <i aria-hidden="true"></i><span>${x.label}</span></button></li>`)}
+    <li class="etapa-cancel"><button type="button" data-etapa="cancelado"><i aria-hidden="true"></i><span>Cancelado</span></button></li></ol>
+`;
+}
+function marcarEtapas(root, code) {
+  const orden = ETAPAS_LINEA().map((x) => x.code);
+  const idx = orden.indexOf(code);
+  root.querySelectorAll('.etapas [data-etapa]').forEach((b) => {
+    const i = orden.indexOf(b.dataset.etapa);
+    const li = b.parentElement;
+    li.classList.toggle('is-hecha', code !== 'cancelado' && i >= 0 && i < idx);
+    li.classList.toggle('is-actual', b.dataset.etapa === code);
+  });
+  root.querySelector('.etapas')?.classList.toggle('is-cancelado', code === 'cancelado');
 }
