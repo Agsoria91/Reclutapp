@@ -6,6 +6,7 @@ import { state, loadAll } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
 import { fmtDate } from '../lib/format.js';
 import { openDrawer, closeDrawer, toast } from './ui.js';
+import { sigueEnOtroProceso } from '../lib/entrevistasPersona.js';
 
 // Desde cuándo existe la función: las bajas anteriores no se piden avisar.
 const LANZAMIENTO = '2026-11-15';
@@ -87,6 +88,7 @@ export function pendientesDeAviso() {
     const tipo = tipoSugerido(c);
     if (!tipo) return false;
     if (tipo === 'baja' && !(c.fecha_baja && c.fecha_baja >= LANZAMIENTO)) return false;
+    if (tipo === 'baja' && sigueEnOtroProceso(c)) return false;
     return !avisosDe(c).some((a) => a.tipo === tipo);
   });
 }
@@ -177,6 +179,7 @@ export function avisoBar(c) {
 export function avisarCambioDeEtapa(id, etapaAnterior) {
   const c = state.candidates.find((x) => x.id === id);
   if (!c || !etapaAnterior || c.stage === etapaAnterior) return;
+  if (tipoSugerido(c) === 'baja' && sigueEnOtroProceso(c)) return;
   const lab = (s) => state.stageMap[s]?.label || s;
   openAvisoDrawer(id, { tipo: tipoSugerido(c) || 'novedad', cambio: { de: lab(etapaAnterior), a: lab(c.stage) } });
 }

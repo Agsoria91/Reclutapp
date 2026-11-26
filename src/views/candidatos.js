@@ -16,6 +16,7 @@ import { openAssignFromCandidate } from './asignar.js';
 import { celebrate } from './posiciones.js';
 import { preingresoFields } from '../components/ingreso.js';
 import { examenFields, bindExamen } from '../components/examen.js';
+import { otrasEntrevistas, sigueEnOtroProceso, CAMPOS_PERSONA, cvCompartido } from '../lib/entrevistasPersona.js';
 
 // Dimensiones de filtro cruzado: tocar una barra filtra por ese valor y todo
 // lo demás se recalcula. Cada gráfico se calcula con TODOS los filtros menos
@@ -221,6 +222,9 @@ function listSection(today, all) {
   rows = [...rows].sort((a, b) => (stageOrder(a.stage) === 99) - (stageOrder(b.stage) === 99) ||
     stageOrder(b.stage) - stageOrder(a.stage) || (b.created_origen || '').localeCompare(a.created_origen || ''));
   const shown = rows.slice(0, page * PAGE);
+  const porDni = countBy(state.candidates.filter((c) => String(c.dni || '').replace(/\D/g, '')), (c) => String(c.dni).replace(/\D/g, ''));
+  const nEnt = new Map(porDni);
+  const entDe = (c) => nEnt.get(String(c.dni || '').replace(/\D/g, '')) || 0;
   return html`<section class="card">
     <header class="list-head">
       <h2 class="card-title">Listado <small class="muted">${rows.length} candidatos</small></h2>
@@ -231,7 +235,7 @@ function listSection(today, all) {
     ${rows.length ? html`<div class="table-wrap"><table class="tbl tbl--cand is-clickable">
       <thead><tr><th>Nombre</th><th>Etapa</th><th class="hide-sm">Área · Servicio</th><th class="hide-sm">Posición</th><th class="hide-sm">Procedencia</th><th class="hide-sm">Localidad</th><th>Silla</th><th class="hide-sm num">Días</th><th class="hide-sm">CV</th></tr></thead>
       <tbody>${shown.map((c) => html`<tr data-id="${c.id}" tabindex="0">
-        <td data-th="Nombre"><strong>${c.nombre}</strong></td>
+        <td data-th="Nombre"><strong>${c.nombre}</strong>${entDe(c) > 1 ? html` <span class="tag" title="Tiene otras entrevistas">${entDe(c)} entrevistas</span>` : ''}</td>
         <td data-th="Etapa">${stagePill(c.stage, { small: true })}</td>
         <td data-th="Área" class="hide-sm">${[c.area, c.servicio].filter(Boolean).join(' · ')}</td>
         <td data-th="Posición" class="hide-sm">${c.posicion || ''}</td>
@@ -324,6 +328,7 @@ export function openCandidate(id, { volver } = {}) {
       ${(c._ternas || []).filter((p) => p.candidate_id !== c.id).length ? html`<div class="field--wide small muted">También en la terna de:
         ${(c._ternas || []).filter((p) => p.candidate_id !== c.id).map((p) => html`<span class="chip">${p.puesto} · ${p.yacimiento}${p.candidato_nombre ? ` (principal: ${p.candidato_nombre})` : ''}</span>`)}</div>` : ''}
     </div>
+    ${entrevistasBox(c)}
     <div class="cv-box">
       <span class="muted">CV</span>
       ${c.cv_path ? html`<button type="button" class="btn btn--ghost" data-act="cv-open">Ver CV</button>
@@ -401,12 +406,17 @@ export function openCandidate(id, { volver } = {}) {
     data.cancelado = data.stage === 'cancelado';
     data.entrevista_ok = stageOrder(data.stage) >= stageOrder('entrevista_aprobada') && !data.cancelado;
     data.listo_ingreso = ['proximo_ingreso', 'ingresado'].includes(data.stage);
+    if (data.stage === 'cancelado' && c.stage !== 'cancelado' && sigueEnOtroProceso(c)) {
+      const sigue = otrasEntrevistas(c).filter((x) => x.stage !== 'cancelado');
+      toast(`Se cancela solo esta entrevista. Sigue en proceso para ${sigue.map((x) => x.servicio || x.area || x.posicion || 'otra entrevista').join(', ')}.`);
+    }
     if (data.stage === 'cancelado' && c._silla &&
         !(await confirmDialog(`Al cancelar a ${c.nombre}, la silla "${c._silla.puesto}" queda libre. ¿Seguimos?`, { ok: 'Cancelar candidato', danger: true }))) return;
     const btn = e.submitter; btn.disabled = true;
     const { error } = c.id ? await sb.from('candidates').update(data).eq('id', c.id) : await sb.from('candidates').insert(data);
     btn.disabled = false;
     if (error) return toast(error.message, 'error');
+    if (c.id) await sincronizarPersona(c, data);
     const ingreso = data.stage === 'ingresado' && c.stage !== 'ingresado';
     toast(ingreso && c._silla ? '¡Ingreso confirmado! Se creó el legajo.' : 'Candidato guardado', 'ok');
     closeDrawer();
@@ -426,6 +436,9 @@ export function openCandidate(id, { volver } = {}) {
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (act === 'seat') { closeDrawer(); openAssignFromCandidate(c); }
     if (act === 'terna') { closeDrawer(); openAssignFromCandidate(c, { mode: 'terna' }); }
+    if (act === 'nueva-ent') { closeDrawer(); nuevaEntrevista(c); }
+    const otra = e.target.closest('[data-otra-ent]');
+    if (otra) { closeDrawer(); openCandidate(otra.dataset.otraEnt); }
     if (act === 'cv-open') {
       const { data, error } = await sb.storage.from('cvs').createSignedUrl(c.cv_path, 120);
       if (error) return toast(error.message, 'error');
@@ -433,14 +446,14 @@ export function openCandidate(id, { volver } = {}) {
     }
     if (act === 'cv-del') {
       if (!(await confirmDialog('¿Quitar el CV de este candidato?', { ok: 'Quitar', danger: true }))) return;
-      await sb.storage.from('cvs').remove([c.cv_path]);
+      if (!cvCompartido(c.cv_path, c.id)) await sb.storage.from('cvs').remove([c.cv_path]);
       const { error } = await sb.from('candidates').update({ cv_path: null }).eq('id', c.id);
       if (error) return toast(error.message, 'error');
       toast('CV quitado', 'ok'); closeDrawer(); loadAll({ silent: true });
     }
     if (act === 'delete') {
       if (!(await confirmDialog(`¿Eliminar a ${c.nombre} del pipeline? Se pierde su ficha y su CV.`, { ok: 'Eliminar', danger: true }))) return;
-      if (c.cv_path) await sb.storage.from('cvs').remove([c.cv_path]);
+      if (c.cv_path && !cvCompartido(c.cv_path, c.id)) await sb.storage.from('cvs').remove([c.cv_path]);
       const { error } = await sb.from('candidates').delete().eq('id', c.id);
       if (error) return toast(error.message, 'error');
       toast('Candidato eliminado', 'ok'); closeDrawer(); loadAll({ silent: true });
@@ -458,10 +471,79 @@ export function openCandidate(id, { volver } = {}) {
     if (up.error) return toast(up.error.message, 'error');
     const { error } = await sb.from('candidates').update({ cv_path: path }).eq('id', c.id);
     if (error) return toast(error.message, 'error');
-    if (c.cv_path) await sb.storage.from('cvs').remove([c.cv_path]);
+    if (c.cv_path && !cvCompartido(c.cv_path, c.id)) await sb.storage.from('cvs').remove([c.cv_path]);
     toast('CV guardado', 'ok');
     closeDrawer();
     await loadAll({ silent: true });
     openCandidate(c.id);
   });
+}
+
+// ---------------------------------------------------------------------------
+// Varias entrevistas de la misma persona (vinculadas por DNI)
+// ---------------------------------------------------------------------------
+function entrevistasBox(c) {
+  const otras = otrasEntrevistas(c);
+  return html`<div class="ent-box">
+    <div><span class="muted">Entrevistas de esta persona</span>
+      <div class="ent-lista">
+        <span class="chip is-actual">${[c.area, c.servicio].filter(Boolean).join(' · ') || c.posicion || 'Esta entrevista'} · ${state.stageMap[c.stage]?.label || c.stage}</span>
+        ${otras.map((x) => html`<button type="button" class="chip" data-otra-ent="${x.id}">${[x.area, x.servicio].filter(Boolean).join(' · ') || x.posicion || 'Entrevista'} · ${state.stageMap[x.stage]?.label || x.stage}</button>`)}
+      </div>
+    </div>
+    <button type="button" class="btn" data-act="nueva-ent">＋ Nueva entrevista</button>
+  </div>`;
+}
+
+function nuevaEntrevista(c) {
+  if (!String(c.dni || '').replace(/\D/g, '')) {
+    toast('Cargá el DNI en la ficha para vincular las entrevistas de la persona.', 'error');
+    openCandidate(c.id);
+    return;
+  }
+  const root = openDrawer(html`<form id="ent-form" class="form-grid">
+      ${pickField('Área', 'area', '', [state.candidates.map((x) => x.area), state.positions.map((x) => x.yacimiento)])}
+      ${pickField('Servicio / Sector', 'servicio', '', state.candidates.map((x) => x.servicio))}
+      ${pickField('Posición', 'posicion', c.posicion, state.candidates.map((x) => x.posicion))}
+      ${field('En entrevista', 'en_entrevista', todayISO(), { type: 'date' })}
+      ${field('Comentarios', 'comentarios', '', { type: 'textarea', span: 2 })}
+      <div class="form-actions field--wide">
+        <span class="spacer"></span>
+        <button type="button" class="btn btn--ghost" data-act="volver-ent">Cancelar</button>
+        <button type="submit" class="btn btn--primary">Crear entrevista</button>
+      </div>
+    </form>`, { title: `Nueva entrevista · ${c.nombre}` });
+  root.querySelector('[data-act="volver-ent"]').addEventListener('click', () => { closeDrawer(); openCandidate(c.id); });
+  root.querySelector('#ent-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = formData(e.target);
+    if (!f.area && !f.servicio) return toast('Indicá el área o el sector de la entrevista', 'error');
+    const data = Object.fromEntries(CAMPOS_PERSONA.map((k) => [k, c[k] ?? null]));
+    Object.assign(data, f, {
+      stage: f.en_entrevista ? 'entrevista' : 'cv_recibido',
+      cv_recibido: c.cv_recibido || todayISO(), cv_path: c.cv_path || null, motivos_baja: [],
+      cancelado: false, entrevista_ok: false, listo_ingreso: false,
+    });
+    const btn = e.submitter; btn.disabled = true;
+    const { data: nuevo, error } = await sb.from('candidates').insert(data).select('id').single();
+    btn.disabled = false;
+    if (error) return toast(error.message, 'error');
+    toast('Entrevista creada', 'ok');
+    closeDrawer();
+    await loadAll({ silent: true });
+    openCandidate(nuevo.id);
+  });
+}
+
+// Si se corrigen datos de la persona, ofrecer pasarlos a sus otras entrevistas.
+async function sincronizarPersona(c, data) {
+  const otras = otrasEntrevistas(c);
+  if (!otras.length) return;
+  const cambios = Object.fromEntries(CAMPOS_PERSONA
+    .filter((k) => k in data && String(data[k] ?? '') !== String(c[k] ?? ''))
+    .map((k) => [k, data[k]]));
+  if (!Object.keys(cambios).length) return;
+  if (!(await confirmDialog(`¿Actualizar también estos datos en sus otras ${otras.length === 1 ? 'entrevista' : `${otras.length} entrevistas`}?`, { ok: 'Actualizar' }))) return;
+  const { error } = await sb.from('candidates').update(cambios).in('id', otras.map((x) => x.id));
+  if (error) toast(error.message, 'error');
 }

@@ -250,7 +250,7 @@ h1 {
 .drawer-body { padding: 20px 24px 32px; }
 fieldset { border-radius: 0; border: 1px dotted var(--rule); }
 fieldset.sensitive { border: 1px dotted var(--st-orange); }
-.seat-box, .cv-box, .terna-box, .secret { border-radius: 0; background: transparent; border: 1px dotted var(--rule); }
+.seat-box, .cv-box, .ent-box, .terna-box, .secret { border-radius: 0; background: transparent; border: 1px dotted var(--rule); }
 .seat-name, .ing-name { font: 700 18px var(--font-sans); letter-spacing: -.02em; }
 .terna-list li { border-radius: 0; background: color-mix(in srgb, var(--text) 4%, transparent); }
 .pick { border-radius: 0; background: transparent; border: 1px dotted var(--rule); font-family: var(--font-sans); }
