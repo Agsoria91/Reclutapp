@@ -38,9 +38,10 @@ function mesesDisponibles() {
   return out.reverse();
 }
 function presetsMeses(disp) {
-  const hoy = todayISO().slice(0, 7); const y = Number(hoy.slice(0, 4));
-  return [['Este mes', [hoy]], ['Últimos 3 meses', disp.slice(0, 3)], ['Últimos 6 meses', disp.slice(0, 6)],
-    [`Año ${y}`, disp.filter((m) => m.startsWith(String(y)))], [`Año ${y - 1}`, disp.filter((m) => m.startsWith(String(y - 1)))]]
+  const hoy = todayISO().slice(0, 7);
+  const anios = [...new Set(disp.map((m) => m.slice(0, 4)))];
+  return [['Todo', disp], ['Este mes', [hoy]], ['Últimos 3 meses', disp.slice(0, 3)], ['Últimos 6 meses', disp.slice(0, 6)],
+    ...anios.map((y) => [`Año ${y}`, disp.filter((m) => m.startsWith(y))])]
     .filter(([, v]) => v.length);
 }
 
