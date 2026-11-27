@@ -81,6 +81,7 @@ async function servidor() {
   await tab(p, 'perfil'); await snap(p, '16b-nomina-perfil');
   await tab(p, 'listado'); await snap(p, '17-nomina-listado');
   await go(p, 'importar'); await snap(p, '18-importar');
+  await go(p, 'revisar', 1200); await snap(p, '18b-revisar');
   await go(p, 'reunion', 1500); await snap(p, '19-reunion');
   // pantallas y paneles adicionales
   const abrir = async (js, name) => { await p.evaluate(js); await p.waitForTimeout(700); await snap(p, name); await p.keyboard.press('Escape'); await p.waitForTimeout(300); await p.evaluate(async () => { (await import('/src/components/ui.js')).closeDrawer(); document.querySelectorAll('dialog').forEach((d) => d.remove()); }); };

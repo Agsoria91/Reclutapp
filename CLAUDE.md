@@ -38,7 +38,7 @@ ingreso → legajo/nómina. La usa RRHH a diario y jefaturas/gerencias como lect
 - `src/main.js`: rutas (hash), barra lateral agrupada (Cobertura / Proceso / Dotación / Administración), barra superior (buscar, campanita, Excel, compacto, tema), barra inferior en celular, transiciones.
 - `src/lib/store.js`: estado global y carga desde Supabase (qué datos viajan según el rol).
 - `src/lib/kpis.js`: cálculos puros (cobertura, días en etapa con plazos, avance del período…). Tienen pruebas en `tests/`.
-- Pantallas en `src/views/`: posiciones (Mapa de sillas · Por mes objetivo · Por etapa), mapa (Leaflet satelital, inicio alternativo), candidatos (ficha por pestañas, varias entrevistas por DNI, próximo paso, filtros rápidos), agenda (mes/semana, feriados), entrevistas, exámenes, ingresos, legajos, nómina (Resumen · Gráficos · Perfil · Listado, diferencias con SAP, plazos fijos), dashboardpj, importar, usuarios, reunión (diapositivas 16:9), presentar, historial, login.
+- Pantallas en `src/views/`: posiciones (Mapa de sillas · Por mes objetivo · Por etapa), mapa (Leaflet satelital, inicio alternativo), candidatos (ficha por pestañas, varias entrevistas por DNI, próximo paso, filtros rápidos), agenda (mes/semana, feriados), entrevistas, exámenes, ingresos, legajos, nómina (Resumen · Gráficos · Perfil · Listado, diferencias con SAP, plazos fijos), dashboardpj, importar, revisar (Revisar datos: ya en nómina, duplicados sin DNI, fechas de ingreso, localidades con distinta grafía y unificar, sin DNI avanzados; lógica en `src/lib/revisar.js`), usuarios, reunión (diapositivas 16:9), presentar, historial, login.
 - Componentes en `src/components/`: `ui.js` (paneles, avisos con Deshacer, filtros), `avisos.js` (plantillas WhatsApp/mail, incluye turnos por clínica), `paraHoy.js` (franja + campanita), `cumples.js` (cumpleaños y aniversarios), `buscador.js` (Ctrl+K), `tarjetaFlotante.js`, `detalleGrafico.js`, `moderno.js`, `iconos.js`, `examen.js`, `ingreso.js`, `folds.js`.
 - Datos fijos en `src/data/`: `yacimientos.js` (códigos y coordenadas), `feriados.js` (2026 oficial, 2027 por ley; agregar días puente 2027 cuando se publiquen), `areas-neuquen.json` (áreas de concesión oficiales).
 - Estilos: `src/styles/tokens.css` → `app.css` (base) → `iris.css` (estilo actual: IRIS con paleta EFiS, claro/oscuro/automático). `src/views/reunion.css` para las diapositivas. Colores por yacimiento en `src/lib/coloresYac.js`.
@@ -51,7 +51,7 @@ Triggers relevantes: `tg_candidates_hitos` (las fechas adelantan la etapa salvo 
 ## Pruebas
 
 - Unitarias: `npm test` (`tests/*.test.js`).
-- Visuales: `npm run visual:base` (antes) → `npm run visual:nuevo` (después) → `npm run visual:comparar`. 67 pantallas con datos ficticios; ver `tests/visual/README.md`. Al agregar una pantalla, sumarla en `tests/visual/pantallas.cjs`.
+- Visuales: `npm run visual:base` (antes) → `npm run visual:nuevo` (después) → `npm run visual:comparar`. 68 pantallas con datos ficticios; ver `tests/visual/README.md`. Al agregar una pantalla, sumarla en `tests/visual/pantallas.cjs`.
 - Lección aprendida: al "limpiar" CSS no basta con las capturas (hay elementos transitorios: avisos, estados vacíos, diálogos). Solo quitar reglas que nombran clases inexistentes en el código.
 
 ## Historial de decisiones
@@ -63,6 +63,7 @@ Triggers relevantes: `tg_candidates_hitos` (las fechas adelantan la etapa salvo 
 - "Días en etapa": CV recibido no cuenta; un turno agendado a futuro no es demora. Plazos en `PLAZOS_ETAPA` (kpis.js).
 - Cargas masivas desde planilla (ej. 27/11/2026, Well Services LT2E enero): si el candidato ya existe solo se completan campos vacíos (no se pisa nada), los nuevos entran en CV recibido, se sientan en sillas libres sin ocupar relevos; sobrantes van a la terna. Respaldo previo en `respaldo.*_AAAAMMDD`.
 - "Próximos ingresos" (pantalla Ingresos y diapositiva de reunión): solo sillas en etapa Próximo ingreso; una fecha de ingreso cargada por adelantado no alcanza.
+- Fecha de ingreso: `positions.ingreso_previsto` (planificada) separada de `fecha_ingreso` (confirmada, solo en Próximo ingreso/Ingresado). La importación de sillas manda la fecha a prevista si la silla no está en esas etapas.
 - POS SAP: el maestro SAP manda; si quien figura en SAP está de baja en nómina, la POS se considera libre.
 
 ## Pendientes

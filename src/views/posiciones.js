@@ -447,7 +447,8 @@ export function openEditor(id) {
       ${linked ? '' : field('Persona (texto libre)', 'candidato_nombre', p.candidato_nombre, { hint: 'Para movimientos internos o gente sin ficha.' })}
       ${field('Fecha inicio búsqueda', 'fecha_inicio', p.fecha_inicio, { type: 'date' })}
       ${field('Mes objetivo', 'fecha_objetivo', p.fecha_objetivo ? p.fecha_objetivo.slice(0, 7) : '', { type: 'month', hint: 'Solo importa mes y año.' })}
-      ${field('Fecha de ingreso', 'fecha_ingreso', p.fecha_ingreso, { type: 'date' })}
+      ${field('Ingreso previsto', 'ingreso_previsto', p.ingreso_previsto, { type: 'date' })}
+      ${field('Fecha de ingreso confirmada', 'fecha_ingreso', p.fecha_ingreso, { type: 'date' })}
       ${convenioFields(p)}
       ${field('Básico (sensible)', 'basico', p.basico, { type: 'number', step: '0.01' })}
       ${field('Id SAP', 'id_sap', p.id_sap)}

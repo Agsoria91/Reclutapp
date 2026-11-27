@@ -25,7 +25,7 @@ export function render(el) {
   const sillas = state.positions.filter((p) => p.stage === 'proximo_ingreso')
     .map((p) => ({ p, c: p.candidate_id ? byId.get(p.candidate_id) : null }))
     .map((x) => ({ ...x, prog: preingresoProgress(x.c) }))
-    .sort((a, b) => (a.p.fecha_ingreso || '9999').localeCompare(b.p.fecha_ingreso || '9999') || a.prog.done - b.prog.done);
+    .sort((a, b) => (a.p.fecha_ingreso || a.p.ingreso_previsto || '9999').localeCompare(b.p.fecha_ingreso || b.p.ingreso_previsto || '9999') || a.prog.done - b.prog.done);
   const sinSilla = state.candidates.filter((c) => c.stage === 'proximo_ingreso' && !c._silla);
   const completos = sillas.filter((x) => x.c && !x.prog.missing.length).length;
   const okDe = (x) => x.c && !x.prog.missing.length;
@@ -73,7 +73,7 @@ function card(p, c, prog) {
       ${stagePill(p.stage, { small: true })}
     </header>
     <div class="ing-meta">
-      <span>Ingreso: <b>${p.fecha_ingreso ? fmtDate(p.fecha_ingreso) : 'a definir'}</b></span>
+      <span>Ingreso: <b>${p.fecha_ingreso ? fmtDate(p.fecha_ingreso) : p.ingreso_previsto ? `previsto ${fmtDate(p.ingreso_previsto)}` : 'a definir'}</b></span>
       <span class="muted">${[p.procedencia, p.localidad].filter(Boolean).join(' · ')}</span>
     </div>
     ${c ? html`
@@ -94,7 +94,7 @@ function card(p, c, prog) {
 function openForm(p, c) {
   const root = openDrawer(html`<form id="ing-form" class="form-grid">
     <p class="field--wide muted">${p.puesto} · ${p.yacimiento} · ${p.sector || ''}</p>
-    ${field('Fecha de ingreso', 'fecha_ingreso', p.fecha_ingreso, { type: 'date', hint: 'Se guarda en la silla.' })}
+    ${field('Fecha de ingreso confirmada', 'fecha_ingreso', p.fecha_ingreso, { type: 'date', hint: p.ingreso_previsto ? `Previsto: ${fmtDate(p.ingreso_previsto)}` : '' })}
     ${preingresoFields(c)}
     <div class="form-actions field--wide"><span class="spacer"></span>
       <button type="button" class="btn btn--ghost" data-close>Cancelar</button>
