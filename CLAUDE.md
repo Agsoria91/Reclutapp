@@ -46,7 +46,7 @@ ingreso → legajo/nómina. La usa RRHH a diario y jefaturas/gerencias como lect
 ## Base de datos (tablas principales)
 
 `positions` (sillas), `candidates`, `position_candidates` (ternas), `position_history`, `nomina`, `sap_posiciones` (maestro SAP, solo RRHH), `stages` (etapas), `avisos` y `plantillas_aviso`, `vacantes_pj` (+ `_importaciones`), `staff` (RRHH), `lectores`, `stage_aliases`. Vistas para lectores: `positions_public`, `candidates_public`.
-Triggers relevantes: `tg_candidates_hitos` (las fechas adelantan la etapa salvo que la etapa se elija a mano), `tg_candidates_after` (sincroniza la silla), `tg_touch` (updated_by), historial de sillas. Función `nombre_de_usuario(uuid)` para "Modificado por" (solo RRHH).
+Triggers relevantes: `tg_candidates_hitos` (las fechas adelantan la etapa salvo que la etapa se elija a mano), `tg_candidates_after` (sincroniza la silla: etapa, nombre, localidad y procedencia salen siempre de la ficha del candidato), `tg_touch` (updated_by), historial de sillas. Función `nombre_de_usuario(uuid)` para "Modificado por" (solo RRHH).
 
 ## Pruebas
 
