@@ -78,6 +78,12 @@ const getters = {
 const edad = (n) => (n.fecha_nacimiento ? Math.floor(daysBetween(n.fecha_nacimiento, todayISO()) / 365.25) : null);
 
 
+// Plazos fijos a revisar (vencidos o que vencen en los próximos N días)
+let vistaPf = null;
+export function elegirPlazos(dias) { vistaPf = dias; subTab = 'listado'; saveLocal('reclutapp.nom.tab', 'listado'); }
+const sumarDias = (iso, n) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+export const plazoARevisar = (n, dias, hoy = todayISO()) => n.estado === 'activo' && !!n.fin_pf && n.fin_pf <= sumarDias(hoy, dias);
+
 function filterRows(except, { sinMeses = false } = {}) {
   const porMes = meses.size && !sinMeses;
   return state.nomina.filter((n) => DIMS.every((d) => d === except || (porMes && d === 'estado') || !filters[d].size || [].concat(getters[d](n)).some((v) => filters[d].has(v)))
@@ -100,7 +106,8 @@ export function render(el) {
     const q = norm(search);
     rows = rows.filter((n) => norm([n.nombre, n.dni, n.cuil, n.nro_pers, n.pos, n.funcion, n.titling, n.jefe, n.ceco].join(' ')).includes(q));
   }
-  rows = [...rows].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  if (vistaPf) rows = rows.filter((n) => plazoARevisar(n, vistaPf));
+  rows = [...rows].sort((a, b) => (vistaPf ? a.fin_pf.localeCompare(b.fin_pf) : 0) || a.nombre.localeCompare(b.nombre, 'es'));
   const shown = rows.slice(0, page * PAGE);
   const hoy = todayISO();
   const pfProx = base.filter((n) => n.fin_pf && n.fin_pf >= hoy && daysBetween(hoy, n.fin_pf) <= 60).length;
@@ -122,6 +129,8 @@ export function render(el) {
       if (act === 'more') { page++; render(el); return; }
       if (act === 'm-filtros') { filtrosAbiertos = !filtrosAbiertos; render(el); return; }
       if (act === 'm-tab') { subTab = e.target.closest('[data-tab]').dataset.tab; saveLocal('reclutapp.nom.tab', subTab); render(el); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+      if (act === 'm-pf') { vistaPf = vistaPf === 60 ? null : 60; if (vistaPf) subTab = 'listado'; page = 1; render(el); return; }
+      if (act === 'm-pf-off') { vistaPf = null; page = 1; render(el); return; }
       if (act === 'm-pend') { filters.pendiente = new Set([e.target.closest('[data-value]').dataset.value]); subTab = 'listado'; page = 1; render(el); return; }
       if (act === 'm-limpiar') { DIMS.forEach((d) => { filters[d] = new Set(d === 'estado' ? ['activo'] : []); }); meses = new Set(); saveLocal('reclutapp.nom.meses', []); page = 1; render(el); return; }
       if (act === 'export') return exportCSV(currentRows(el));
@@ -353,7 +362,7 @@ function coberturaDotacion() {
 
 function tablaPersonal(rows, shown) {
   return rows.length ? html`<div class="table-wrap"><table class="tbl tbl--tarjetas is-clickable">
-      <thead><tr><th>Nombre</th><th>DNI</th><th class="hide-sm">Nº pers.</th><th class="hide-sm">Yac. · Sector</th><th class="hide-sm">Función</th><th class="hide-sm">Cat.</th><th class="hide-sm">Diagrama</th><th class="hide-sm">Jefe</th><th>Ingreso</th><th class="hide-sm num">Edad</th><th>Pend.</th></tr></thead>
+      <thead><tr><th>Nombre</th><th>DNI</th><th class="hide-sm">Nº pers.</th><th class="hide-sm">Yac. · Sector</th><th class="hide-sm">Función</th><th class="hide-sm">Cat.</th><th class="hide-sm">Diagrama</th><th class="hide-sm">Jefe</th><th>Ingreso</th>${vistaPf ? html`<th>Fin plazo fijo</th>` : ''}<th class="hide-sm num">Edad</th><th>Pend.</th></tr></thead>
       <tbody>${shown.map((n) => {
         const pend = pendientes(n).filter((p) => p !== 'Al día');
         return html`<tr data-id="${n.id}" tabindex="0" class="${n.estado === 'baja' ? 'is-off' : ''}">
@@ -366,6 +375,7 @@ function tablaPersonal(rows, shown) {
           <td data-th="Diagrama" class="hide-sm">${n.diagrama || ''}</td>
           <td data-th="Jefe" class="hide-sm">${n.jefe || ''}</td>
           <td data-th="Ingreso">${fmtDate(n.fecha_ingreso)}</td>
+          ${vistaPf ? html`<td data-th="Fin plazo fijo" class="${n.fin_pf < todayISO() ? 'is-late-txt' : ''}"><b>${fmtDate(n.fin_pf)}</b> <small class="muted">${n.fin_pf < todayISO() ? 'vencido' : `en ${daysBetween(todayISO(), n.fin_pf)} días`}</small></td>` : ''}
           <td data-th="Edad" class="hide-sm num">${edad(n) ?? ''}</td>
           <td data-th="Pend.">${pend.map((p) => html`<span class="tag tag--late">${p}</span> `)}</td>
         </tr>`;
@@ -442,11 +452,11 @@ function vistaModerna({ base, rows, shown, recientes, pfProx }) {
       <div class="mk-row">${num(recientes, 'rec')}</div>
       <span class="mk-sub">${porc(recientes, base.length)}% de la dotación</span>
     </div>
-    <div class="mk ${pfProx ? 'mk--alerta' : ''}">
+    <button type="button" class="mk mk--btn ${pfProx ? 'mk--alerta' : ''} ${vistaPf === 60 ? 'is-sel' : ''}" data-act="m-pf">
       <div class="mk-top"><span class="mk-ico">${icono('reloj')}</span><span class="mk-lbl">Plazos fijos ≤ 60 días</span></div>
       <div class="mk-row">${num(pfProx, 'pf')}</div>
-      <span class="mk-sub">${pfProx ? 'revisar renovaciones' : 'sin vencimientos'}</span>
-    </div>
+      <span class="mk-sub">${pfProx ? 'revisar renovaciones' : 'sin vencimientos'}${pfProx ? html`<b class="mk-go"> · ${vistaPf === 60 ? 'mostrando ✓' : 'ver'}</b>` : ''}</span>
+    </button>
   </section>
 
   <nav class="m-tabs" aria-label="Vistas de nómina">
@@ -470,6 +480,8 @@ function vistaModerna({ base, rows, shown, recientes, pfProx }) {
       <article class="card"><h2 class="card-title">Por sector</h2>${bars(countBy(filterRows('sector'), getters.sector), { color: 'green', dim: 'sector', selected: filters.sector, chart: 'n-sec', limit: 12 })}</article>
     </section>
     <section class="card"><h2 class="card-title">Encuadre</h2>${bars(countBy(filterRows('encuadre'), getters.encuadre), { dim: 'encuadre', selected: filters.encuadre })}</section>` : ''}
-  ${tab === 'listado' ? html`<section class="card m-lista">${tablaPersonal(rows, shown)}</section>` : ''}
+  ${tab === 'listado' ? html`<section class="card m-lista">
+    ${vistaPf ? html`<div class="m-chips"><button type="button" class="m-chip" data-act="m-pf-off">Plazos fijos vencidos o que vencen en ${vistaPf} días <span aria-hidden="true">✕</span></button></div>` : ''}
+    ${tablaPersonal(rows, shown)}</section>` : ''}
   </div>`;
 }

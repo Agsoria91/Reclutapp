@@ -13,6 +13,7 @@ const masDias = (iso, n) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDa
 function items() {
   const hoy = todayISO();
   const semana = masDias(hoy, 7);
+  const semana30 = masDias(hoy, 30); // plazos fijos: aviso con 30 días para decidir la renovación
   const byId = new Map(state.candidates.map((c) => [c.id, c]));
   const ingresosSemana = state.positions.filter((p) => p.stage === 'proximo_ingreso' && p.fecha_ingreso && p.fecha_ingreso >= hoy && p.fecha_ingreso <= semana)
     .filter((p) => { const c = byId.get(p.candidate_id); return !c || preingresoProgress(c).missing.length; });
@@ -22,6 +23,8 @@ function items() {
     ['demorados', state.candidates.filter((c) => estaDemorado(c, hoy)).length, (n) => `${n} ${n === 1 ? 'proceso demorado' : 'procesos demorados'}`, 'alerta'],
     ['interconsulta', state.candidates.filter((c) => c.epo && estadoMedico(c).code === 'interconsulta').length, (n) => `${n} ${n === 1 ? 'interconsulta abierta' : 'interconsultas abiertas'}`, 'aviso'],
     ['ingresos', ingresosSemana.length, (n) => `${n} ${n === 1 ? 'ingreso' : 'ingresos'} esta semana con datos faltantes`, 'aviso'],
+    ['plazos', state.nomina.filter((n) => n.estado === 'activo' && n.fin_pf && n.fin_pf <= semana30).length,
+      (n) => `${n} ${n === 1 ? 'plazo fijo vence' : 'plazos fijos vencen'} en 30 días`, state.nomina.some((n) => n.estado === 'activo' && n.fin_pf && n.fin_pf < hoy) ? 'alerta' : 'aviso'],
     ['vencen', state.positions.filter((p) => !isCovered(p) && monthKey(p.fecha_objetivo) === mes).length, (n) => `${n} ${n === 1 ? 'silla vence' : 'sillas vencen'} este mes`, 'neutro'],
   ].filter(([, n]) => n > 0);
 }
@@ -49,6 +52,9 @@ export async function irA(k) {
   } else if (k === 'ingresos') {
     (await import('../views/ingresos.js')).elegirVista('falta');
     location.hash = '#/ingresos';
+  } else if (k === 'plazos') {
+    (await import('../views/nomina.js')).elegirPlazos(30);
+    location.hash = '#/nomina';
   } else if (k === 'vencen') {
     (await import('../views/posiciones.js')).elegirVencenEsteMes();
     return 'redibujar';
