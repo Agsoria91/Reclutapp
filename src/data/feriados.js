@@ -1,0 +1,43 @@
+// Feriados nacionales y días no laborables de Argentina (Ley 27.399).
+// 2026: calendario oficial; días no laborables con fines turísticos según la Resolución 164/2025.
+// 2027: feriados de la ley con sus traslados. Los días puente 2027 se agregan cuando se publiquen.
+// tipo: 'feriado' (no se trabaja) · 'no_laborable' (optativo para el empleador)
+export const FERIADOS = {
+  '2026-01-01': ['Año Nuevo', 'feriado'],
+  '2026-02-16': ['Carnaval', 'feriado'],
+  '2026-02-17': ['Carnaval', 'feriado'],
+  '2026-03-23': ['Día no laborable con fines turísticos', 'no_laborable'],
+  '2026-03-24': ['Día Nacional de la Memoria por la Verdad y la Justicia', 'feriado'],
+  '2026-04-02': ['Día del Veterano y de los Caídos en Malvinas · Jueves Santo', 'feriado'],
+  '2026-04-03': ['Viernes Santo', 'feriado'],
+  '2026-05-01': ['Día del Trabajador', 'feriado'],
+  '2026-05-25': ['Revolución de Mayo', 'feriado'],
+  '2026-06-15': ['Paso a la Inmortalidad del Gral. Güemes (trasladado del 17/06)', 'feriado'],
+  '2026-06-20': ['Paso a la Inmortalidad del Gral. Belgrano', 'feriado'],
+  '2026-07-09': ['Día de la Independencia', 'feriado'],
+  '2026-07-10': ['Día no laborable con fines turísticos', 'no_laborable'],
+  '2026-08-17': ['Paso a la Inmortalidad del Gral. San Martín', 'feriado'],
+  '2026-10-12': ['Día del Respeto a la Diversidad Cultural', 'feriado'],
+  '2026-11-23': ['Día de la Soberanía Nacional (trasladado del 20/11)', 'feriado'],
+  '2026-12-07': ['Día no laborable con fines turísticos', 'no_laborable'],
+  '2026-12-08': ['Inmaculada Concepción de María', 'feriado'],
+  '2026-12-25': ['Navidad', 'feriado'],
+  '2027-01-01': ['Año Nuevo', 'feriado'],
+  '2027-02-08': ['Carnaval', 'feriado'],
+  '2027-02-09': ['Carnaval', 'feriado'],
+  '2027-03-24': ['Día Nacional de la Memoria por la Verdad y la Justicia', 'feriado'],
+  '2027-03-25': ['Jueves Santo', 'no_laborable'],
+  '2027-03-26': ['Viernes Santo', 'feriado'],
+  '2027-04-02': ['Día del Veterano y de los Caídos en Malvinas', 'feriado'],
+  '2027-05-01': ['Día del Trabajador', 'feriado'],
+  '2027-05-25': ['Revolución de Mayo', 'feriado'],
+  '2027-06-20': ['Paso a la Inmortalidad del Gral. Belgrano', 'feriado'],
+  '2027-06-21': ['Paso a la Inmortalidad del Gral. Güemes (trasladado del 17/06)', 'feriado'],
+  '2027-07-09': ['Día de la Independencia', 'feriado'],
+  '2027-08-16': ['Paso a la Inmortalidad del Gral. San Martín (trasladado del 17/08)', 'feriado'],
+  '2027-10-11': ['Día del Respeto a la Diversidad Cultural (trasladado del 12/10)', 'feriado'],
+  '2027-11-20': ['Día de la Soberanía Nacional', 'feriado'],
+  '2027-12-08': ['Inmaculada Concepción de María', 'feriado'],
+  '2027-12-25': ['Navidad', 'feriado'],
+};
+export const feriado = (iso) => FERIADOS[iso] ? { nombre: FERIADOS[iso][0], tipo: FERIADOS[iso][1] } : null;
