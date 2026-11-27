@@ -168,27 +168,42 @@ export function render(el) {
   animateIn(el);
 }
 
-// Por etapa: personas en proceso en las sillas, por sector › puesto y etapa (también para el lector)
+// Por etapa: personas en proceso en las sillas, por sector › puesto y etapa (también para el lector).
+// Las tarjetas filtran por etapa; cada sector se abre o cierra al tocarlo.
+const etSel = new Set();
+const etAbiertos = new Set();
 function resumenEtapas(base) {
-  const xs = base.filter((p) => p.stage && !['sin_candidato', 'ingresado', 'cancelado'].includes(p.stage));
-  const etapas = state.stages.filter((s) => xs.some((p) => p.stage === s.code)).sort((a, b) => a.orden - b.orden);
-  if (!xs.length) return html`<section class="card"><h2 class="card-title">Personas en proceso por etapa</h2><p class="muted">No hay sillas con personas en proceso con estos filtros.</p></section>`;
+  const todas = base.filter((p) => p.stage && !['sin_candidato', 'ingresado', 'cancelado'].includes(p.stage));
+  const etapasTodas = state.stages.filter((s) => todas.some((p) => p.stage === s.code)).sort((a, b) => a.orden - b.orden);
+  for (const c of [...etSel]) if (!etapasTodas.some((s) => s.code === c)) etSel.delete(c);
+  if (!todas.length) return html`<section class="card"><h2 class="card-title">Personas en proceso por etapa</h2><p class="muted">No hay sillas con personas en proceso con estos filtros.</p></section>`;
+  const xs = etSel.size ? todas.filter((p) => etSel.has(p.stage)) : todas;
+  const etapas = etSel.size ? etapasTodas.filter((s) => etSel.has(s.code)) : etapasTodas;
   const color = (s) => `var(--st-${s.color || 'neutral'})`;
   const cuenta = (lista, code) => lista.filter((p) => p.stage === code).length;
   const sectores = [...new Set(xs.map((p) => p.sector || 'Sin sector'))].sort((a, b) => a.localeCompare(b, 'es'));
+  const todosAbiertos = sectores.length && sectores.every((x) => etAbiertos.has(x));
   const burbuja = (n, s) => (n ? html`<span class="et-n" style="--et:${color(s)}">${n}</span>` : '');
   return html`
-  <section class="et-cards">${etapas.map((s) => html`<div class="et-card" style="--et:${color(s)}"><b>${cuenta(xs, s.code)}</b><span>${s.label}</span></div>`)}</section>
+  <section class="et-cards" role="group" aria-label="Filtrar por etapa">${etapasTodas.map((s) => html`<button type="button" class="et-card ${etSel.has(s.code) ? 'is-sel' : etSel.size ? 'is-dim' : ''}" style="--et:${color(s)}" data-et-card="${s.code}" aria-pressed="${etSel.has(s.code)}"><b>${cuenta(todas, s.code)}</b><span>${s.label}</span></button>`)}</section>
   <section class="card et-tabla-card">
-    <h2 class="card-title">Personas en proceso por etapa <small class="muted">${xs.length} · por sector y puesto</small></h2>
+    <header class="list-head">
+      <h2 class="card-title">Personas en proceso por etapa <small class="muted">${xs.length}${etSel.size ? ` · ${etapas.map((s) => s.label).join(', ')}` : ' · por sector y puesto'}</small></h2>
+      <div class="et-acciones">
+        ${etSel.size ? html`<button type="button" class="btn btn--ghost btn--sm" data-et-limpiar>Ver todas las etapas</button>` : ''}
+        <button type="button" class="btn btn--ghost btn--sm" data-et-todo>${todosAbiertos ? 'Contraer todo' : 'Expandir todo'}</button>
+      </div>
+    </header>
     <div class="table-wrap"><table class="tbl et-tabla">
       <thead><tr><th>Sector / Puesto</th>${etapas.map((s) => html`<th class="num" style="--et:${color(s)}">${s.label}</th>`)}<th class="num">Total</th></tr></thead>
       <tbody>${sectores.map((sec) => {
         const ps = xs.filter((p) => (p.sector || 'Sin sector') === sec);
+        const abierto = etAbiertos.has(sec);
         const puestos = [...new Set(ps.map((p) => p.puesto || 'Sin puesto'))].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
-        return html`<tr class="et-sector"><td colspan="${etapas.length + 2}">${sec}</td></tr>
-          ${puestos.map((pu) => { const g = ps.filter((p) => (p.puesto || 'Sin puesto') === pu); return html`<tr><td class="et-puesto">${pu}</td>${etapas.map((s) => html`<td class="num">${burbuja(cuenta(g, s.code), s)}</td>`)}<td class="num"><b>${g.length}</b></td></tr>`; })}
-          <tr class="et-sub"><td>Total ${sec}</td>${etapas.map((s) => html`<td class="num">${cuenta(ps, s.code) || ''}</td>`)}<td class="num"><b>${ps.length}</b></td></tr>`;
+        return html`<tr class="et-sector ${abierto ? 'is-abierto' : ''}" data-et-sector="${sec}" tabindex="0" aria-expanded="${abierto}">
+            <td><span class="et-flecha" aria-hidden="true">›</span>${sec} <small>${puestos.length} ${puestos.length === 1 ? 'puesto' : 'puestos'}</small></td>
+            ${etapas.map((s) => html`<td class="num">${cuenta(ps, s.code) || ''}</td>`)}<td class="num"><b>${ps.length}</b></td></tr>
+          ${abierto ? puestos.map((pu) => { const g = ps.filter((p) => (p.puesto || 'Sin puesto') === pu); return html`<tr class="et-fila"><td class="et-puesto">${pu}</td>${etapas.map((s) => html`<td class="num">${burbuja(cuenta(g, s.code), s)}</td>`)}<td class="num"><b>${g.length}</b></td></tr>`; }) : ''}`;
       })}</tbody>
       <tfoot><tr class="et-total"><td>Total</td>${etapas.map((s) => html`<td class="num">${cuenta(xs, s.code)}</td>`)}<td class="num">${xs.length}</td></tr></tfoot>
     </table></div>
@@ -267,7 +282,7 @@ function bind(el) {
   if (!el._bound) {
     el._bound = true;
     el.addEventListener('click', onClick);
-    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('tr[data-id]')) openEditor(e.target.dataset.id); });
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('tr[data-id]')) openEditor(e.target.dataset.id); if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-et-sector]')) { e.preventDefault(); e.target.click(); } });
     el.addEventListener('change', (e) => {
       const m = e.target.closest('[data-multi-opt]');
       if (m) {
@@ -359,6 +374,16 @@ function onClick(e) {
   }
   if (act === 'pos-clear') { Object.keys(posFilters).forEach((d) => { posFilters[d] = new Set(); }); soloPendientes = false; vista = null; persist(); render(el); return; }
   if (act === 'pos-solo-pend') { soloPendientes = false; persist(); render(el); return; }
+  const etc = e.target.closest('[data-et-card]');
+  if (etc) { const k = etc.dataset.etCard; if (etSel.has(k)) etSel.delete(k); else etSel.add(k); render(el); return; }
+  if (e.target.closest('[data-et-limpiar]')) { etSel.clear(); render(el); return; }
+  const ets = e.target.closest('[data-et-sector]');
+  if (ets) { const k = ets.dataset.etSector; if (etAbiertos.has(k)) etAbiertos.delete(k); else etAbiertos.add(k); render(el); return; }
+  if (e.target.closest('[data-et-todo]')) {
+    const secs = [...el.querySelectorAll('[data-et-sector]')].map((r) => r.dataset.etSector);
+    const abrir = !secs.every((x) => etAbiertos.has(x));
+    secs.forEach((x) => (abrir ? etAbiertos.add(x) : etAbiertos.delete(x))); render(el); return;
+  }
   const hoy = e.target.closest('[data-hoy]');
   if (hoy) { irA(hoy.dataset.hoy).then((r) => { if (r === 'redibujar') { saveLocal('reclutapp.tab.posiciones', 'mapa'); render(el); } }); return; }
   if (act === 'pos-vista-off') { vista = null; render(el); return; }
