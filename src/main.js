@@ -281,6 +281,7 @@ function alternarCampana(btn) {
   pop.style.right = Math.max(12, window.innerWidth - r.right) + 'px';
   btn.setAttribute('aria-expanded', 'true');
   pop.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-cumple-nom], [data-cumple-cand]')) { pop.remove(); btn.setAttribute('aria-expanded', 'false'); return; } // la ficha la abre el aviso de cumpleaños
     const b = e.target.closest('[data-hoy]'); if (!b) return;
     pop.remove(); btn.setAttribute('aria-expanded', 'false');
     const res = await irA(b.dataset.hoy);
