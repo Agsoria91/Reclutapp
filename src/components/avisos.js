@@ -4,7 +4,8 @@
 import { html, raw } from '../lib/html.js';
 import { state, loadAll } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
-import { fmtDate } from '../lib/format.js';
+import { fmtDate, todayISO as hoyAR } from '../lib/format.js';
+import { clinicaCanon } from './examen.js';
 import { openDrawer, closeDrawer, toast } from './ui.js';
 import { sigueEnOtroProceso } from '../lib/entrevistasPersona.js';
 
@@ -24,6 +25,8 @@ const DEFAULTS = [
     cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\nQueremos agradecerte por tu interés y por el tiempo que dedicaste al proceso de selección. En esta oportunidad no vamos a continuar con tu postulación.\n\nGuardamos tus datos por si surge una nueva búsqueda acorde a tu perfil. Te deseamos mucho éxito.\n\nSaludos,\nRecursos Humanos · EFiS' },
   { tipo: 'novedad', titulo: 'Novedad de la postulación', asunto: 'Tu postulación en EFiS', orden: 5,
     cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\nTe contamos que tu postulación para {posicion} avanzó a la etapa: {etapa}. Ante cualquier novedad te volvemos a escribir.\n\n¡Gracias!\nRecursos Humanos · EFiS' },
+  { tipo: 'turno_synergys', titulo: 'Turno examen médico · Synergys', asunto: 'Turno confirmado · Examen médico preocupacional · EFiS', orden: 6,
+    cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\n¡Tu turno para el examen médico preocupacional quedó confirmado!\n\n📅 {fecha_turno}\n🏥 Clínica Synergys\n📍 República Argentina 1, Rincón de los Sauces\n     (Ref.: detrás de la parrilla del Kacike)\n\nPara que el estudio salga bien a la primera, tené en cuenta:\n\n• Ayuno de 12 horas.\n• Retener la orina durante las 4 horas previas.\n• Llevar tu DNI.\n• Ir con ropa cómoda, fácil de quitar en la parte de arriba.\n• Ese día no te apliques cremas, aceites ni talco en el pecho.\n• Si tenés abundante vello en el pecho, puede ser necesario recortarlo o rasurarlo en parte para colocar bien los electrodos y que la lectura no tenga interferencias.\n• Si tomás alguna medicación, seguí tomándola como siempre.\n\nSi por algún motivo no podés asistir, respondé este mensaje y reprogramamos el turno.\n\n¡Te esperamos! Es un paso más en tu camino a EFiS.\n\nSaludos cordiales,\nRecursos Humanos · EFiS' },
 ];
 
 // Las de la base pisan a las por defecto (por tipo); si falta alguna, se usa la por defecto.
@@ -36,7 +39,17 @@ const plantilla = (tipo) => plantillas().find((p) => p.tipo === tipo) || plantil
 
 // Etapas principales con mensaje propio; cualquier otro cambio usa "novedad".
 const POR_ETAPA = { entrevista: 'entrevista', entrevista_aprobada: 'entrevista_ok', proximo_ingreso: 'proximo_ingreso', cancelado: 'baja' };
-export function tipoSugerido(c) { return POR_ETAPA[c.stage] || null; }
+// Turno cargado en una clínica con mensaje propio (plantilla "turno_<clínica>"): se sugiere mientras el turno sea de hoy en adelante
+export const tipoTurno = (c) => {
+  if (!c?.epo || c.stage !== 'examen_medico') return null;
+  const t = 'turno_' + String(clinicaCanon(c.clinica) || '').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+  return plantillas().some((p) => p.tipo === t) ? t : null;
+};
+export function tipoSugerido(c) {
+  const t = tipoTurno(c);
+  if (t && c.epo >= hoyAR()) return t;
+  return POR_ETAPA[c.stage] || null;
+}
 export const avisosDe = (c) => (state.avisos || []).filter((a) => a.candidate_id === c.id);
 
 // Celular argentino -> formato internacional de WhatsApp (549 + área + número).
@@ -71,6 +84,12 @@ export function datosFaltantes(c) {
   return f.length ? f.join('\n') : '(Ya tenemos todos tus datos, ¡gracias!)';
 }
 
+// "lunes 30 de noviembre" (con mayúscula inicial)
+function fechaLarga(iso) {
+  if (!iso) return '[fecha del turno]';
+  const t = new Date(iso + 'T12:00:00Z').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).replace(',', '');
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
 export function armarTexto(tpl, c) {
   const vals = {
     etapa: state.stageMap[c.stage]?.label || c.stage || '',
@@ -79,6 +98,8 @@ export function armarTexto(tpl, c) {
     nombre_completo: c.nombre || '',
     posicion: c._silla?.puesto || c.posicion || 'el puesto',
     area: c._silla?.yacimiento || c.area || '',
+    fecha_turno: fechaLarga(c.epo),
+    clinica: clinicaCanon(c.clinica) || '',
   };
   return tpl.replace(/\{(\w+)\}/g, (m, k) => (k in vals ? vals[k] : m));
 }
@@ -152,13 +173,13 @@ export function bindAvisos(root, getC, { onDone } = {}) {
   });
 }
 
-export function openAvisoDrawer(id, { tipo, cambio } = {}) {
+export function openAvisoDrawer(id, { tipo, cambio, motivo } = {}) {
   const getC = () => state.candidates.find((x) => x.id === id);
   const c = getC();
   if (!c) return;
   const intro = cambio
     ? html`<p class="note">Cambió de etapa: <b>${cambio.de}</b> → <b>${cambio.a}</b>. ¿Le avisás?</p>`
-    : '';
+    : motivo ? html`<p class="note">${motivo}</p>` : '';
   const root = openDrawer(html`${intro}${avisoBox(c, tipo || tipoSugerido(c) || 'novedad')}`, { title: c.nombre });
   bindAvisos(root, getC, { onDone: () => closeDrawer() });
 }
