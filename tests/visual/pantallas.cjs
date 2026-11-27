@@ -103,6 +103,21 @@ async function servidor() {
   await go(p, 'login', 900); await snap(p, '48-login');
   await go(p, 'reunion', 1200); await p.keyboard.press('ArrowRight'); await p.waitForTimeout(600); await snap(p, '49-reunion-2');
   await p.keyboard.press('ArrowRight'); await p.waitForTimeout(600); await snap(p, '50-reunion-3');
+  // pantallas agregadas: agenda, buscador, duplicados, vista compacta, carga
+  await go(p, 'agenda'); await snap(p, '60-agenda');
+  await p.click('[data-sem="1"]'); await p.waitForTimeout(400); await snap(p, '61-agenda-siguiente');
+  await p.click('[data-sem="0"]');
+  await p.keyboard.press('Control+k'); await p.waitForTimeout(300); await p.keyboard.type('maqueta'); await p.waitForTimeout(400); await snap(p, '62-buscador');
+  await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+  await go(p, 'candidatos');
+  await p.evaluate(async () => { (await import('/src/views/candidatos.js')).openCandidate(null); }); await p.waitForTimeout(600);
+  await p.evaluate(() => { const i = document.querySelector('#cand-form [name="dni"]'); i.value = '40000000'; i.dispatchEvent(new Event('input', { bubbles: true })); });
+  await p.waitForTimeout(300); await snap(p, '63-duplicado');
+  await p.evaluate(async () => { (await import('/src/components/ui.js')).closeDrawer(); });
+  await go(p, 'nomina'); await tab(p, 'listado'); await p.click('#btn-compacto'); await p.waitForTimeout(300); await snap(p, '64-compacto');
+  await p.click('#btn-compacto'); await p.waitForTimeout(200);
+  await p.evaluate(async () => { const st = await import('/src/lib/store.js'); st.set({ loading: true, positions: [], candidates: [] }); location.hash = '#/posiciones'; });
+  await p.waitForTimeout(600); await snap(p, '65-cargando');
   await p.context().close();
 
   p = await page({ theme: 'dark' });

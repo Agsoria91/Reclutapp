@@ -25,6 +25,8 @@ import { descargarRespaldo, diasDesdeRespaldo } from './lib/respaldo.js';
 import { descargarExcel } from './lib/reporteExcel.js';
 import { initFolds } from './components/folds.js';
 import { icono } from './components/iconos.js';
+import { abrirBuscador, initBuscador } from './components/buscador.js';
+import * as agenda from './views/agenda.js';
 import { initModerno } from './components/moderno.js';
 
 const ROUTES = {
@@ -32,6 +34,7 @@ const ROUTES = {
   posiciones: { view: posiciones, label: 'Posiciones' },
   candidatos: { view: candidatos, label: 'Candidatos' },
   entrevistas: { view: entrevistas, label: 'Entrevistas' },
+  agenda: { view: agenda, label: 'Agenda', staff: true },
   dashboardpj: { view: dashboardpj, label: 'Dashboard PJ', staff: true },
   examenes: { view: examenes, label: 'Exámenes', staff: true },
   ingresos: { view: ingresos, label: 'Ingresos', staff: true },
@@ -56,6 +59,7 @@ function applyTheme(t) {
 // oscuro si la persona lo eligió con el botón de tema.
 document.documentElement.dataset.estilo = 'iris';
 applyTheme(loadLocal('reclutapp.theme', 'light') === 'dark' ? 'dark' : 'light');
+document.documentElement.classList.toggle('compacto', loadLocal('reclutapp.compacto', false) === true);
 function toggleTheme() {
   const dark = document.documentElement.dataset.theme === 'dark' ||
     (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
@@ -80,7 +84,7 @@ const app = $('#app');
 // Secciones agrupadas en la barra lateral
 const GRUPOS = [
   ['Cobertura', ['posiciones', 'mapa', 'candidatos']],
-  ['Proceso', ['entrevistas', 'examenes', 'ingresos']],
+  ['Proceso', ['agenda', 'entrevistas', 'examenes', 'ingresos']],
   ['Dotación', ['nomina', 'legajos', 'dashboardpj']],
   ['Administración', ['importar', 'usuarios']],
 ];
@@ -90,6 +94,7 @@ const INICIALES = { mapa: 'MA', posiciones: 'PO', candidatos: 'CA', entrevistas:
 let current = { name: null, container: null };
 initFolds(app, () => current.name);
 initModerno(() => draw());
+initBuscador();
 // En celular las tablas de personas se ven como tarjetas: cada celda lleva el
 // nombre de su columna (data-th) para mostrarlo como etiqueta.
 function rotularTablas() {
@@ -135,8 +140,10 @@ function shell(name) {
     </nav>
     ${(() => { const g = GRUPOS.find(([, ks]) => ks.includes(name)); return g && r.label ? html`<span class="miga">${g[0]} <i>/</i> <b>${r.label}</b></span>` : ''; })()}
     <div class="topbar-right">
+      ${state.canRead ? html`<button class="icon-btn btn-buscar" id="btn-buscar" title="Buscar (Ctrl+K)" aria-label="Buscar">${icono('buscar')}<span class="bus-atajo">Buscar <kbd>Ctrl K</kbd></span></button>` : ''}
       ${state.canRead ? html`<button class="btn btn--sm btn--excel" id="btn-excel" title="${state.isStaff ? 'Descargar todo en Excel (incluye nómina y datos personales)' : 'Descargar resumen en Excel (sin datos personales)'}">${ICON.descarga} Excel</button>
       <button class="icon-btn" id="btn-refresh" title="Actualizar datos" aria-label="Actualizar datos">${ICON.actualizar}</button>` : ''}
+      ${state.canRead ? html`<button class="icon-btn btn-compacto ${loadLocal('reclutapp.compacto', false) ? 'is-on' : ''}" id="btn-compacto" title="${loadLocal('reclutapp.compacto', false) ? 'Vista normal' : 'Vista compacta: más filas por pantalla'}" aria-label="Vista compacta" aria-pressed="${!!loadLocal('reclutapp.compacto', false)}">${icono('densidad')}</button>` : ''}
       <button class="icon-btn" id="btn-theme" title="Tema claro / oscuro" aria-label="Cambiar tema">${ICON.tema}</button>
       ${state.session
         ? html`<span class="user ${state.canRead ? '' : 'user--warn'}" title="${state.session.user.email}">${state.isStaff ? 'RRHH' : state.canRead ? 'Lectura' : 'Sin permisos'} · ${state.session.user.email.split('@')[0]}</span>
@@ -191,6 +198,15 @@ function route() {
   document.querySelector('[data-menu-cerrar]')?.addEventListener('click', cerrarMenu);
   $('#menu-secciones')?.addEventListener('click', (e) => { if (e.target.closest('a')) cerrarMenu(); });
   $('#btn-theme')?.addEventListener('click', toggleTheme);
+  $('#btn-buscar')?.addEventListener('click', () => abrirBuscador());
+  $('#btn-compacto')?.addEventListener('click', (e) => {
+    const on = !loadLocal('reclutapp.compacto', false);
+    saveLocal('reclutapp.compacto', on);
+    document.documentElement.classList.toggle('compacto', on);
+    e.currentTarget.classList.toggle('is-on', on);
+    e.currentTarget.setAttribute('aria-pressed', String(on));
+    e.currentTarget.title = on ? 'Vista normal' : 'Vista compacta: más filas por pantalla';
+  });
   $('#btn-refresh')?.addEventListener('click', () => loadAll());
   $('#btn-logout')?.addEventListener('click', async () => { await sb.auth.signOut(); });
   $('#btn-lateral')?.addEventListener('click', () => {
