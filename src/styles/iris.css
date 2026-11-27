@@ -1547,3 +1547,19 @@ dialog.buscador::backdrop { background: rgba(8, 18, 14, .45); }
 .et-card b { font-size: 26px; }
 .et-card span { font-size: 12.5px; line-height: 1.25; }
 [data-estilo="iris"] .et-tabla th { font-family: var(--font-sans) !important; font-size: 11.5px; white-space: normal; line-height: 1.2; }
+
+/* Por etapa: tarjetas que filtran y sectores desplegables */
+.et-card { font: inherit; text-align: left; cursor: pointer; transition: box-shadow .15s, opacity .15s, transform .15s; color: inherit; }
+.et-card:hover { box-shadow: 0 4px 14px rgba(0, 0, 0, .08); transform: translateY(-1px); }
+.et-card.is-sel { box-shadow: 0 0 0 2px var(--et), 0 4px 14px rgba(0, 0, 0, .08); background: color-mix(in srgb, var(--et) 7%, var(--ir-card)); }
+.et-card.is-dim { opacity: .5; }
+.et-card:focus-visible { outline: 2px solid var(--et); outline-offset: 2px; }
+.et-acciones { display: flex; gap: 6px; }
+.et-tabla .et-sector { cursor: pointer; }
+.et-tabla .et-sector:hover td { background: var(--ir-sel); }
+.et-tabla .et-sector td.num { font-weight: 700; color: var(--text); }
+.et-tabla .et-sector small { font-weight: 400; color: var(--text-2); margin-left: 6px; }
+.et-flecha { display: inline-block; width: 14px; transition: transform .15s; color: var(--text-2); }
+.et-sector.is-abierto .et-flecha { transform: rotate(90deg); }
+.et-tabla .et-sector:focus-visible { outline: 2px solid var(--ir-pri); outline-offset: -2px; }
+@media (prefers-reduced-motion: reduce) { .et-card, .et-flecha { transition: none; } }
