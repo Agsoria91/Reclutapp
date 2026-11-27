@@ -6,7 +6,7 @@ import { html } from '../lib/html.js';
 import { state, loadAll } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
 import { fmtDate, todayISO, norm } from '../lib/format.js';
-import { kpi, openDrawer, closeDrawer, toast, formData, field, confirmDialog, stagePill, animateIn } from '../components/ui.js';
+import { kpi, openDrawer, closeDrawer, toast, toastDeshacer, formData, field, confirmDialog, stagePill, animateIn } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 import { mHead, mKpis } from '../components/moderno.js';
 import { preingresoFields, preingresoProgress } from '../components/ingreso.js';
@@ -60,6 +60,7 @@ export function render(el) {
       if (b.dataset.act === 'confirm') confirmIngreso(p, c);
       if (b.dataset.act === 'seat') { openAssignFromCandidate(c); }
       if (b.dataset.act === 'ficha') crearFicha(p);
+      if (b.dataset.act === 'previsto') confirmarPrevisto(p);
     });
   }
 }
@@ -83,6 +84,7 @@ function card(p, c, prog) {
       ${prog.missing.length ? html`<p class="small muted">Falta: ${prog.missing.join(', ')}</p>` : html`<p class="small ok-txt">Datos completos ✓</p>`}
       <div class="form-actions">
         <button class="btn btn--sm" data-act="edit" data-pid="${p.id}">Completar datos</button>
+        ${!p.fecha_ingreso && p.ingreso_previsto ? html`<button class="btn btn--sm" data-act="previsto" data-pid="${p.id}">Confirmar fecha</button>` : ''}
         <span class="spacer"></span>
         <button class="btn btn--sm btn--primary" data-act="confirm" data-pid="${p.id}">Confirmar ingreso</button>
       </div>`
@@ -166,5 +168,18 @@ async function crearFicha(p) {
   const r = await sb.rpc('assign_candidate', { p_candidate: data.id, p_position: p.id, p_force: true });
   if (r.error) return toast(r.error.message, 'error');
   toast('Ficha creada y vinculada', 'ok');
+  await loadAll({ silent: true });
+}
+
+// Fecha prevista → confirmada en un clic (se guarda en la silla y pasa a la ficha)
+async function confirmarPrevisto(p) {
+  const { error } = await sb.from('positions').update({ fecha_ingreso: p.ingreso_previsto }).eq('id', p.id);
+  if (error) { toast(error.message, 'error'); return; }
+  toastDeshacer(`Ingreso confirmado para el ${fmtDate(p.ingreso_previsto)}`, async () => {
+    const r = await sb.from('positions').update({ fecha_ingreso: null }).eq('id', p.id);
+    if (r.error) throw r.error;
+    if (p.candidate_id) { const r2 = await sb.from('candidates').update({ fecha_ingreso: null }).eq('id', p.candidate_id); if (r2.error) throw r2.error; }
+    await loadAll({ silent: true });
+  });
   await loadAll({ silent: true });
 }

@@ -1280,6 +1280,9 @@ dialog.buscador::backdrop { background: rgba(8, 18, 14, .45); }
 .ag-tipo.is-off i { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ag); }
 .ag--entrevista { --ag: #2F7FC1; } .ag--examen { --ag: #D9822B; } .ag--interconsulta { --ag: #C0392B; }
 .ag--ingreso { --ag: var(--ir-pri); } .ag--plazo { --ag: #7A5AA6; }
+.ag--previsto { --ag: color-mix(in srgb, var(--ir-pri) 45%, var(--ir-card)); }
+.ag-ev.ag--previsto { border-left-style: dashed; background: color-mix(in srgb, var(--ir-pri) 5%, transparent); }
+.ag-ev.ag--previsto small { color: color-mix(in srgb, var(--ir-pri) 70%, var(--text-2)); }
 .ag-semana { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 10px; align-items: start; }
 .ag-dia { background: var(--ir-card); border: 1px solid var(--ir-line); border-radius: var(--r); padding: 10px; display: grid; gap: 6px; min-height: 140px; align-content: start; }
 .ag-dia header { display: flex; align-items: baseline; gap: 6px; padding: 2px 4px 6px; border-bottom: 1px solid var(--ir-line); }

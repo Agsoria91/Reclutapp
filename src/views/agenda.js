@@ -13,7 +13,7 @@ import { avisoCumples } from '../components/cumples.js';
 
 const TIPOS = [
   ['entrevista', 'Entrevista'], ['examen', 'Examen médico'], ['interconsulta', 'Interconsulta'],
-  ['ingreso', 'Ingreso'], ['plazo', 'Fin de plazo fijo'],
+  ['ingreso', 'Ingreso'], ['previsto', 'Ingreso previsto'], ['plazo', 'Fin de plazo fijo'],
 ];
 let semana = 0; // 0 = esta semana; -1 anterior; +1 siguiente
 let mes = 0;    // 0 = este mes
@@ -23,7 +23,7 @@ let ocultos = new Set(loadLocal('reclutapp.agenda.ocultos', []));
 
 const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-const PLURAL = { entrevista: ['entrevista', 'entrevistas'], examen: ['examen', 'exámenes'], interconsulta: ['interconsulta', 'interconsultas'], ingreso: ['ingreso', 'ingresos'], plazo: ['plazo fijo', 'plazos fijos'] };
+const PLURAL = { entrevista: ['entrevista', 'entrevistas'], examen: ['examen', 'exámenes'], interconsulta: ['interconsulta', 'interconsultas'], ingreso: ['ingreso', 'ingresos'], previsto: ['previsto', 'previstos'], plazo: ['plazo fijo', 'plazos fijos'] };
 const iso = (d) => d.toISOString().slice(0, 10);
 function lunes(offset) {
   const d = new Date(todayISO() + 'T00:00:00Z');
@@ -44,6 +44,11 @@ function eventos(desde, hasta) {
     if (en(c.interconsulta)) ev.push({ tipo: 'interconsulta', fecha: c.interconsulta, nombre: c.nombre, sub: c.interconsulta_obs || lugar(c), cand: c.id });
     if (en(c.fecha_ingreso) && ['proximo_ingreso', 'ingresado'].includes(c.stage)) ev.push({ tipo: 'ingreso', fecha: c.fecha_ingreso, nombre: c.nombre, sub: c._silla ? `${c._silla.puesto} · ${c._silla.yacimiento}` : lugar(c), cand: c.id });
   }
+  for (const p of state.positions) {
+    if (en(p.ingreso_previsto) && !p.fecha_ingreso && p.stage !== 'ingresado') {
+      ev.push({ tipo: 'previsto', fecha: p.ingreso_previsto, nombre: p.candidato_nombre || 'Sin candidato', sub: [p.puesto, p.yacimiento].filter(Boolean).join(' · '), cand: p.candidate_id || null, silla: p.candidate_id ? null : p.id });
+    }
+  }
   for (const n of state.nomina) {
     if (n.estado === 'activo' && en(n.fin_pf)) ev.push({ tipo: 'plazo', fecha: n.fin_pf, nombre: n.nombre, sub: [n.yacimiento, n.sector].filter(Boolean).join(' · '), nom: n.id });
   }
@@ -57,7 +62,7 @@ function primeroDelMes(offset) {
 const nombreTipo = (t) => TIPOS.find(([k]) => k === t)[1];
 
 function eventoHtml(e) {
-  return html`<button type="button" class="ag-ev ag--${e.tipo}" ${e.cand ? html`data-cand="${e.cand}"` : html`data-nom="${e.nom}"`}>
+  return html`<button type="button" class="ag-ev ag--${e.tipo}" ${e.cand ? html`data-cand="${e.cand}"` : e.silla ? html`data-silla="${e.silla}"` : html`data-nom="${e.nom}"`}>
     <small>${nombreTipo(e.tipo)}</small><b>${e.nombre}</b>${e.sub ? html`<span>${e.sub}</span>` : ''}</button>`;
 }
 function feriadoHtml(f) {
@@ -173,6 +178,8 @@ export function render(el) {
       if (t) { const k = t.dataset.tipo; if (ocultos.has(k)) ocultos.delete(k); else ocultos.add(k); saveLocal('reclutapp.agenda.ocultos', [...ocultos]); render(el); return; }
       const c = e.target.closest('[data-cand]');
       if (c) { (await import('./candidatos.js')).openCandidate(c.dataset.cand); return; }
+      const sil = e.target.closest('[data-silla]');
+      if (sil) { (await import('./posiciones.js')).openEditor(sil.dataset.silla); return; }
       const n = e.target.closest('[data-nom]');
       if (n) (await import('./nomina.js')).abrirPersona(n.dataset.nom);
     });
