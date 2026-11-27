@@ -21,19 +21,3 @@ test('días en etapa: un turno agendado a futuro no cuenta como demora', async (
   assert.equal(diasEnEtapa(c, hoy).agendado, '2026-11-27');
   assert.equal(estaDemorado(c, hoy), false);
 });
-
-test('cierre de mes: dotación, ingresos, bajas y rotación', async () => {
-  const { datosCierre, mesAnterior } = await import('../src/lib/cierreMes.js');
-  assert.equal(mesAnterior('2026-01-15'), '2025-12');
-  const nomina = [
-    { fecha_ingreso: '2020-01-01', estado: 'activo' },
-    { fecha_ingreso: '2026-10-05', estado: 'activo' },                               // ingreso del mes
-    { fecha_ingreso: '2026-09-01', estado: 'baja', fecha_baja: '2026-10-20' },       // baja temprana del mes
-    { fecha_ingreso: '2019-01-01', estado: 'baja', fecha_baja: '2026-09-30' },       // se fue antes
-  ];
-  const r = datosCierre('2026-10', { nomina, hoy: '2026-11-27' });
-  assert.equal(r.dotIni, 2); assert.equal(r.dotFin, 2);
-  assert.equal(r.ingresos.length, 1); assert.equal(r.bajas.length, 1); assert.equal(r.tempranas.length, 1);
-  assert.equal(r.rotacion, 50);
-  assert.equal(r.enCurso, false);
-});

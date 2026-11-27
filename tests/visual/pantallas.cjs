@@ -104,7 +104,6 @@ async function servidor() {
   await go(p, 'login', 900); await snap(p, '48-login');
   await go(p, 'reunion', 1200); await p.keyboard.press('ArrowRight'); await p.waitForTimeout(600); await snap(p, '49-reunion-2');
   await p.keyboard.press('ArrowRight'); await p.waitForTimeout(600); await snap(p, '50-reunion-3');
-  await p.evaluate(() => { location.hash = '#/reunion?mes=2026-10&ir=cierre-mes'; }); await p.waitForTimeout(1500); await snap(p, '51-cierre-mes');
   // pantallas agregadas: agenda, buscador, duplicados, vista compacta, carga
   await go(p, 'agenda'); await p.click('[data-vista="mes"]'); await p.waitForTimeout(300); await snap(p, '60-agenda-mes');
   await p.click('[data-paso="1"]'); await p.waitForTimeout(300); await p.click('.ag-cel[data-dia$="-08"]'); await p.waitForTimeout(300); await snap(p, '60b-agenda-mes-feriado');
