@@ -27,6 +27,8 @@ const DEFAULTS = [
     cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\nTe contamos que tu postulación para {posicion} avanzó a la etapa: {etapa}. Ante cualquier novedad te volvemos a escribir.\n\n¡Gracias!\nRecursos Humanos · EFiS' },
   { tipo: 'turno_synergys', titulo: 'Turno examen médico · Synergys', asunto: 'Turno confirmado · Examen médico preocupacional · EFiS', orden: 6,
     cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\n¡Tu turno para el examen médico preocupacional quedó confirmado!\n\n📅 {fecha_turno}\n🏥 Clínica Synergys\n📍 República Argentina 1, Rincón de los Sauces\n     (Ref.: detrás de la parrilla del Kacike)\n\nPara que el estudio salga bien a la primera, tené en cuenta:\n\n• Ayuno de 12 horas.\n• Retener la orina durante las 4 horas previas.\n• Llevar tu DNI.\n• Ir con ropa cómoda, fácil de quitar en la parte de arriba.\n• Ese día no te apliques cremas, aceites ni talco en el pecho.\n• Si tenés abundante vello en el pecho, puede ser necesario recortarlo o rasurarlo en parte para colocar bien los electrodos y que la lectura no tenga interferencias.\n• Si tomás alguna medicación, seguí tomándola como siempre.\n\nSi por algún motivo no podés asistir, respondé este mensaje y reprogramamos el turno.\n\n¡Te esperamos! Es un paso más en tu camino a EFiS.\n\nSaludos cordiales,\nRecursos Humanos · EFiS' },
+  { tipo: 'turno_cmit', titulo: 'Turno examen médico · CMIT', asunto: 'Turno confirmado · Examen médico preocupacional · EFiS', orden: 7,
+    cuerpo: 'Hola {nombre}, ¿cómo estás? Te escribimos de Recursos Humanos de EFiS.\n\n¡Tu turno para el examen médico preocupacional quedó confirmado!\n\n📅 {fecha_turno}\n🏥 CMIT Salud Ocupacional\n📍 Juan B. Justo 825, Neuquén Capital\n\nPara el día del turno:\n\n• Llevá tu DNI original con foto (es obligatorio; sin DNI no pueden atenderte).\n• Llegá unos minutos antes del horario indicado.\n\nSi por algún motivo no podés asistir, respondé este mensaje y reprogramamos el turno.\n\n¡Te esperamos! Es un paso más en tu camino a EFiS.\n\nSaludos cordiales,\nRecursos Humanos · EFiS' },
 ];
 
 // Las de la base pisan a las por defecto (por tipo); si falta alguna, se usa la por defecto.
@@ -98,7 +100,7 @@ export function armarTexto(tpl, c) {
     nombre_completo: c.nombre || '',
     posicion: c._silla?.puesto || c.posicion || 'el puesto',
     area: c._silla?.yacimiento || c.area || '',
-    fecha_turno: fechaLarga(c.epo),
+    fecha_turno: fechaLarga(c.epo) + (c.turno_hora ? ` · ${String(c.turno_hora).slice(0, 5)} h` : ''),
     clinica: clinicaCanon(c.clinica) || '',
   };
   return tpl.replace(/\{(\w+)\}/g, (m, k) => (k in vals ? vals[k] : m));
