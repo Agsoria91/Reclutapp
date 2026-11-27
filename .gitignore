@@ -9,3 +9,7 @@ dist/
 /data/
 rediseno-*.png
 pegar_en_supabase.txt
+
+# capturas de las pruebas visuales (se regeneran)
+tests/visual/.base/
+tests/visual/.nuevo/
