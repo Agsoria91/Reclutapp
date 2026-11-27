@@ -1,10 +1,10 @@
 import { html, raw, $ } from '../lib/html.js';
-import { state, loadAll } from '../lib/store.js';
+import { state, loadAll, set } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
 import { fmtMonth, fmtMoney, todayISO, norm, pct } from '../lib/format.js';
 import { applyFilters, countBy, positionKpis, pendingByTarget, isCovered, hasPerson, isLate, monthKey } from '../lib/kpis.js';
 import {
-  stagePill, filterGroup, selectFilter, multiSelectFilter, toggleFilter, pickField, kpi, openDrawer, closeDrawer, toast, formData, field,
+  stagePill, filterGroup, selectFilter, multiSelectFilter, toggleFilter, pickField, kpi, openDrawer, closeDrawer, toast, toastDeshacer, formData, field,
   confirmDialog, saveLocal, loadLocal, serializeFilters, restoreFilters, datalist,
   animateIn,
 } from '../components/ui.js';
@@ -472,19 +472,36 @@ export function openEditor(id) {
     if (act === 'terna-del' && cid) {
       const { error } = await sb.from('position_candidates').delete().eq('position_id', p.id).eq('candidate_id', cid);
       if (error) return toast(error.message, 'error');
-      toast('Quitado de la terna', 'ok'); closeDrawer(); await loadAll({ silent: true }); openEditor(p.id);
+      const nom = state.candidates.find((x) => x.id === cid)?.nombre || 'Candidato';
+      toastDeshacer(`${nom} quitado de la terna`, async () => {
+        const { error: e1 } = await sb.from('position_candidates').upsert({ position_id: p.id, candidate_id: cid }, { ignoreDuplicates: true });
+        if (e1) throw e1;
+        await loadAll({ silent: true });
+      });
+      closeDrawer(); await loadAll({ silent: true }); openEditor(p.id);
     }
     if (act === 'free') {
-      if (!(await confirmDialog(`¿Liberar la silla "${p.puesto}"? ${p.candidato_nombre} queda sin silla (su ficha no se borra).`, { ok: 'Liberar' }))) return;
+      const antes = p.candidate_id;
       const { error } = await sb.rpc('unassign_position', { p_position: p.id });
       if (error) return toast(error.message, 'error');
-      toast('Silla liberada', 'ok'); closeDrawer(); loadAll({ silent: true });
+      toastDeshacer(`Silla "${p.puesto}" liberada`, async () => {
+        const { error: e1 } = await sb.rpc('assign_candidate', { p_candidate: antes, p_position: p.id, p_force: false });
+        if (e1) throw e1;
+        await loadAll({ silent: true });
+      });
+      closeDrawer(); loadAll({ silent: true });
     }
     if (act === 'delete') {
-      if (!(await confirmDialog(`¿Eliminar la silla "${p.puesto}" (${p.yacimiento})? No se puede deshacer.`, { ok: 'Eliminar', danger: true }))) return;
-      const { error } = await sb.from('positions').delete().eq('id', p.id);
-      if (error) return toast(error.message, 'error');
-      toast('Silla eliminada', 'ok'); closeDrawer(); loadAll({ silent: true });
+      // se borra recién si no se toca "Deshacer"
+      closeDrawer();
+      set({ positions: state.positions.filter((x) => x.id !== p.id) });
+      toastDeshacer(`Silla "${p.puesto}" eliminada`, () => loadAll({ silent: true }), {
+        alVencer: async () => {
+          const { error } = await sb.from('positions').delete().eq('id', p.id);
+          if (error) toast(error.message, 'error');
+          loadAll({ silent: true });
+        },
+      });
     }
   });
 }

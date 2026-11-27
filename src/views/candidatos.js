@@ -1,11 +1,11 @@
 import { html, raw, $ } from '../lib/html.js';
-import { state, loadAll, stageOrder } from '../lib/store.js';
+import { state, loadAll, stageOrder, set } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
 import { fmtInt, pct, todayISO, norm, daysBetween, fmtMonth } from '../lib/format.js';
 import { countBy, candidateKpis, sectorMatches, diasEnEtapa, estaDemorado } from '../lib/kpis.js';
 import {
   stagePill, filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, formData, field,
-  confirmDialog, saveLocal, loadLocal, serializeFilters, restoreFilters, prevSize, pickField,
+  confirmDialog, toastDeshacer, saveLocal, loadLocal, serializeFilters, restoreFilters, prevSize, pickField,
   pivot, pivotTable, pivotCSV, downloadCSV, rowsToCSV, dimSelect,
   animateIn,
 } from '../components/ui.js';
@@ -506,13 +506,24 @@ export function openCandidate(id, { volver } = {}) {
         if (ref.cv_path && !data.cv_path) data.cv_path = ref.cv_path;
       }
     }
+    // para "Deshacer": valores anteriores y silla que se libera al cancelar
+    const previo = c.id ? Object.fromEntries(Object.keys(data).map((k) => [k, c[k] ?? null])) : null;
+    const sillaLiberada = c.id && data.stage === 'cancelado' && c.stage !== 'cancelado' && c._silla ? c._silla.id : null;
     const btn = e.submitter; btn.disabled = true;
     const { error } = c.id ? await sb.from('candidates').update(data).eq('id', c.id) : await sb.from('candidates').insert(data);
     btn.disabled = false;
     if (error) return toast(error.message, 'error');
     if (c.id) await sincronizarPersona(c, data);
     const ingreso = data.stage === 'ingresado' && c.stage !== 'ingresado';
-    toast(ingreso && c._silla ? '¡Ingreso confirmado! Se creó el legajo.' : 'Candidato guardado', 'ok');
+    if (c.id && !ingreso) {
+      const cambio = data.stage !== c.stage ? `${c.nombre}: ${state.stageMap[data.stage]?.label || data.stage}` : 'Candidato guardado';
+      toastDeshacer(cambio, async () => {
+        const { error: e1 } = await sb.from('candidates').update(previo).eq('id', c.id);
+        if (e1) throw e1;
+        if (sillaLiberada) { const { error: e2 } = await sb.rpc('assign_candidate', { p_candidate: c.id, p_position: sillaLiberada, p_force: false }); if (e2) throw e2; }
+        await loadAll({ silent: true });
+      });
+    } else toast(ingreso && c._silla ? '¡Ingreso confirmado! Se creó el legajo.' : 'Candidato guardado', 'ok');
     closeDrawer();
     await loadAll({ silent: true });
     if (ingreso) celebrate();
@@ -562,11 +573,17 @@ export function openCandidate(id, { volver } = {}) {
       toast('CV quitado', 'ok'); closeDrawer(); loadAll({ silent: true });
     }
     if (act === 'delete') {
-      if (!(await confirmDialog(`¿Eliminar a ${c.nombre} del pipeline? Se pierde su ficha y su CV.`, { ok: 'Eliminar', danger: true }))) return;
-      if (c.cv_path && !cvCompartido(c.cv_path, c.id)) await sb.storage.from('cvs').remove([c.cv_path]);
-      const { error } = await sb.from('candidates').delete().eq('id', c.id);
-      if (error) return toast(error.message, 'error');
-      toast('Candidato eliminado', 'ok'); closeDrawer(); loadAll({ silent: true });
+      // se borra recién si no se toca "Deshacer"
+      closeDrawer();
+      set({ candidates: state.candidates.filter((x) => x.id !== c.id) });
+      toastDeshacer(`${c.nombre} eliminado`, () => loadAll({ silent: true }), {
+        alVencer: async () => {
+          if (c.cv_path && !cvCompartido(c.cv_path, c.id)) await sb.storage.from('cvs').remove([c.cv_path]);
+          const { error } = await sb.from('candidates').delete().eq('id', c.id);
+          if (error) { toast(error.message, 'error'); }
+          loadAll({ silent: true });
+        },
+      });
     }
   });
 

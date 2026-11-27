@@ -1,14 +1,14 @@
 // Nómina general EFiS (solo RRHH). Todo el personal; los ingresos confirmados
 // en la app se agregan solos. Se puede reimportar la planilla (clave: DNI).
 import { html, raw, $ } from '../lib/html.js';
-import { state, loadAll } from '../lib/store.js';
+import { state, loadAll, set } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
 import { fmtDate, fmtInt, norm, todayISO, daysBetween, fmtMonth } from '../lib/format.js';
 import { countBy, faltantesAlCorte, sectorMatches } from '../lib/kpis.js';
 import { decodeBytes } from '../lib/csv.js';
 import { parseNominaCSV } from '../lib/importers.js';
 import {
-  filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, formData, field, confirmDialog, animateIn, pickField,
+  filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, toastDeshacer, formData, field, confirmDialog, animateIn, pickField,
   multiSelectFilter, loadLocal, saveLocal,
 
 } from '../components/ui.js';
@@ -217,9 +217,16 @@ function openPersona(id) {
   root.addEventListener('click', async (e) => {
     if (!e.target.closest('[data-act="delete"]')) return;
     if (!(await confirmDialog(`¿Eliminar a ${n.nombre} de la nómina? Para una salida usá Estado = Baja.`, { ok: 'Eliminar', danger: true }))) return;
-    const { error } = await sb.from('nomina').delete().eq('id', n.id);
-    if (error) return toast(error.message, 'error');
-    toast('Eliminado', 'ok'); closeDrawer(); loadAll({ silent: true });
+    // se borra recién si no se toca "Deshacer"
+    closeDrawer();
+    set({ nomina: state.nomina.filter((x) => x.id !== n.id) });
+    toastDeshacer(`${n.nombre} eliminado de la nómina`, () => loadAll({ silent: true }), {
+      alVencer: async () => {
+        const { error } = await sb.from('nomina').delete().eq('id', n.id);
+        if (error) toast(error.message, 'error');
+        loadAll({ silent: true });
+      },
+    });
   });
 }
 

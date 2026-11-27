@@ -192,13 +192,53 @@ export function openDrawer(content, { title = '', wide = false, onClose, modific
     root.classList.add('is-open');
     (root.querySelector('input,select,textarea,button:not([data-close])') || root.querySelector('button'))?.focus();
   });
+  // celular: se cierra deslizándolo hacia la derecha
+  const panel = root.querySelector('.drawer');
+  let x0 = null, y0 = 0, dx = 0;
+  panel.addEventListener('touchstart', (e) => { if (e.touches.length !== 1) return; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; }, { passive: true });
+  panel.addEventListener('touchmove', (e) => {
+    if (x0 == null) return;
+    dx = e.touches[0].clientX - x0;
+    if (Math.abs(e.touches[0].clientY - y0) > Math.abs(dx)) { x0 = null; panel.style.transform = ''; return; }
+    if (dx > 0) { panel.style.transition = 'none'; panel.style.transform = `translateX(${dx}px)`; }
+  }, { passive: true });
+  panel.addEventListener('touchend', () => {
+    if (x0 == null) return;
+    x0 = null; panel.style.transition = ''; panel.style.transform = '';
+    if (dx > 90) closeDrawer();
+  });
   drawerCleanup = () => {
     document.removeEventListener('keydown', onKey);
-    root.remove();
-    prevFocus?.focus?.();
+    // salida suave: se quita del todo cuando termina la animación
+    root.classList.remove('is-open'); root.classList.add('is-closing');
+    setTimeout(() => root.remove(), reducido() ? 0 : 220);
+    prevFocus?.focus?.({ preventScroll: true });
+    resaltarVuelta();
     onClose?.();
   };
   return root;
+}
+
+const reducido = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+// Al cerrar una ficha, la fila desde la que se abrió se ilumina un instante
+let ultimaFila = null;
+document.addEventListener('click', (e) => {
+  const f = e.target.closest('tr[data-id], [data-cand], [data-nom], [data-sap-persona], [data-sap-silla], .ag-ev');
+  if (f && !f.closest('.drawer-root')) ultimaFila = f.dataset.id || f.dataset.cand || f.dataset.nom || f.dataset.sapPersona || f.dataset.sapSilla || null;
+}, true);
+function resaltarVuelta() {
+  const id = ultimaFila; if (!id) return;
+  const marcar = () => {
+    const sel = `[data-id="${CSS.escape(id)}"], [data-cand="${CSS.escape(id)}"], [data-nom="${CSS.escape(id)}"]`;
+    const el = document.querySelector(`#view :is(${sel})`);
+    if (!el) return;
+    el.classList.remove('is-volver'); void el.offsetWidth; el.classList.add('is-volver');
+    el.scrollIntoView({ block: 'nearest', behavior: reducido() ? 'auto' : 'smooth' });
+    setTimeout(() => el.classList.remove('is-volver'), 1600);
+  };
+  marcar();
+  setTimeout(marcar, 450); // si la pantalla se redibujó al guardar
 }
 export function closeDrawer() { const f = drawerCleanup; drawerCleanup = null; f?.(); }
 
@@ -223,6 +263,26 @@ export function toast(message, tone = 'info', ms = 3500) {
   t.textContent = message;
   host.appendChild(t);
   setTimeout(() => { t.classList.add('is-out'); setTimeout(() => t.remove(), 300); }, ms);
+}
+
+// Aviso con "Deshacer" (como en Gmail). onDeshacer se llama si se toca el botón;
+// alVencer, si pasa el tiempo sin tocarlo (sirve para demorar un borrado).
+export function toastDeshacer(message, onDeshacer, { ms = 8000, alVencer } = {}) {
+  let host = $('#toasts');
+  if (!host) { host = document.createElement('div'); host.id = 'toasts'; host.setAttribute('aria-live', 'polite'); document.body.appendChild(host); }
+  const t = document.createElement('div');
+  t.className = 'toast toast--ok toast--deshacer';
+  t.innerHTML = '<span></span><button type="button">Deshacer</button><i aria-hidden="true"></i>';
+  t.querySelector('span').textContent = message;
+  t.querySelector('i').style.animationDuration = ms + 'ms';
+  host.appendChild(t);
+  let listo = false;
+  const salir = () => { t.classList.add('is-out'); setTimeout(() => t.remove(), 300); };
+  t.querySelector('button').addEventListener('click', async () => {
+    if (listo) return; listo = true; clearTimeout(timer); salir();
+    try { await onDeshacer?.(); toast('Deshecho', 'ok', 2200); } catch (e) { toast('No se pudo deshacer: ' + (e.message || e), 'error', 6000); }
+  });
+  const timer = setTimeout(async () => { if (listo) return; listo = true; salir(); try { await alVencer?.(); } catch (e) { toast(e.message || String(e), 'error', 6000); } }, ms);
 }
 
 // Lee un <form> a objeto: '' -> null, number/date respetados.

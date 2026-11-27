@@ -28,6 +28,7 @@ import { icono } from './components/iconos.js';
 import { abrirBuscador, initBuscador } from './components/buscador.js';
 import * as agenda from './views/agenda.js';
 import { initCumples } from './components/cumples.js';
+import { initTarjetaFlotante } from './components/tarjetaFlotante.js';
 import { initModerno } from './components/moderno.js';
 
 const ROUTES = {
@@ -59,13 +60,21 @@ function applyTheme(t) {
 // Diseño de la app: estilo IRIS (guía UX BI Tecpetrol) con paleta EFiS; claro por defecto,
 // oscuro si la persona lo eligió con el botón de tema.
 document.documentElement.dataset.estilo = 'iris';
-applyTheme(loadLocal('reclutapp.theme', 'light') === 'dark' ? 'dark' : 'light');
+// tema elegido: claro, oscuro o automático (sigue al sistema y cambia solo)
+const temaPreferido = () => { const t = loadLocal('reclutapp.theme', 'light'); return ['light', 'dark', 'auto'].includes(t) ? t : 'light'; };
+const oscuroSistema = matchMedia('(prefers-color-scheme: dark)');
+const aplicarTema = () => { const t = temaPreferido(); applyTheme(t === 'auto' ? (oscuroSistema.matches ? 'dark' : 'light') : t); };
+aplicarTema();
+oscuroSistema.addEventListener?.('change', () => { if (temaPreferido() === 'auto') aplicarTema(); });
+const TEMA_TXT = { light: 'claro', dark: 'oscuro', auto: 'automático (según el sistema)' };
 document.documentElement.classList.toggle('compacto', loadLocal('reclutapp.compacto', false) === true);
-function toggleTheme() {
-  const dark = document.documentElement.dataset.theme === 'dark' ||
-    (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
-  const next = dark ? 'light' : 'dark';
-  applyTheme(next); saveLocal('reclutapp.theme', next);
+function toggleTheme(e) {
+  const orden = ['light', 'dark', 'auto'];
+  const next = orden[(orden.indexOf(temaPreferido()) + 1) % orden.length];
+  saveLocal('reclutapp.theme', next); aplicarTema();
+  const b = e?.currentTarget;
+  if (b) { b.title = `Tema: ${TEMA_TXT[next]}`; b.classList.toggle('is-auto', next === 'auto'); }
+  toast(`Tema ${TEMA_TXT[next]}`, 'ok', 1800);
 }
 
 function parseHash() {
@@ -97,6 +106,7 @@ initFolds(app, () => current.name);
 initModerno(() => draw());
 initBuscador();
 initCumples();
+initTarjetaFlotante();
 // En celular las tablas de personas se ven como tarjetas: cada celda lleva el
 // nombre de su columna (data-th) para mostrarlo como etiqueta.
 function rotularTablas() {
@@ -146,7 +156,7 @@ function shell(name) {
       ${state.canRead ? html`<button class="btn btn--sm btn--excel" id="btn-excel" title="${state.isStaff ? 'Descargar todo en Excel (incluye nómina y datos personales)' : 'Descargar resumen en Excel (sin datos personales)'}">${ICON.descarga} Excel</button>
       <button class="icon-btn" id="btn-refresh" title="Actualizar datos" aria-label="Actualizar datos">${ICON.actualizar}</button>` : ''}
       ${state.canRead ? html`<button class="icon-btn btn-compacto ${loadLocal('reclutapp.compacto', false) ? 'is-on' : ''}" id="btn-compacto" title="${loadLocal('reclutapp.compacto', false) ? 'Vista normal' : 'Vista compacta: más filas por pantalla'}" aria-label="Vista compacta" aria-pressed="${!!loadLocal('reclutapp.compacto', false)}">${icono('densidad')}</button>` : ''}
-      <button class="icon-btn" id="btn-theme" title="Tema claro / oscuro" aria-label="Cambiar tema">${ICON.tema}</button>
+      <button class="icon-btn btn-tema ${temaPreferido() === 'auto' ? 'is-auto' : ''}" id="btn-theme" title="Tema: ${TEMA_TXT[temaPreferido()]}" aria-label="Cambiar tema (claro, oscuro o automático)">${ICON.tema}</button>
       ${state.session
         ? html`<span class="user ${state.canRead ? '' : 'user--warn'}" title="${state.session.user.email}">${state.isStaff ? 'RRHH' : state.canRead ? 'Lectura' : 'Sin permisos'} · ${state.session.user.email.split('@')[0]}</span>
                ${state.canRead ? html`<button class="btn btn--ghost btn--sm" id="btn-pass">Mi contraseña</button>` : ''}
@@ -251,14 +261,20 @@ function draw() {
 }
 
 subscribe(() => draw());
-window.addEventListener('hashchange', () => { window.scrollTo(0, 0); route(); });
+// cambio de pantalla con un fundido corto (si el navegador lo soporta y no se pidió reducir movimiento)
+const conTransicion = (fn) => {
+  if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return fn();
+  const t = document.startViewTransition(fn);
+  t.ready.catch(() => {}); t.finished.catch(() => {}); // si se navega rápido, la transición anterior se omite (no es un error)
+};
+window.addEventListener('hashchange', () => conTransicion(() => { window.scrollTo(0, 0); route(); }));
 window.addEventListener('scroll', () => document.documentElement.classList.toggle('con-scroll', window.scrollY > 24), { passive: true });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.documentElement.classList.contains('menu-abierto')) { document.documentElement.classList.remove('menu-abierto'); document.getElementById('btn-menu')?.focus(); } });
 
 // Re-leer al volver a la pestaña (otra persona pudo haber editado).
 let lastFocusLoad = 0;
 window.addEventListener('focus', () => {
-  if (Date.now() - lastFocusLoad > 30000 && !document.querySelector('.drawer-root')) { lastFocusLoad = Date.now(); loadAll({ silent: true }); }
+  if (Date.now() - lastFocusLoad > 30000 && !document.querySelector('.drawer-root:not(.is-closing)')) { lastFocusLoad = Date.now(); loadAll({ silent: true }); }
 });
 
 async function boot() {
