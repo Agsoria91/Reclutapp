@@ -1211,3 +1211,14 @@ dialog.buscador::backdrop { background: rgba(8, 18, 14, .45); }
 }
 @media (max-width: 900px) { .ag-cel { flex-direction: row; flex-wrap: wrap; align-content: flex-start; gap: 3px; } .ag-cel-n, .ag-cel-fer { flex-basis: 100%; } }
 @media (max-width: 900px) { .ag-cel.is-hoy .ag-cel-n { background: none; color: var(--ir-pri); padding: 0; text-decoration: underline 2px; text-underline-offset: 3px; } }
+
+/* cumpleaños de hoy y mañana */
+.cumples { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 14px; background: var(--ir-card); border: 1px solid var(--ir-line); border-left: 3px solid #C9A227; border-radius: var(--r); }
+.cum-ico { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: color-mix(in srgb, #C9A227 16%, transparent); color: #8A6A1F; flex: none; }
+[data-theme="dark"] .cum-ico { color: #E8CF8F; }
+.cum-ico .ico { width: 18px; height: 18px; }
+.cum-grupo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cum-tit { font: 700 11px var(--font-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); margin-right: 2px; }
+.cum-chip { border: 1px solid var(--ir-line); background: transparent; border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 12.5px; color: var(--text); cursor: pointer; }
+.cum-chip:hover { background: var(--ir-hover); }
+.cum-chip span { color: var(--text-2); }
