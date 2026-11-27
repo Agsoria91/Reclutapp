@@ -115,7 +115,7 @@ export function render(el) {
   }
   const sortedGroups = [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0], 'es'));
   const allOpen = sortedGroups.length && sortedGroups.every(([g]) => openGroups.has(g));
-  const tab = subTab('posiciones', ['mapa', 'meses'], 'mapa');
+  const tab = subTab('posiciones', ['mapa', 'meses', 'etapas'], 'mapa');
   const desdeMapa = loadLocal('reclutapp.desdeMapa', null);
 
   el.innerHTML = String(html`
@@ -147,12 +147,13 @@ export function render(el) {
     { icono: 'candidatos', label: 'Sin candidato', valor: k.sinCandidato, id: 'pos-sin', attrs: 'data-vista="sin"', sel: vista === 'sin', tono: k.sinCandidato ? 'aviso' : '', sub: 'sillas a buscar' },
     { icono: 'documento', label: 'Vencidas', valor: k.vencidas, id: 'pos-venc', attrs: 'data-vista="venc"', sel: vista === 'venc', tono: k.vencidas ? 'alerta' : 'ok', sub: 'mes objetivo pasado' },
   ])}
-  ${mTabs('posiciones', [['mapa', `Mapa · ${rows.length}`], ['meses', 'Por mes objetivo']], tab)}
+  ${mTabs('posiciones', [['mapa', `Mapa · ${rows.length}`], ['meses', 'Por mes objetivo'], ['etapas', 'Por etapa']], tab)}
   <div class="m-cuerpo">
+  ${tab === 'etapas' ? resumenEtapas(base) : ''}
   ${tab === 'meses' ? html`<section class="card">
     <h2 class="card-title">Faltan cubrir, por mes objetivo</h2>
     ${pend.length ? pendingTable(pend, k.pendientes) : html`<p class="muted">No quedan posiciones pendientes con estos filtros.</p>`}
-  </section>` : html`<section class="card groups-card">
+  </section>` : tab === 'etapas' ? '' : html`<section class="card groups-card">
     <header class="list-head">
       <h2 class="card-title">Sillas por área y sector <small class="muted">${rows.length}</small></h2>
       ${sortedGroups.length ? html`<button class="btn btn--ghost btn--sm" data-act="toggle-all">${allOpen ? 'Contraer todo' : 'Expandir todo'}</button>` : ''}
@@ -165,6 +166,33 @@ export function render(el) {
 
   bind(el);
   animateIn(el);
+}
+
+// Por etapa: personas en proceso en las sillas, por sector › puesto y etapa (también para el lector)
+function resumenEtapas(base) {
+  const xs = base.filter((p) => p.stage && !['sin_candidato', 'ingresado', 'cancelado'].includes(p.stage));
+  const etapas = state.stages.filter((s) => xs.some((p) => p.stage === s.code)).sort((a, b) => a.orden - b.orden);
+  if (!xs.length) return html`<section class="card"><h2 class="card-title">Personas en proceso por etapa</h2><p class="muted">No hay sillas con personas en proceso con estos filtros.</p></section>`;
+  const color = (s) => `var(--st-${s.color || 'neutral'})`;
+  const cuenta = (lista, code) => lista.filter((p) => p.stage === code).length;
+  const sectores = [...new Set(xs.map((p) => p.sector || 'Sin sector'))].sort((a, b) => a.localeCompare(b, 'es'));
+  const burbuja = (n, s) => (n ? html`<span class="et-n" style="--et:${color(s)}">${n}</span>` : '');
+  return html`
+  <section class="et-cards">${etapas.map((s) => html`<div class="et-card" style="--et:${color(s)}"><b>${cuenta(xs, s.code)}</b><span>${s.label}</span></div>`)}</section>
+  <section class="card et-tabla-card">
+    <h2 class="card-title">Personas en proceso por etapa <small class="muted">${xs.length} · por sector y puesto</small></h2>
+    <div class="table-wrap"><table class="tbl et-tabla">
+      <thead><tr><th>Sector / Puesto</th>${etapas.map((s) => html`<th class="num" style="--et:${color(s)}">${s.label}</th>`)}<th class="num">Total</th></tr></thead>
+      <tbody>${sectores.map((sec) => {
+        const ps = xs.filter((p) => (p.sector || 'Sin sector') === sec);
+        const puestos = [...new Set(ps.map((p) => p.puesto || 'Sin puesto'))].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
+        return html`<tr class="et-sector"><td colspan="${etapas.length + 2}">${sec}</td></tr>
+          ${puestos.map((pu) => { const g = ps.filter((p) => (p.puesto || 'Sin puesto') === pu); return html`<tr><td class="et-puesto">${pu}</td>${etapas.map((s) => html`<td class="num">${burbuja(cuenta(g, s.code), s)}</td>`)}<td class="num"><b>${g.length}</b></td></tr>`; })}
+          <tr class="et-sub"><td>Total ${sec}</td>${etapas.map((s) => html`<td class="num">${cuenta(ps, s.code) || ''}</td>`)}<td class="num"><b>${ps.length}</b></td></tr>`;
+      })}</tbody>
+      <tfoot><tr class="et-total"><td>Total</td>${etapas.map((s) => html`<td class="num">${cuenta(xs, s.code)}</td>`)}<td class="num">${xs.length}</td></tr></tfoot>
+    </table></div>
+  </section>`;
 }
 
 export function pendingTable(pend, totalPend) {
