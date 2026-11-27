@@ -1,7 +1,7 @@
 import { html, raw, $ } from '../lib/html.js';
 import { state, loadAll, set } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
-import { fmtMonth, fmtMoney, todayISO, norm, pct } from '../lib/format.js';
+import { fmtMonth, fmtMoney, todayISO, norm, pct, fmtDate } from '../lib/format.js';
 import { applyFilters, countBy, positionKpis, pendingByTarget, isCovered, hasPerson, isLate, monthKey } from '../lib/kpis.js';
 import {
   stagePill, filterGroup, selectFilter, multiSelectFilter, toggleFilter, pickField, kpi, openDrawer, closeDrawer, toast, toastDeshacer, formData, field,
@@ -481,6 +481,9 @@ export function openEditor(id) {
       const dniSilla = dniDeSilla({ ...p, ...data });
       if (enSap && enSap.dni !== dniSilla && !(await confirmDialog(`La POS SAP ${sap} figura ocupada en SAP por ${enSap.nombre}${enSap.puesto ? ` (${enSap.puesto})` : ''}. ¿Guardarla igual?`, { ok: 'Guardar igual' }))) return;
     }
+    // pasa a Próximo ingreso con fecha prevista: ofrecer confirmarla
+    if (p.id && data.stage === 'proximo_ingreso' && p.stage !== 'proximo_ingreso' && p.ingreso_previsto && p.ingreso_previsto >= todayISO() && !data.fecha_ingreso
+        && await confirmDialog(`Ingreso previsto el ${fmtDate(p.ingreso_previsto)}. ¿Lo confirmo como fecha de ingreso?`, { ok: 'Confirmar fecha', cancel: 'Todavía no' })) data.fecha_ingreso = p.ingreso_previsto;
     const btn = e.submitter; btn.disabled = true;
     let q;
     if (p.id) q = sb.from('positions').update(data).eq('id', p.id);

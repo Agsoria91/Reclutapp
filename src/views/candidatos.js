@@ -1,7 +1,7 @@
 import { html, raw, $ } from '../lib/html.js';
 import { state, loadAll, stageOrder, set } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
-import { fmtInt, pct, todayISO, norm, daysBetween, fmtMonth } from '../lib/format.js';
+import { fmtInt, pct, todayISO, norm, daysBetween, fmtMonth, fmtDate } from '../lib/format.js';
 import { countBy, candidateKpis, sectorMatches, diasEnEtapa, estaDemorado } from '../lib/kpis.js';
 import {
   stagePill, filterGroup, toggleFilter, kpi, bars, openDrawer, closeDrawer, toast, formData, field,
@@ -506,6 +506,11 @@ export function openCandidate(id, { volver } = {}) {
         if (ref.cv_path && !data.cv_path) data.cv_path = ref.cv_path;
       }
     }
+    // llega a Próximo ingreso y la silla tiene fecha prevista: ofrecer confirmarla
+    const prev = c._silla?.ingreso_previsto;
+    if (c.id && data.stage === 'proximo_ingreso' && c.stage !== 'proximo_ingreso' && prev && prev >= todayISO() && !c._silla.fecha_ingreso && !data.fecha_ingreso
+        && await confirmDialog(`La silla tiene ingreso previsto el ${fmtDate(prev)}. ¿Lo confirmo como fecha de ingreso?`, { ok: 'Confirmar fecha', cancel: 'Todavía no' })) data.fecha_ingreso = prev;
+    const fechaDesdePrevisto = c.id && prev && data.fecha_ingreso === prev && !c.fecha_ingreso ? c._silla.id : null;
     // para "Deshacer": valores anteriores y silla que se libera al cancelar
     const previo = c.id ? Object.fromEntries(Object.keys(data).map((k) => [k, c[k] ?? null])) : null;
     const sillaLiberada = c.id && data.stage === 'cancelado' && c.stage !== 'cancelado' && c._silla ? c._silla.id : null;
@@ -520,6 +525,7 @@ export function openCandidate(id, { volver } = {}) {
       toastDeshacer(cambio, async () => {
         const { error: e1 } = await sb.from('candidates').update(previo).eq('id', c.id);
         if (e1) throw e1;
+        if (fechaDesdePrevisto) { const { error: e3 } = await sb.from('positions').update({ fecha_ingreso: null }).eq('id', fechaDesdePrevisto); if (e3) throw e3; }
         if (sillaLiberada) { const { error: e2 } = await sb.rpc('assign_candidate', { p_candidate: c.id, p_position: sillaLiberada, p_force: false }); if (e2) throw e2; }
         await loadAll({ silent: true });
       });

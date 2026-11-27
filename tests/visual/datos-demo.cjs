@@ -73,6 +73,9 @@ function datos() {
   candidates[3].dni = null;
   const libre = positions.find((p) => !p.candidate_id); if (libre) libre.ingreso_previsto = '2026-10-05';
   activos[40].localidad = 'NEUQUEN';
+  // ingresos previstos (Agenda) y uno en Próximo ingreso sin fecha confirmada
+  positions.filter((p) => ['cv_recibido', 'entrevista'].includes(p.stage)).slice(0, 4).forEach((p, i) => { p.ingreso_previsto = rel(3 + i * 4); });
+  const pi = positions.find((p) => p.stage === 'proximo_ingreso'); if (pi) { pi.ingreso_previsto = rel(9); pi.fecha_ingreso = null; }
   return { candidates, positions, nomina };
 };
 
