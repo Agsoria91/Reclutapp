@@ -60,6 +60,11 @@ function datos() {
   // legajos: ingresos por silla
   positions.filter((p) => p.stage === 'ingresado').forEach((p, i) => nomina.push({ id: 'nl' + i, nombre: p.candidato_nombre, dni: String(41000000 + i), yacimiento: p.yacimiento, sector: p.sector, puesto: p.puesto, encuadre: p.encuadre,
     fecha_ingreso: p.fecha_ingreso, estado: 'activo', position_id: p.id, candidate_id: p.candidate_id, origen: 'app', localidad: pick(LOC), ddjj: r() < .5 ? 'OK' : '', regalo_kit: '', procedencia: p.procedencia }));
+  // cumpleaños ficticios de hoy y mañana (para el aviso de Agenda y Nómina)
+  const md = (n) => new Date(Date.now() + n * 864e5).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).slice(5, 10);
+  const activos = nomina.filter((n) => n.estado === 'activo');
+  activos[0].fecha_nacimiento = `1990-${md(0)}`; activos[5].fecha_nacimiento = `1984-${md(0)}`; activos[9].fecha_nacimiento = `1999-${md(1)}`;
+  const prox = candidates.find((c) => c.stage === 'proximo_ingreso'); if (prox) prox.fecha_nacimiento = `2001-${md(1)}`;
   return { candidates, positions, nomina };
 };
 

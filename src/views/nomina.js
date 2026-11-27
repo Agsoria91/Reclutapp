@@ -13,6 +13,7 @@ import {
 
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
+import { avisoCumples } from '../components/cumples.js';
 import { icono } from '../components/iconos.js';
 
 const DIMS = ['yacimiento', 'sector', 'encuadre', 'estado', 'pendiente'];
@@ -421,6 +422,7 @@ function vistaModerna({ base, rows, shown, recientes, pfProx }) {
     </div>
   </section>
 
+  ${avisoCumples()}
   <section class="m-barra">
     <label class="m-buscar">${icono('buscar')}<input type="search" id="nom-search" placeholder="Buscar por nombre, DNI, Nº pers., función o jefe" value="${search}"></label>
     <button type="button" class="m-btn-filtros ${filtrosAbiertos ? 'is-on' : ''}" data-act="m-filtros" aria-expanded="${filtrosAbiertos}">${icono('filtro')} Filtros${activos ? html`<b>${activos}</b>` : ''}</button>

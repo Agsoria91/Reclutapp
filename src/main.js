@@ -27,6 +27,7 @@ import { initFolds } from './components/folds.js';
 import { icono } from './components/iconos.js';
 import { abrirBuscador, initBuscador } from './components/buscador.js';
 import * as agenda from './views/agenda.js';
+import { initCumples } from './components/cumples.js';
 import { initModerno } from './components/moderno.js';
 
 const ROUTES = {
@@ -95,6 +96,7 @@ let current = { name: null, container: null };
 initFolds(app, () => current.name);
 initModerno(() => draw());
 initBuscador();
+initCumples();
 // En celular las tablas de personas se ven como tarjetas: cada celda lleva el
 // nombre de su columna (data-th) para mostrarlo como etiqueta.
 function rotularTablas() {

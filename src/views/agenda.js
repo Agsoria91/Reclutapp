@@ -9,6 +9,7 @@ import { mascot } from '../components/mascot.js';
 import { mHead } from '../components/moderno.js';
 import { clinicaCanon } from '../components/examen.js';
 import { feriado } from '../data/feriados.js';
+import { avisoCumples } from '../components/cumples.js';
 
 const TIPOS = [
   ['entrevista', 'Entrevista'], ['examen', 'Examen médico'], ['interconsulta', 'Interconsulta'],
@@ -142,6 +143,7 @@ export function render(el) {
       <button type="button" class="btn ${v.hoyBoton ? 'btn--primary' : 'btn--ghost'}" data-paso="0">${paso === 'mes' ? 'Este mes' : 'Esta semana'}</button>
       <button type="button" class="btn btn--ghost" data-paso="1" aria-label="${paso === 'mes' ? 'Mes siguiente' : 'Semana siguiente'}">→</button>
     </div>` })}
+  ${avisoCumples()}
   <div class="ag-tipos" role="group" aria-label="Tipos de evento">${TIPOS.map(([t, l]) => html`<button type="button" class="ag-tipo ag--${t} ${ocultos.has(t) ? 'is-off' : ''}" data-tipo="${t}" aria-pressed="${!ocultos.has(t)}"><i aria-hidden="true"></i>${l} <span>${cuenta[t]}</span></button>`)}
     <span class="ag-leyenda"><i class="ag-l-fer"></i>Feriado <i class="ag-l-nol"></i>No laborable</span></div>
   ${v.cuerpo}`);
