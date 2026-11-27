@@ -64,6 +64,7 @@ Triggers relevantes: `tg_candidates_hitos` (las fechas adelantan la etapa salvo 
 - Cargas masivas desde planilla (ej. 27/11/2026, Well Services LT2E enero): si el candidato ya existe solo se completan campos vacíos (no se pisa nada), los nuevos entran en CV recibido, se sientan en sillas libres sin ocupar relevos; sobrantes van a la terna. Respaldo previo en `respaldo.*_AAAAMMDD`.
 - "Próximos ingresos" (pantalla Ingresos y diapositiva de reunión): solo sillas en etapa Próximo ingreso; una fecha de ingreso cargada por adelantado no alcanza.
 - Fecha de ingreso: `positions.ingreso_previsto` (planificada) separada de `fecha_ingreso` (confirmada, solo en Próximo ingreso/Ingresado). La importación de sillas manda la fecha a prevista si la silla no está en esas etapas. Los previstos se ven en Agenda ("Ingreso previsto", color suave) y al pasar a Próximo ingreso se ofrece confirmarlos (ficha, silla y botón "Confirmar fecha" en Ingresos).
+- 24/12 (Nochebuena) y 31/12 (Fin de año) se marcan como no laborables en la Agenda todos los años (criterio del usuario).
 - POS SAP: el maestro SAP manda; si quien figura en SAP está de baja en nómina, la POS se considera libre.
 
 ## Pendientes
