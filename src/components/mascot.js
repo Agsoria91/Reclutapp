@@ -1,62 +1,30 @@
-// "La Cigüeña": balancín (bomba de varillas) con cara de ave, mascota de la app.
-// Estados: loading (bombea), empty (mira un pozo seco), success (festeja),
-// error (se le soltó un bulón). Línea simple, paleta EFiS, sin texto.
+// Ilustraciones de estado (sin datos, error, éxito) en el mismo trazo de línea
+// que los íconos del menú. Paleta EFiS, sin texto.
 import { html, raw } from '../lib/html.js';
 
 const MSG = {
-  loading: ['Bombeando datos…', 'Un toque y sale.'],
-  empty: ['Pozo seco', 'No hay resultados con estos filtros. Probá sacando alguno.'],
-  success: ['¡Ingreso confirmado!', 'Una silla menos para cubrir.'],
-  error: ['Se nos trabó el balancín', 'Algo no cargó. Reintentá en un momento.'],
+  loading: ['Cargando datos', ''],
+  empty: ['Sin resultados', ''],
+  success: ['¡Ingreso confirmado!', ''],
+  error: ['No se pudo cargar', 'Reintentá en un momento.'],
 };
 
-export function mascotSVG(stateName = 'loading', size = 160) {
-  const s = stateName;
-  return raw(`
-<svg class="cig cig--${s}" width="${size}" height="${Math.round(size * 0.72)}" viewBox="0 0 200 144" aria-hidden="true" focusable="false">
-  <g class="cig-ground">
-    <path d="M8 126 H192" />
-    ${s === 'empty' || s === 'error' ? '<path class="cig-crack" d="M150 126 l4 5 l-3 4 l5 4 M164 126 l-3 6 l4 3" />' : ''}
-  </g>
-  <!-- boca de pozo -->
-  <g class="cig-well">
-    <rect x="164" y="112" width="16" height="14" rx="2" />
-    <path d="M160 112 H184" />
-  </g>
-  <!-- caja reductora + manivela (cola) -->
-  <rect class="cig-box" x="44" y="100" width="28" height="26" rx="4" />
-  <g class="cig-crank">
-    <circle cx="58" cy="104" r="3.5" class="cig-hub" />
-    <path d="M58 104 L58 88" />
-    <path class="cig-weight" d="M48 84 Q58 74 68 84 L64 90 Q58 86 52 90 Z" />
-  </g>
-  <!-- patas (poste maestro) -->
-  <g class="cig-legs">
-    <path d="M86 126 L104 56" />
-    <path d="M122 126 L104 56" />
-    <path d="M92 104 H116" class="cig-knee" />
-  </g>
-  <!-- balancín con cabeza de ave -->
-  <g class="cig-beam">
-    <path class="cig-bar" d="M50 56 H166" />
-    <path class="cig-pitman" d="M58 58 L58 90" />
-    <path class="cig-tail" d="M50 56 L40 48 M50 56 L38 56 M50 56 L40 64" />
-    <path class="cig-head" d="M156 46 Q176 42 178 60 Q179 74 168 80 L164 80 Q170 72 168 62 Q166 54 156 54 Z" />
-    <path class="cig-beak" d="M175 60 L194 70 L176 67 Z" />
-    ${s === 'error'
-      ? '<path class="cig-eye-x" d="M163 52 l5 5 M168 52 l-5 5" />'
-      : '<circle class="cig-eye" cx="165.5" cy="54.5" r="3" /><circle class="cig-pupil" cx="166.4" cy="55" r="1.3" />'}
-    <path class="cig-cable" d="M168 80 L172 112" />
-    <circle class="cig-pivot" cx="104" cy="56" r="4" />
-  </g>
-  ${s === 'empty' ? '<text class="cig-q" x="182" y="40">?</text><path class="cig-dust" d="M170 122 q4 -6 8 0 q4 -6 8 0" />' : ''}
-  ${s === 'success' ? `<g class="cig-spurt">
-      <circle cx="172" cy="104" r="3" class="d1"/><circle cx="172" cy="104" r="2.5" class="d2"/>
-      <circle cx="172" cy="104" r="3" class="d3"/><circle cx="172" cy="104" r="2" class="d4"/>
-      <circle cx="172" cy="104" r="2.5" class="d5"/>
-    </g>` : ''}
-  ${s === 'error' ? '<g class="cig-bolt"><circle cx="128" cy="118" r="3" /><path d="M128 118 l6 -3" /></g><path class="cig-swirl" d="M160 34 q6 -6 10 0 q-4 6 -10 2" />' : ''}
-</svg>`);
+export function mascotSVG(stateName = 'empty', size = 120) {
+  const w = size, h = Math.round(size * 0.75);
+  const base = `<svg class="ilu ilu--${stateName}" width="${w}" height="${h}" viewBox="0 0 160 120" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">`;
+  const piso = '<path class="ilu-piso" d="M20 104h120"/>';
+  const dibujos = {
+    // carpeta vacía con una lupa
+    empty: `${piso}<path class="ilu-linea" d="M34 40h30l8 9h48a6 6 0 0 1 6 6v41a6 6 0 0 1-6 6H40a6 6 0 0 1-6-6z"/>
+      <path class="ilu-suave" d="M46 66h40M46 78h28"/>
+      <circle class="ilu-acento" cx="108" cy="70" r="13"/><path class="ilu-acento" d="m118 80 10 10"/>`,
+    // aviso con signo de exclamación
+    error: `${piso}<path class="ilu-linea" d="M80 26 122 98H38z"/><path class="ilu-alerta" d="M80 52v22M80 84v1"/>`,
+    // tilde dentro de un círculo, con destellos
+    success: `${piso}<circle class="ilu-linea" cx="80" cy="60" r="30"/><path class="ilu-acento" d="m66 61 10 10 20-22"/>
+      <path class="ilu-suave" d="M80 18v8M116 34l-6 5M44 34l6 5M124 64h-8M36 64h8"/>`,
+  };
+  return raw(base + (dibujos[stateName] || dibujos.empty) + '</svg>');
 }
 
 export function mascot(stateName = 'loading', { title, text, size = 160, compact = false, action } = {}) {
@@ -71,7 +39,7 @@ export function mascot(stateName = 'loading', { title, text, size = 160, compact
   }
   const [t, d] = MSG[stateName] || MSG.loading;
   return html`<div class="mascot ${compact ? 'mascot--compact' : ''}" role="${stateName === 'error' ? 'alert' : 'status'}">
-    ${mascotSVG(stateName, size)}
+    ${mascotSVG(stateName, Math.min(size, 140))}
     <div class="mascot-text">
       <strong>${title ?? t}</strong>
       ${(text ?? d) ? html`<span>${text ?? d}</span>` : ''}

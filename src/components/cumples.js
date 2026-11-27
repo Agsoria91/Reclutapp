@@ -5,6 +5,9 @@ import { html } from '../lib/html.js';
 import { state } from '../lib/store.js';
 import { todayISO } from '../lib/format.js';
 import { icono } from './iconos.js';
+import { loadLocal, saveLocal } from './ui.js';
+
+let abierta = false; // la franja arranca en una sola línea
 
 const digitos = (v) => String(v ?? '').replace(/\D/g, '');
 const bisiesto = (y) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
@@ -56,19 +59,30 @@ export function avisoCumples() {
   const aniv = aniversarios();
   if (!hoy.length && !manana.length && !aniv.length) return '';
   const hoyIso = todayISO();
+  if (loadLocal('reclutapp.cumples.oculto', '') === hoyIso) return '';
+  const resumen = [hoy.length ? `${hoy.length} ${hoy.length === 1 ? 'cumpleaños' : 'cumpleaños'} hoy` : '', manana.length ? `${manana.length} mañana` : '',
+    aniv.length ? `${aniv.length} ${aniv.length === 1 ? 'aniversario' : 'aniversarios'} esta semana` : ''].filter(Boolean).join(' · ');
   const cuando = (f) => (f === hoyIso ? 'hoy' : f === sumar(hoyIso, 1) ? 'mañana' : `${DSEM[new Date(f + 'T00:00:00Z').getUTCDay()]} ${f.slice(8, 10)}/${f.slice(5, 7)}`);
   const chip = (p) => html`<button type="button" class="cum-chip" ${p.nom ? html`data-cumple-nom="${p.nom}"` : html`data-cumple-cand="${p.cand}"`} title="${p.sub}"><b>${p.nombre}</b> <span>${p.edad} años${p.sub === 'Próximo ingreso' ? ' · próximo ingreso' : ''}</span></button>`;
-  return html`<section class="cumples" aria-label="Cumpleaños y aniversarios">
-    <span class="cum-ico">${icono('cumple')}</span>
+  return html`<section class="cumples ${abierta ? 'is-abierta' : ''}" aria-label="Cumpleaños y aniversarios">
+    <div class="cum-linea">
+      <button type="button" class="cum-resumen" data-cum-toggle aria-expanded="${abierta}"><span class="cum-ico">${icono('cumple')}</span><b>${resumen}</b><span class="cum-flecha" aria-hidden="true">${icono('flecha')}</span></button>
+      <button type="button" class="cum-ocultar" data-cum-ocultar title="No mostrar más hoy">Ocultar hasta mañana</button>
+    </div>
+    <div class="cum-detalle">
     ${hoy.length ? html`<div class="cum-grupo"><span class="cum-tit">Hoy cumplen</span>${hoy.map(chip)}</div>` : ''}
     ${manana.length ? html`<div class="cum-grupo"><span class="cum-tit">Mañana</span>${manana.map(chip)}</div>` : ''}
     ${aniv.length ? html`<div class="cum-grupo"><span class="cum-tit">Aniversarios esta semana</span>${aniv.map((a) => html`<button type="button" class="cum-chip ${esHito(a.anios) ? 'is-hito' : ''}" data-cumple-nom="${a.nom}" title="${a.sub}"><b>${a.nombre}</b> <span>${a.anios} ${a.anios === 1 ? 'año' : 'años'} · ${cuando(a.fecha)}</span></button>`)}</div>` : ''}
+    </div>
   </section>`;
 }
 
 // abre la ficha al tocar un nombre (en cualquier pantalla)
 export function initCumples() {
   document.addEventListener('click', async (e) => {
+    const t = e.target.closest('[data-cum-toggle]');
+    if (t) { abierta = !abierta; document.querySelectorAll('.cumples').forEach((s) => s.classList.toggle('is-abierta', abierta)); t.setAttribute('aria-expanded', String(abierta)); return; }
+    if (e.target.closest('[data-cum-ocultar]')) { saveLocal('reclutapp.cumples.oculto', todayISO()); document.querySelectorAll('.cumples').forEach((s) => s.remove()); return; }
     const n = e.target.closest('[data-cumple-nom]');
     if (n) { (await import('../views/nomina.js')).abrirPersona(n.dataset.cumpleNom); return; }
     const c = e.target.closest('[data-cumple-cand]');

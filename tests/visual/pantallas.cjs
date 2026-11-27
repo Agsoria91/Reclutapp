@@ -126,6 +126,11 @@ async function servidor() {
   await p.evaluate(async () => { (await import('/src/components/ui.js')).toastDeshacer('Demo Ejemplo: Examen Médico', () => {}, { ms: 60000 }); }); await p.waitForTimeout(400); await snap(p, '68-deshacer');
   await p.evaluate(() => document.querySelectorAll('.toast').forEach((t) => t.remove()));
   await go(p, 'nomina'); await tab(p, 'listado'); await p.evaluate(() => { const w = document.querySelector('.m-lista .table-wrap'); w.scrollTop = 600; }); await p.waitForTimeout(300); await snap(p, '69-encabezado-fijo');
+  // diseño: campanita, franja desplegada, detalle de gráfico, estado vacío
+  await go(p, 'nomina'); await tab(p, 'resumen'); await p.click('#btn-campana'); await p.waitForTimeout(300); await snap(p, '70-campana');
+  await p.keyboard.press('Escape'); await p.click('[data-cum-toggle]'); await p.waitForTimeout(200); await snap(p, '71-franja-abierta'); await p.click('[data-cum-toggle]');
+  await go(p, 'entrevistas'); await tab(p, 'graficos'); const col = p.locator('.cols .col').nth(2); await col.scrollIntoViewIfNeeded(); await col.hover(); await p.mouse.move((await col.boundingBox()).x + 20, (await col.boundingBox()).y + 60); await p.waitForTimeout(300); await snap(p, '72-detalle-grafico');
+  await go(p, 'candidatos'); await tab(p, 'listado'); await p.fill('#cand-search', 'zzzz'); await p.waitForTimeout(400); await snap(p, '73-sin-resultados'); await p.fill('#cand-search', '');
   await p.evaluate(async () => { const st = await import('/src/lib/store.js'); st.set({ loading: true, positions: [], candidates: [] }); location.hash = '#/posiciones'; });
   await p.waitForTimeout(600); await snap(p, '65-cargando');
   await p.context().close();
