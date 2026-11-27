@@ -9,6 +9,7 @@ import { fmtMonth, fmtDate, todayISO, pct } from '../lib/format.js';
 import { positionKpis, pendingByTarget, isCovered, interviewStats, monthKey, avancePeriodo } from '../lib/kpis.js';
 import { mascot } from '../components/mascot.js';
 import { estadoMedico, esApto, clinicaCanon } from '../components/examen.js';
+import { datosCierre, mesAnterior } from '../lib/cierreMes.js';
 
 let idx = 0;
 let keysBound = false;
@@ -33,6 +34,7 @@ const SECCIONES = [
   { id: 'reclutamiento', label: 'Reclutamiento', slide: slideReclutamiento },
   { id: 'ingresos', label: 'Ingresos', slide: slideIngresos },
   { id: 'examenes', label: 'Exámenes médicos', slide: slideExamenes, staff: true },
+  { id: 'cierre-mes', label: 'Cierre de mes', slide: slideCierreMes, staff: true },
 ];
 
 function header(activo) {
@@ -245,6 +247,42 @@ function slideExamenes({ cands }) {
     </div></section>`;
 }
 
+// Cierre de mes (solo RRHH): dotación, movimientos, sillas, reclutamiento y tiempos
+function slideCierreMes({ mesCierre, area, today }) {
+  const nomina = state.nomina.filter((n) => !area || n.yacimiento === area);
+  const r = datosCierre(mesCierre, { nomina, candidates: state.candidates.filter((c) => !area || c.area === area), positions: state.positions.filter((p) => !area || p.yacimiento === area), hoy: today });
+  const s = r.sillas || { req: 0, ok: 0, pend: 0, despues: 0, avance: 0 };
+  const rc = r.reclutamiento;
+  const max = Math.max(1, rc.cvs, rc.entrevistas);
+  const dias = (v) => (v == null ? '—' : `${v} días`);
+  return html`<section class="dk-slide">${header('cierre-mes')}
+    <div class="dk-body dk-grid-2">
+      <div class="dk-col">
+        <div class="dk-big dk-big--dark"><b>${fmtN(r.dotFin)}</b><span>Dotación al ${fmtDate(r.corte)}<br><small>${r.dotFin - r.dotIni >= 0 ? '+' : ''}${r.dotFin - r.dotIni} vs. inicio del mes (${fmtN(r.dotIni)})${r.enCurso ? ' · mes en curso' : ''}</small></span></div>
+        <div class="dk-kpis">
+          ${dkKpi(r.ingresos.length, 'Ingresos', 'altas en nómina', 'green')}
+          ${dkKpi(r.bajas.length, 'Bajas', r.tempranas.length ? `${r.tempranas.length} antes de los 90 días` : 'en el mes', r.bajas.length ? 'red' : '')}
+          <div class="dk-kpi ${r.rotacion >= 3 ? 'dk-kpi--red' : ''}"><b>${r.rotacion.toLocaleString('es-AR')}%</b><span>Rotación</span><small>bajas / dotación promedio</small></div>
+          <div class="dk-kpi dk-kpi--lime"><b>${s.avance}%</b><span>Sillas del mes</span><small>${s.ok} de ${s.req} cubiertas${s.pend ? ` · ${s.pend} pendientes` : ''}</small></div>
+        </div>
+      </div>
+      <div class="dk-col">
+        <div class="dk-card"><h3>Reclutamiento del mes <small>${fmtMonth(mesCierre)}</small></h3>
+          <ul class="dk-funnel">${[['CV recibidos', rc.cvs], ['Entrevistas', rc.entrevistas], ['Entrevistas aprobadas', rc.aprobadas], ['Enviados a examen', rc.examenes], ['Ingresaron (candidatos)', rc.ingresos]].map(([l, v]) => html`<li>
+            <span>${l}</span><span class="dk-funnel-bar" style="width:${Math.max(1, (v / max) * 100)}%"></span><span class="dk-funnel-val"><b>${fmtN(v)}</b></span></li>`)}</ul>
+          ${rc.cancelados ? html`<p class="dk-legend">${rc.cancelados} ${rc.cancelados === 1 ? 'candidato dado de baja' : 'candidatos dados de baja'} en el proceso</p>` : ''}
+        </div>
+        <div class="dk-card"><h3>Tiempos promedio <small>de quienes ingresaron en el mes</small></h3>
+          <table class="dk-table"><tbody>
+            <tr><td>CV recibido → ingreso</td><td class="dk-mono">${dias(r.tiempos.cvIngreso)}</td></tr>
+            <tr><td>Entrevista → ingreso</td><td class="dk-mono">${dias(r.tiempos.entrevistaIngreso)}</td></tr>
+            <tr><td>Apertura de la silla → ingreso</td><td class="dk-mono">${dias(r.tiempos.sillaCubierta)}</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+    </div></section>`;
+}
+
 function slideCierre() {
   return html`<section class="dk-slide dk-cover dk-cover--end">
     <img src="./brand/efis-isologo-negativo.svg" alt="EFiS Energy Field Services" class="dk-cover-logo">
@@ -263,10 +301,14 @@ export function render(el, params) {
   const disponibles = mesesDelMapa();
   const pedidos = (params?.get('meses') || '').split(',').filter((m) => disponibles.includes(m));
   const meses = pedidos.length ? pedidos.sort() : periodoPorDefecto();
-  const d = { area, meses, ...datos(area) };
+  const mesCierre = /^\d{4}-\d{2}$/.test(params?.get('mes') || '') ? params.get('mes') : mesAnterior(todayISO());
+  const d = { area, meses, mesCierre, ...datos(area) };
   const slides = [slidePortada(d), ...SECCIONES.filter((s) => !s.staff || state.isStaff).map((s) => s.slide(d)), slideCierre()];
   const ids = ['portada', ...SECCIONES.filter((s) => !s.staff || state.isStaff).map((s) => s.id), 'cierre'];
+  // ?ir=… abre directamente esa diapositiva (una vez por enlace)
+  if (params?.get('ir') && ids.includes(params.get('ir')) && render._ir !== location.hash) { idx = ids.indexOf(params.get('ir')); render._ir = location.hash; }
   idx = Math.min(idx, slides.length - 1);
+  const ultimos12 = Array.from({ length: 12 }, (_, i) => { const [y, m] = todayISO().split('-').map(Number); return new Date(Date.UTC(y, m - 1 - i, 1)).toISOString().slice(0, 7); });
   const areas = [...new Set(state.positions.map((p) => p.yacimiento).filter(Boolean))].sort();
 
   el.innerHTML = String(html`<div class="dk-root">
@@ -277,6 +319,8 @@ export function render(el, params) {
         <div class="dk-meses-box">${disponibles.map((m) => html`<label><input type="checkbox" value="${m}" ${raw(meses.includes(m) ? 'checked' : '')}> ${fmtMonth(m)}</label>`)}
           <div class="dk-meses-pre"><button type="button" class="dk-btn" data-dk-meses="hasta">Hasta el mes pasado</button><button type="button" class="dk-btn" data-dk-meses="aplicar">Aplicar</button></div></div>
       </details>
+      ${ids[idx] === 'cierre-mes' ? html`<label class="dk-sel"><span>Mes</span><select id="dk-mes">${ultimos12.map((m) => html`<option value="${m}" ${raw(m === mesCierre ? 'selected' : '')}>${fmtMonth(m)}</option>`)}</select></label>
+        <button type="button" class="dk-btn" data-dk="excel-mes">Excel del mes</button>` : ''}
       <span class="dk-spacer"></span>
       <button class="dk-btn" type="button" data-dk="prev" aria-label="Anterior">◀</button>
       <span class="dk-count">${idx + 1} / ${slides.length}</span>
@@ -305,6 +349,14 @@ export function render(el, params) {
     location.hash = '#/reunion' + (q.toString() ? '?' + q.toString().replace(/%2C/g, ',') : '');
   };
   el.querySelector('#dk-area').onchange = (e) => { idx = 0; irA(e.target.value, pedidos); };
+  el.querySelector('#dk-mes')?.addEventListener('change', (e) => {
+    const q = new URLSearchParams(params?.toString() || ''); q.set('mes', e.target.value); q.delete('ir');
+    location.hash = '#/reunion?' + q.toString().replace(/%2C/g, ',');
+  });
+  el.querySelector('[data-dk="excel-mes"]')?.addEventListener('click', async (e) => {
+    const b = e.currentTarget; b.disabled = true;
+    try { const { descargarCierre } = await import('../lib/cierreExcel.js'); await descargarCierre(mesCierre, area); } finally { b.disabled = false; }
+  });
   el.querySelectorAll('[data-dk-meses]').forEach((b) => {
     b.onclick = () => {
       const cur = monthKey(todayISO());

@@ -1444,3 +1444,6 @@ dialog.buscador::backdrop { background: rgba(8, 18, 14, .45); }
   [data-estilo="iris"] .table-wrap:has(> .tbl--tarjetas:not(.tbl--pos)) { max-height: calc(100vh - 150px); overflow: auto; }
   [data-estilo="iris"] .tbl--tarjetas:not(.tbl--pos) thead th { position: sticky; top: 0; z-index: 1; }
 }
+.cum-chip.is-hito { border-color: #C9A227; background: color-mix(in srgb, #C9A227 10%, transparent); }
+.cum-chip.is-hito span { color: #8A6A1F; font-weight: 600; }
+[data-theme="dark"] .cum-chip.is-hito span { color: #E8CF8F; }
