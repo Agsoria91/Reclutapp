@@ -9,7 +9,7 @@ import {
   pivot, pivotTable, pivotCSV, downloadCSV, rowsToCSV, dimSelect,
   animateIn,
 } from '../components/ui.js';
-import { avisoBar, pendientesCard, openAvisoDrawer, openPlantillas, avisarCambioDeEtapa, pendientesDeAviso } from '../components/avisos.js';
+import { avisoBar, pendientesCard, openAvisoDrawer, openPlantillas, avisarCambioDeEtapa, pendientesDeAviso, tipoTurno } from '../components/avisos.js';
 import { mascot } from '../components/mascot.js';
 import { mHead, mBarra, mChips, mPanel, mKpis, mTabs, subTab } from '../components/moderno.js';
 import { openAssignFromCandidate } from './asignar.js';
@@ -528,7 +528,11 @@ export function openCandidate(id, { volver } = {}) {
     await loadAll({ silent: true });
     if (ingreso) celebrate();
     // Cambió de etapa: ofrecer avisarle en el momento (mensaje según la etapa)
-    if (c.id && data.stage !== c.stage) avisarCambioDeEtapa(c.id, c.stage);
+    // turno nuevo o cambiado en una clínica con mensaje propio (p. ej. Synergys): ofrecer avisarle
+    const turnoNuevo = c.id && data.epo && (data.epo !== c.epo || (data.clinica || '') !== (c.clinica || ''));
+    const cAct = state.candidates.find((x) => x.id === c.id);
+    if (turnoNuevo && cAct && tipoTurno(cAct)) openAvisoDrawer(c.id, { tipo: tipoTurno(cAct), motivo: `Turno cargado para el ${String(data.epo).split('-').reverse().join('/')}. ¿Le avisás?` });
+    else if (c.id && data.stage !== c.stage) avisarCambioDeEtapa(c.id, c.stage);
     else if (volver) volver();
   });
 

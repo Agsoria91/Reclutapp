@@ -1563,3 +1563,4 @@ dialog.buscador::backdrop { background: rgba(8, 18, 14, .45); }
 .et-sector.is-abierto .et-flecha { transform: rotate(90deg); }
 .et-tabla .et-sector:focus-visible { outline: 2px solid var(--ir-pri); outline-offset: -2px; }
 @media (prefers-reduced-motion: reduce) { .et-card, .et-flecha { transition: none; } }
+.aviso-box header select { min-width: 270px; max-width: 100%; }
