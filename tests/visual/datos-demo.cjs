@@ -29,6 +29,9 @@ function datos() {
     if (stage === 'cancelado') { c.fecha_baja = fecha(9, 3); c.motivos_baja = [pick(['No Califica','Rechaza Propuesta','No se presenta','No Apto Medico'])]; c.cancelado = true; }
     candidates.push(c);
   }
+  // turnos en el mes actual (relativos a hoy) para la agenda
+  const rel = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
+  candidates.slice(0, 24).forEach((c, i) => { if (c.stage === 'cancelado') return; if (i % 3 === 0) c.en_entrevista = rel((i % 12) - 4); else if (i % 3 === 1) c.epo = rel((i % 10) - 3); });
   // una persona con dos entrevistas
   candidates.push({ ...candidates[3], id: 'c-dup', area: 'FDP', servicio: 'Producción', stage: 'entrevista', en_entrevista: '2026-11-20' });
   candidates[3].stage = 'cancelado'; candidates[3].motivos_baja = ['No Califica']; candidates[3].fecha_baja = '2026-11-18';

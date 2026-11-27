@@ -104,9 +104,11 @@ async function servidor() {
   await go(p, 'reunion', 1200); await p.keyboard.press('ArrowRight'); await p.waitForTimeout(600); await snap(p, '49-reunion-2');
   await p.keyboard.press('ArrowRight'); await p.waitForTimeout(600); await snap(p, '50-reunion-3');
   // pantallas agregadas: agenda, buscador, duplicados, vista compacta, carga
-  await go(p, 'agenda'); await snap(p, '60-agenda');
-  await p.click('[data-sem="1"]'); await p.waitForTimeout(400); await snap(p, '61-agenda-siguiente');
-  await p.click('[data-sem="0"]');
+  await go(p, 'agenda'); await p.click('[data-vista="mes"]'); await p.waitForTimeout(300); await snap(p, '60-agenda-mes');
+  await p.click('[data-paso="1"]'); await p.waitForTimeout(300); await p.click('.ag-cel[data-dia$="-08"]'); await p.waitForTimeout(300); await snap(p, '60b-agenda-mes-feriado');
+  await p.click('[data-paso="0"]');
+  await p.click('[data-vista="semana"]'); await p.waitForTimeout(300); await snap(p, '61-agenda-semana');
+  await p.click('[data-vista="mes"]');
   await p.keyboard.press('Control+k'); await p.waitForTimeout(300); await p.keyboard.type('maqueta'); await p.waitForTimeout(400); await snap(p, '62-buscador');
   await p.keyboard.press('Escape'); await p.waitForTimeout(200);
   await go(p, 'candidatos');
@@ -131,6 +133,7 @@ async function servidor() {
 
   p = await page({ mobile: true });
   await go(p, 'mapa', 5000); await snap(p, '23-movil-mapa');
+  await go(p, 'agenda'); await snap(p, '66-movil-agenda');
   await go(p, 'candidatos'); await tab(p, 'listado'); await snap(p, '24-movil-candidatos');
   await go(p, 'nomina'); await tab(p, 'resumen'); await snap(p, '25-movil-nomina');
   await p.click('[data-menu-abrir]'); await p.waitForTimeout(500); await snap(p, '26-movil-menu');
