@@ -8,6 +8,7 @@ import { pendientesDeAviso } from './avisos.js';
 import { preingresoProgress } from './ingreso.js';
 import { estadoMedico } from './examen.js';
 import { icono } from './iconos.js';
+import { cumplesCampana, hayCumples } from './cumples.js';
 
 const masDias = (iso, n) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 
@@ -65,11 +66,15 @@ export async function irA(k) {
 // Campanita de la barra superior: cantidad de pendientes y la misma lista desplegable
 export function campanaHtml() {
   if (!state.isStaff) return '';
-  const n = items().length;
-  return html`<button type="button" class="icon-btn btn-campana" id="btn-campana" aria-haspopup="true" aria-expanded="false" title="${n ? `Para hoy: ${n} ${n === 1 ? 'pendiente' : 'pendientes'}` : 'Para hoy: nada pendiente'}">${icono('campana')}${n ? html`<b class="campana-n">${n}</b>` : ''}</button>`;
+  const n = items().length + (hayCumples() ? 1 : 0);
+  return html`<button type="button" class="icon-btn btn-campana" id="btn-campana" aria-haspopup="true" aria-expanded="false" title="${n ? `Para hoy: ${n} ${n === 1 ? 'aviso' : 'avisos'}` : 'Para hoy: nada pendiente'}">${icono('campana')}${n ? html`<b class="campana-n">${n}</b>` : ''}</button>`;
 }
 export function campanaLista() {
   const xs = items();
+  const cumples = cumplesCampana();
+  return html`${cumples}${xs.length || !cumples ? pendientesLista(xs) : ''}`;
+}
+function pendientesLista(xs) {
   return xs.length ? html`<span class="campana-tit">Para hoy</span>${xs.map(([k, n, txt, tono]) => html`<button type="button" class="hoy hoy--${tono}" data-hoy="${k}">${txt(n)}</button>`)}`
     : html`<span class="campana-tit">Para hoy</span><p class="campana-vacio">No hay pendientes.</p>`;
 }
