@@ -79,7 +79,7 @@ async function servidor() {
   await go(p, 'importar'); await snap(p, '18-importar');
   await go(p, 'reunion', 1500); await snap(p, '19-reunion');
   // pantallas y paneles adicionales
-  const abrir = async (js, name) => { await p.evaluate(js); await p.waitForTimeout(700); await snap(p, name); await p.evaluate(async () => { (await import('/src/components/ui.js')).closeDrawer(); document.querySelectorAll('dialog').forEach((d) => d.remove()); }); };
+  const abrir = async (js, name) => { await p.evaluate(js); await p.waitForTimeout(700); await snap(p, name); await p.keyboard.press('Escape'); await p.waitForTimeout(300); await p.evaluate(async () => { (await import('/src/components/ui.js')).closeDrawer(); document.querySelectorAll('dialog').forEach((d) => d.remove()); }); };
   await go(p, 'posiciones'); await abrir(async () => { (await import('/src/views/posiciones.js')).openEditor('p1'); }, '30-editor-silla');
   await go(p, 'candidatos'); await abrir(async () => { (await import('/src/components/avisos.js')).openAvisoDrawer('c1'); }, '31-aviso');
   await abrir(async () => { (await import('/src/components/avisos.js')).openPlantillas(); }, '32-plantillas');
@@ -118,6 +118,13 @@ async function servidor() {
   await p.evaluate(async () => { (await import('/src/components/ui.js')).closeDrawer(); });
   await go(p, 'nomina'); await tab(p, 'listado'); await p.click('#btn-compacto'); await p.waitForTimeout(300); await snap(p, '64-compacto');
   await p.click('#btn-compacto'); await p.waitForTimeout(200);
+  // uso: tarjeta al pasar el mouse, aviso con Deshacer, encabezado fijo
+  await go(p, 'candidatos'); await tab(p, 'listado');
+  const fila = p.locator('.tbl--cand tbody tr').nth(2); await fila.scrollIntoViewIfNeeded(); await p.waitForTimeout(300); await fila.hover(); await p.mouse.move(400, (await fila.boundingBox()).y + 12); await p.waitForTimeout(700); await snap(p, '67-tarjeta-flotante');
+  await p.mouse.move(5, 5);
+  await p.evaluate(async () => { (await import('/src/components/ui.js')).toastDeshacer('Demo Ejemplo: Examen Médico', () => {}, { ms: 60000 }); }); await p.waitForTimeout(400); await snap(p, '68-deshacer');
+  await p.evaluate(() => document.querySelectorAll('.toast').forEach((t) => t.remove()));
+  await go(p, 'nomina'); await tab(p, 'listado'); await p.evaluate(() => { const w = document.querySelector('.m-lista .table-wrap'); w.scrollTop = 600; }); await p.waitForTimeout(300); await snap(p, '69-encabezado-fijo');
   await p.evaluate(async () => { const st = await import('/src/lib/store.js'); st.set({ loading: true, positions: [], candidates: [] }); location.hash = '#/posiciones'; });
   await p.waitForTimeout(600); await snap(p, '65-cargando');
   await p.context().close();
