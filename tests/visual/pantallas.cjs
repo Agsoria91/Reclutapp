@@ -75,6 +75,7 @@ async function servidor() {
   await go(p, 'nomina'); await tab(p, 'resumen'); await snap(p, '14-nomina');
   await p.locator(".m-btn-filtros").first().click(); await p.waitForTimeout(500); await snap(p, '15-nomina-filtros');
   await p.locator(".m-btn-filtros").first().click(); await tab(p, 'graficos'); await desplegar(p); await snap(p, '16-nomina-graficos');
+  await tab(p, 'perfil'); await snap(p, '16b-nomina-perfil');
   await tab(p, 'listado'); await snap(p, '17-nomina-listado');
   await go(p, 'importar'); await snap(p, '18-importar');
   await go(p, 'reunion', 1500); await snap(p, '19-reunion');
@@ -103,6 +104,7 @@ async function servidor() {
   await go(p, 'login', 900); await snap(p, '48-login');
   await go(p, 'reunion', 1200); await p.keyboard.press('ArrowRight'); await p.waitForTimeout(600); await snap(p, '49-reunion-2');
   await p.keyboard.press('ArrowRight'); await p.waitForTimeout(600); await snap(p, '50-reunion-3');
+  await p.evaluate(() => { location.hash = '#/reunion?mes=2026-10&ir=cierre-mes'; }); await p.waitForTimeout(1500); await snap(p, '51-cierre-mes');
   // pantallas agregadas: agenda, buscador, duplicados, vista compacta, carga
   await go(p, 'agenda'); await p.click('[data-vista="mes"]'); await p.waitForTimeout(300); await snap(p, '60-agenda-mes');
   await p.click('[data-paso="1"]'); await p.waitForTimeout(300); await p.click('.ag-cel[data-dia$="-08"]'); await p.waitForTimeout(300); await snap(p, '60b-agenda-mes-feriado');

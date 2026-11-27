@@ -1,4 +1,5 @@
-// Cumpleaños de hoy y mañana: personal activo en nómina, ingresados y próximos ingresos.
+// Cumpleaños de hoy y mañana (personal activo en nómina, ingresados y próximos ingresos)
+// y aniversarios laborales de los próximos 7 días (personal activo en nómina).
 // Se muestra arriba en Agenda y en Nómina (solo RRHH). Sin duplicar: una persona por DNI.
 import { html } from '../lib/html.js';
 import { state } from '../lib/store.js';
@@ -32,15 +33,36 @@ export function cumpleanos(hoy = todayISO()) {
   return { hoy: en(hoy), manana: en(manana) };
 }
 
+// Aniversarios en la empresa de hoy a 6 días (por fecha de ingreso). Hitos: 1, 5, 10, 15, 20, 25, 30…
+export const esHito = (n) => n === 1 || n % 5 === 0;
+export function aniversarios(hoy = todayISO(), dias = 7) {
+  const fechas = Array.from({ length: dias }, (_, i) => sumar(hoy, i));
+  const out = [];
+  for (const n of state.nomina || []) {
+    if (n.estado !== 'activo' || !n.fecha_ingreso) continue;
+    for (const f of fechas) {
+      if (diaEn(n.fecha_ingreso, Number(f.slice(0, 4))) !== f) continue;
+      const anios = Number(f.slice(0, 4)) - Number(n.fecha_ingreso.slice(0, 4));
+      if (anios >= 1) out.push({ nombre: n.nombre, nom: n.id, fecha: f, anios, sub: [n.yacimiento, n.sector].filter(Boolean).join(' · ') });
+    }
+  }
+  return out.sort((a, b) => a.fecha.localeCompare(b.fecha) || b.anios - a.anios || a.nombre.localeCompare(b.nombre, 'es'));
+}
+const DSEM = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+
 export function avisoCumples() {
   if (!state.isStaff) return '';
   const { hoy, manana } = cumpleanos();
-  if (!hoy.length && !manana.length) return '';
+  const aniv = aniversarios();
+  if (!hoy.length && !manana.length && !aniv.length) return '';
+  const hoyIso = todayISO();
+  const cuando = (f) => (f === hoyIso ? 'hoy' : f === sumar(hoyIso, 1) ? 'mañana' : `${DSEM[new Date(f + 'T00:00:00Z').getUTCDay()]} ${f.slice(8, 10)}/${f.slice(5, 7)}`);
   const chip = (p) => html`<button type="button" class="cum-chip" ${p.nom ? html`data-cumple-nom="${p.nom}"` : html`data-cumple-cand="${p.cand}"`} title="${p.sub}"><b>${p.nombre}</b> <span>${p.edad} años${p.sub === 'Próximo ingreso' ? ' · próximo ingreso' : ''}</span></button>`;
-  return html`<section class="cumples" aria-label="Cumpleaños">
+  return html`<section class="cumples" aria-label="Cumpleaños y aniversarios">
     <span class="cum-ico">${icono('cumple')}</span>
     ${hoy.length ? html`<div class="cum-grupo"><span class="cum-tit">Hoy cumplen</span>${hoy.map(chip)}</div>` : ''}
     ${manana.length ? html`<div class="cum-grupo"><span class="cum-tit">Mañana</span>${manana.map(chip)}</div>` : ''}
+    ${aniv.length ? html`<div class="cum-grupo"><span class="cum-tit">Aniversarios esta semana</span>${aniv.map((a) => html`<button type="button" class="cum-chip ${esHito(a.anios) ? 'is-hito' : ''}" data-cumple-nom="${a.nom}" title="${a.sub}"><b>${a.nombre}</b> <span>${a.anios} ${a.anios === 1 ? 'año' : 'años'} · ${cuando(a.fecha)}</span></button>`)}</div>` : ''}
   </section>`;
 }
 

@@ -64,6 +64,7 @@ function datos() {
   const md = (n) => new Date(Date.now() + n * 864e5).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).slice(5, 10);
   const activos = nomina.filter((n) => n.estado === 'activo');
   activos[0].fecha_nacimiento = `1990-${md(0)}`; activos[5].fecha_nacimiento = `1984-${md(0)}`; activos[9].fecha_nacimiento = `1999-${md(1)}`;
+  activos[12].fecha_ingreso = `2021-${md(2)}`; activos[15].fecha_ingreso = `2016-${md(4)}`; activos[20].fecha_ingreso = `2023-${md(5)}`; // aniversarios
   const prox = candidates.find((c) => c.stage === 'proximo_ingreso'); if (prox) prox.fecha_nacimiento = `2001-${md(1)}`;
   return { candidates, positions, nomina };
 };

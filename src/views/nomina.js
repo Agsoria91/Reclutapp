@@ -14,6 +14,7 @@ import {
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 import { avisoCumples } from '../components/cumples.js';
+import { mesAnterior } from '../lib/cierreMes.js';
 import { icono } from '../components/iconos.js';
 
 const DIMS = ['yacimiento', 'sector', 'encuadre', 'estado', 'pendiente'];
@@ -308,6 +309,70 @@ function datosCobertura() {
   return { ult, corte, personas, falt, req: personas.length + falt.length };
 }
 
+// Perfil de la dotación: edad, antigüedad, género y residencia (con los filtros de la pantalla)
+const RANGOS_EDAD = [['Menos de 25', 0, 25], ['25 a 34', 25, 35], ['35 a 44', 35, 45], ['45 a 54', 45, 55], ['55 o más', 55, 200]];
+const RANGOS_ANT = [['Menos de 1 año', 0, 1], ['1 a 2 años', 1, 3], ['3 a 5 años', 3, 6], ['6 a 10 años', 6, 11], ['Más de 10 años', 11, 200]];
+const GENERO = { M: 'Masculino', F: 'Femenino' };
+const provinciaDe = (v) => { const t = norm(v || ''); if (!t) return 'Sin dato'; if (t === 'neuquen') return 'Neuquén'; if (t === 'rio negro') return 'Río Negro'; return String(v).trim().toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase()); };
+// agrupa sin distinguir mayúsculas ni acentos; muestra la variante con acentos (o la más común), en formato Título
+function agrupar(rows, fn) {
+  const g = new Map();
+  for (const r of rows) {
+    const v = String(fn(r) ?? '').trim(); const k = norm(v) || '—';
+    if (!g.has(k)) g.set(k, { n: 0, vars: new Map() });
+    const e = g.get(k); e.n++; e.vars.set(v, (e.vars.get(v) || 0) + 1);
+  }
+  const titulo = (t) => t.toLowerCase().replace(/(^|[\s(])\S/g, (c) => c.toUpperCase());
+  return [...g.entries()].map(([k, e]) => {
+    if (k === '—') return ['Sin dato', e.n];
+    const vs = [...e.vars.entries()].sort((a, b) => (/[^\x00-\x7F]/.test(b[0]) - /[^\x00-\x7F]/.test(a[0])) || b[1] - a[1]);
+    return [titulo(vs[0][0]), e.n];
+  }).sort((a, b) => b[1] - a[1]);
+}
+const aniosDesde = (iso, hoy) => (iso ? daysBetween(iso, hoy) / 365.25 : null);
+function perfilDotacion(rows) {
+  const hoy = todayISO();
+  const pers = rows.filter((n) => n.estado === 'activo');
+  if (!pers.length) return html`<section class="card"><p class="muted">No hay personal activo con estos filtros.</p></section>`;
+  const edades = pers.map((n) => aniosDesde(n.fecha_nacimiento, hoy)).filter((x) => x != null);
+  const ants = pers.map((n) => aniosDesde(n.fecha_ingreso, hoy)).filter((x) => x != null);
+  const prom = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+  const enRango = (xs, rs) => rs.map(([l, a, b]) => [l, xs.filter((x) => x >= a && x < b).length]);
+  const genero = countBy(pers, (n) => GENERO[String(n.sexo || '').toUpperCase()] || (n.sexo ? 'Otro' : 'Sin dato'));
+  const provincias = countBy(pers, (n) => provinciaDe(n.provincia)).sort((a, b) => b[1] - a[1]);
+  const localidades = agrupar(pers, (n) => n.localidad);
+  const conProv = pers.filter((n) => provinciaDe(n.provincia) !== 'Sin dato');
+  const locales = conProv.filter((n) => provinciaDe(n.provincia) === 'Neuquén').length;
+  const mujeres = pers.filter((n) => String(n.sexo || '').toUpperCase() === 'F').length;
+  const porYac = countBy(pers, getters.yacimiento).sort((a, b) => b[1] - a[1]).map(([y, tot]) => {
+    const g = pers.filter((n) => getters.yacimiento(n) === y && provinciaDe(n.provincia) !== 'Sin dato');
+    const l = g.filter((n) => provinciaDe(n.provincia) === 'Neuquén').length;
+    return [y, g.length ? Math.round((l / g.length) * 100) : 0, null, y, l, g.length];
+  });
+  const f1 = (x) => (x == null ? '—' : x.toLocaleString('es-AR', { maximumFractionDigits: 1 }));
+  return html`
+  <section class="mk-grid mk-grid--4">
+    <div class="mk mk--main"><div class="mk-top"><span class="mk-lbl">Personal activo</span></div><div class="mk-row"><span class="mk-num">${fmtInt(pers.length)}</span></div><span class="mk-sub">con los filtros elegidos</span></div>
+    <div class="mk"><div class="mk-top"><span class="mk-lbl">Edad promedio</span></div><div class="mk-row"><span class="mk-num">${f1(prom(edades))}</span></div><span class="mk-sub">años</span></div>
+    <div class="mk"><div class="mk-top"><span class="mk-lbl">Antigüedad promedio</span></div><div class="mk-row"><span class="mk-num">${f1(prom(ants))}</span></div><span class="mk-sub">años en la empresa</span></div>
+    <div class="mk"><div class="mk-top"><span class="mk-lbl">Residentes en Neuquén</span></div><div class="mk-row"><span class="mk-num">${conProv.length ? Math.round((locales / conProv.length) * 100) : 0}<small>%</small></span></div>
+      <span class="mk-barra"><span style="width:${conProv.length ? (locales / conProv.length) * 100 : 0}%"></span></span>
+      <span class="mk-sub"><b>${fmtInt(locales)}</b> de ${fmtInt(conProv.length)} con provincia cargada · ${porc(mujeres, pers.length)}% mujeres</span></div>
+  </section>
+  <section class="grid-2">
+    <article class="card"><h2 class="card-title">Edad</h2>${bars(enRango(edades, RANGOS_EDAD), { color: 'green', total: edades.length, chart: 'n-edad', limit: 10 })}</article>
+    <article class="card"><h2 class="card-title">Antigüedad</h2>${bars(enRango(ants, RANGOS_ANT), { color: 'green', total: ants.length, chart: 'n-ant', limit: 10 })}</article>
+  </section>
+  <section class="grid-2">
+    <article class="card"><h2 class="card-title">Género</h2>${bars(genero.sort((a, b) => b[1] - a[1]), { color: 'green', total: pers.length, chart: 'n-gen' })}</article>
+    <article class="card"><h2 class="card-title">Provincia de residencia</h2>${bars(provincias, { color: 'green', total: pers.length, chart: 'n-prov' })}</article>
+  </section>
+  <section class="grid-2">
+    <article class="card"><h2 class="card-title">Localidades de residencia <small class="muted">las 10 principales</small></h2>${bars(localidades, { color: 'green', total: pers.length, chart: 'n-loc', limit: 10 })}</article>
+    <article class="card"><h2 class="card-title">Residentes en Neuquén por yacimiento <small class="muted">% de cada uno</small></h2>${bars(porYac, { color: 'green', max: 100, fmt: (v) => v + '%', chart: 'n-locyac', limit: 12 })}</article>
+  </section>`;
+}
+
 // Diferencias entre la app y el maestro de SAP (solo RRHH)
 const sapAbiertos = new Set();
 const digitos = (v) => String(v ?? '').replace(/\D/g, '');
@@ -415,7 +480,7 @@ function vistaModerna({ base, rows, shown, recientes, pfProx }) {
   const pc = porc(cob.personas.length, cob.req);
   const pend = [['DDJJ', base.filter((n) => !okVal(n.ddjj)).length], ['Kit', base.filter((n) => !okVal(n.regalo_kit)).length],
     ['Teléfono', base.filter((n) => !n.telefono).length], ['CUIL', base.filter((n) => !n.cuil).length]];
-  const tab = ['resumen', 'graficos', 'listado'].includes(subTab) ? subTab : 'resumen';
+  const tab = ['resumen', 'graficos', 'perfil', 'listado'].includes(subTab) ? subTab : 'resumen';
   const titulo = meses.size ? (meses.size === 1 ? `Dotación ${fmtMonth([...meses][0])}` : 'Personas en el período') : 'Personas en nómina';
   const num = (v, k) => raw(`<span class="kpi-value mk-num" data-n="${v}" data-k="mk-${k}">${fmtInt(v)}</span>`);
 
@@ -423,6 +488,7 @@ function vistaModerna({ base, rows, shown, recientes, pfProx }) {
   <section class="m-head">
     <div><h1>Nómina</h1><p>${fmtInt(base.length)} personas ${meses.size ? 'en el período elegido' : 'activas'}${activos ? ` · ${activos} filtro${activos === 1 ? '' : 's'}` : ''}</p></div>
     <div class="m-acciones">
+      <a class="btn btn--ghost" href="#/reunion?mes=${mesAnterior(todayISO())}&ir=cierre-mes" title="Resumen del mes: dotación, ingresos, bajas, sillas y reclutamiento">Cierre de mes</a>
       <label class="btn btn--ghost">Reimportar<input type="file" id="nom-file" accept=".csv,text/csv" hidden></label>
       <button class="btn btn--ghost" data-act="export">Exportar</button>
       <button class="btn btn--primary" data-act="new">+ Alta</button>
@@ -470,7 +536,7 @@ function vistaModerna({ base, rows, shown, recientes, pfProx }) {
   </section>
 
   <nav class="m-tabs" aria-label="Vistas de nómina">
-    ${[['resumen', 'Resumen'], ['graficos', 'Gráficos'], ['listado', `Listado · ${fmtInt(rows.length)}`]].map(([k, l]) => html`<button type="button" class="m-tab ${tab === k ? 'is-on' : ''}" data-act="m-tab" data-tab="${k}" aria-pressed="${tab === k}">${l}</button>`)}
+    ${[['resumen', 'Resumen'], ['graficos', 'Gráficos'], ['perfil', 'Perfil'], ['listado', `Listado · ${fmtInt(rows.length)}`]].map(([k, l]) => html`<button type="button" class="m-tab ${tab === k ? 'is-on' : ''}" data-act="m-tab" data-tab="${k}" aria-pressed="${tab === k}">${l}</button>`)}
   </nav>
 
   <div class="m-cuerpo">
@@ -483,6 +549,7 @@ function vistaModerna({ base, rows, shown, recientes, pfProx }) {
         <span class="m-pend-bar"><span style="width:${porc(n, base.length)}%"></span></span>
         <b>${fmtInt(n)}</b><small>${porc(n, base.length)}%</small>${icono('flecha', 'ico ico--sm')}</button></li>`)}</ul>
     </section>` : ''}
+  ${tab === 'perfil' ? perfilDotacion(base) : ''}
   ${tab === 'graficos' ? html`
     ${meses.size ? dotacionPorMes() : ''}
     <section class="grid-2">
