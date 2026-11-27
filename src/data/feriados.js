@@ -21,7 +21,9 @@ export const FERIADOS = {
   '2026-11-23': ['Día de la Soberanía Nacional (trasladado del 20/11)', 'feriado'],
   '2026-12-07': ['Día no laborable con fines turísticos', 'no_laborable'],
   '2026-12-08': ['Inmaculada Concepción de María', 'feriado'],
+  '2026-12-24': ['Nochebuena', 'no_laborable'],
   '2026-12-25': ['Navidad', 'feriado'],
+  '2026-12-31': ['Fin de año', 'no_laborable'],
   '2027-01-01': ['Año Nuevo', 'feriado'],
   '2027-02-08': ['Carnaval', 'feriado'],
   '2027-02-09': ['Carnaval', 'feriado'],
@@ -38,6 +40,8 @@ export const FERIADOS = {
   '2027-10-11': ['Día del Respeto a la Diversidad Cultural (trasladado del 12/10)', 'feriado'],
   '2027-11-20': ['Día de la Soberanía Nacional', 'feriado'],
   '2027-12-08': ['Inmaculada Concepción de María', 'feriado'],
+  '2027-12-24': ['Nochebuena', 'no_laborable'],
   '2027-12-25': ['Navidad', 'feriado'],
+  '2027-12-31': ['Fin de año', 'no_laborable'],
 };
 export const feriado = (iso) => FERIADOS[iso] ? { nombre: FERIADOS[iso][0], tipo: FERIADOS[iso][1] } : null;
