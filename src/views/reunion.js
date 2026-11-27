@@ -189,7 +189,7 @@ function slideIngresos({ pos, cands, today }) {
   for (const c of ing) { const m = monthKey(c.fecha_ingreso); meses.set(m, (meses.get(m) || 0) + 1); }
   const serie = [...meses.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-9);
   const max = Math.max(1, ...serie.map((m) => m[1]));
-  const proximos = pos.filter((p) => p.stage === 'proximo_ingreso' || (p.fecha_ingreso && p.fecha_ingreso > today && !isCovered(p)))
+  const proximos = pos.filter((p) => p.stage === 'proximo_ingreso')
     .sort((a, b) => String(a.fecha_ingreso || '9').localeCompare(String(b.fecha_ingreso || '9'))).slice(0, 8);
   const internos = pos.filter((p) => isCovered(p) && p.tipo_cobertura === 'Movimiento interno').length;
   return html`<section class="dk-slide">${header('ingresos')}

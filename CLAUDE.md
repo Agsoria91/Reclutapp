@@ -46,7 +46,7 @@ ingreso → legajo/nómina. La usa RRHH a diario y jefaturas/gerencias como lect
 ## Base de datos (tablas principales)
 
 `positions` (sillas), `candidates`, `position_candidates` (ternas), `position_history`, `nomina`, `sap_posiciones` (maestro SAP, solo RRHH), `stages` (etapas), `avisos` y `plantillas_aviso`, `vacantes_pj` (+ `_importaciones`), `staff` (RRHH), `lectores`, `stage_aliases`. Vistas para lectores: `positions_public`, `candidates_public`.
-Triggers relevantes: `tg_candidates_hitos` (las fechas adelantan la etapa salvo que la etapa se elija a mano), `tg_candidates_after` (sincroniza la silla), `tg_touch` (updated_by), historial de sillas. Función `nombre_de_usuario(uuid)` para "Modificado por" (solo RRHH).
+Triggers relevantes: `tg_candidates_hitos` (las fechas adelantan la etapa salvo que la etapa se elija a mano), `tg_candidates_after` (sincroniza la silla: etapa, nombre, localidad y procedencia salen siempre de la ficha del candidato), `tg_touch` (updated_by), historial de sillas. Función `nombre_de_usuario(uuid)` para "Modificado por" (solo RRHH).
 
 ## Pruebas
 
@@ -61,6 +61,8 @@ Triggers relevantes: `tg_candidates_hitos` (las fechas adelantan la etapa salvo 
 - Cumpleaños/aniversarios: fijos según el día (no se pueden ocultar); en Agenda, Nómina y campanita.
 - Avisos de turno por clínica: plantillas `turno_synergys` y `turno_cmit` (se ofrecen al guardar un turno; usan `{fecha_turno}` con la hora de `turno_hora`). Cualquier clínica con plantilla `turno_<clínica>` funciona igual.
 - "Días en etapa": CV recibido no cuenta; un turno agendado a futuro no es demora. Plazos en `PLAZOS_ETAPA` (kpis.js).
+- Cargas masivas desde planilla (ej. 27/11/2026, Well Services LT2E enero): si el candidato ya existe solo se completan campos vacíos (no se pisa nada), los nuevos entran en CV recibido, se sientan en sillas libres sin ocupar relevos; sobrantes van a la terna. Respaldo previo en `respaldo.*_AAAAMMDD`.
+- "Próximos ingresos" (pantalla Ingresos y diapositiva de reunión): solo sillas en etapa Próximo ingreso; una fecha de ingreso cargada por adelantado no alcanza.
 - POS SAP: el maestro SAP manda; si quien figura en SAP está de baja en nómina, la POS se considera libre.
 
 ## Pendientes
