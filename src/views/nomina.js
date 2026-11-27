@@ -188,6 +188,7 @@ const PICK = {
   procedencia: () => [state.nomina.map((x) => x.procedencia), state.candidates.map((x) => x.procedencia)],
 };
 
+export function abrirPersona(id) { openPersona(id); }
 function openPersona(id) {
   const n = id ? state.nomina.find((x) => x.id === id) : { estado: 'activo', origen: 'planilla' };
   if (!n) return;

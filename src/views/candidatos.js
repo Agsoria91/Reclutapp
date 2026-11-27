@@ -16,7 +16,7 @@ import { openAssignFromCandidate } from './asignar.js';
 import { celebrate } from './posiciones.js';
 import { preingresoFields } from '../components/ingreso.js';
 import { examenFields, bindExamen } from '../components/examen.js';
-import { otrasEntrevistas, sigueEnOtroProceso, CAMPOS_PERSONA, cvCompartido } from '../lib/entrevistasPersona.js';
+import { otrasEntrevistas, sigueEnOtroProceso, CAMPOS_PERSONA, cvCompartido, yaCargado } from '../lib/entrevistasPersona.js';
 
 // Dimensiones de filtro cruzado: tocar una barra filtra por ese valor y todo
 // lo demás se recalcula. Cada gráfico se calcula con TODOS los filtros menos
@@ -370,6 +370,7 @@ export function openCandidate(id, { volver } = {}) {
     <nav class="ficha-tabs" role="tablist" aria-label="Secciones de la ficha">
       ${[['proceso', 'Proceso y silla'], ['medico', 'Examen médico'], ['datos', 'Datos y CV']].map(([k, t], i) => html`<button type="button" role="tab" class="ficha-tab ${i === 0 ? 'is-on' : ''}" data-pane-tab="${k}" aria-selected="${i === 0}">${t}</button>`)}
     </nav>
+    ${c.id ? '' : html`<div class="dup-aviso" hidden></div>`}
     <form id="cand-form" class="ficha-form">
       <div class="ficha-pane" data-pane="proceso">
         ${c.id ? etapasLinea(c) : ''}
@@ -494,6 +495,17 @@ export function openCandidate(id, { volver } = {}) {
     }
     if (data.stage === 'cancelado' && c._silla &&
         !(await confirmDialog(`Al cancelar a ${c.nombre}, la silla "${c._silla.puesto}" queda libre. ¿Seguimos?`, { ok: 'Cancelar candidato', danger: true }))) return;
+    // alta con un DNI que ya existe: misma persona, otra entrevista
+    if (!c.id) {
+      const { fichas } = yaCargado(data.dni);
+      if (fichas.length) {
+        const mismo = fichas.find((x) => x.stage !== 'cancelado' && state.stageMap[x.stage]?.es_activa && x.area === data.area && (x.servicio || '') === (data.servicio || ''));
+        if (mismo && !(await confirmDialog(`${mismo.nombre} ya está en proceso para ${[mismo.area, mismo.servicio].filter(Boolean).join(' · ')}. ¿Guardar otra entrevista igual?`, { ok: 'Guardar igual', cancel: 'Volver' }))) return;
+        const ref = fichas[0];
+        CAMPOS_PERSONA.forEach((k) => { if ((data[k] == null || data[k] === '') && ref[k]) data[k] = ref[k]; });
+        if (ref.cv_path && !data.cv_path) data.cv_path = ref.cv_path;
+      }
+    }
     const btn = e.submitter; btn.disabled = true;
     const { error } = c.id ? await sb.from('candidates').update(data).eq('id', c.id) : await sb.from('candidates').insert(data);
     btn.disabled = false;
@@ -510,6 +522,20 @@ export function openCandidate(id, { volver } = {}) {
   });
 
   bindExamen(root);
+  // candidato nuevo: avisar al instante si el DNI ya está cargado
+  const dupBox = root.querySelector('.dup-aviso');
+  if (dupBox) {
+    const etq = (x) => [[x.area, x.servicio].filter(Boolean).join(' · ') || x.posicion, state.stageMap[x.stage]?.label].filter(Boolean).join(' · ');
+    form.elements.dni?.addEventListener('input', () => {
+      const { fichas, nomina } = yaCargado(form.elements.dni.value);
+      dupBox.hidden = !fichas.length && !nomina.length;
+      dupBox.innerHTML = String(html`
+        ${fichas.length ? html`<p><b>Esta persona ya está cargada:</b> ${fichas[0].nombre}. Se va a guardar como una entrevista más y se completan sus datos personales.</p>
+          <div class="dup-lista">${fichas.map((x) => html`<button type="button" class="chip" data-dup="${x.id}">${etq(x)}</button>`)}</div>` : ''}
+        ${nomina.length ? html`<p><b>Figura en la nómina activa</b>${nomina[0].yacimiento ? ` (${nomina[0].yacimiento}${nomina[0].sector ? ' · ' + nomina[0].sector : ''})` : ''}.</p>` : ''}`);
+    });
+    dupBox.addEventListener('click', (e) => { const b = e.target.closest('[data-dup]'); if (b) { closeDrawer(); openCandidate(b.dataset.dup); } });
+  }
   form.addEventListener('change', () => marcarEtapas(root, form.elements.stage.value));
   marcarEtapas(root, c.stage);
   root.addEventListener('click', (e) => {

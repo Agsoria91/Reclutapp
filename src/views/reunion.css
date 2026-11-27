@@ -131,3 +131,57 @@
 .dk-sub { margin-top: 18px; }
 .dk-meses > summary { background: #0F2419; color: #fff; border: 1px solid #2E4A3B; border-radius: 6px; padding: 5px 10px; font: 13px Arial, sans-serif; text-transform: capitalize; }
 .dk-meses > summary span { color: #9fb5a9; margin-right: 4px; text-transform: none; }
+
+/* ==========================================================================
+   Estilo actual de la app: tipografía del sistema, indicadores en tira,
+   números técnicos, barras graduadas y tarjetas planas.
+   ========================================================================== */
+.dk-root { --dk-num: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, Menlo, monospace;
+  --dk-sans: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --dk-pista: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgb(16 35 26 / .14) calc(10% - 1px) 10%);
+  font-family: var(--dk-sans); }
+.dk-root *, .dk-btn, .dk-sel select, .dk-meses > summary { font-family: var(--dk-sans); }
+.dk-cover h1, .dk-head-title, .dk-card h3, .dk-tab, .dk-cover-tag { font-family: var(--dk-sans); }
+
+/* encabezado y pestañas como las sub-pestañas de la app */
+.dk-head { height: 52px; border-bottom: 3px solid var(--dk-green); }
+.dk-head-title { font-weight: 600; font-size: 19px; }
+.dk-tabs { gap: 4px; padding: 14px 28px 0; }
+.dk-tab { flex: 0 1 auto; background: #E4E7E3; color: #44544C; border-radius: 999px; padding: 8px 16px; font-weight: 600; font-size: 13.5px; }
+.dk-tab:hover { background: #D6DCD7; }
+.dk-tab.is-on { background: #fff; color: var(--dk-deep); box-shadow: 0 0 0 1.5px var(--dk-green); }
+
+/* tarjetas planas con borde fino */
+.dk-card { border: 1px solid var(--dk-line); box-shadow: none; border-radius: 12px; }
+.dk-card h3 { font-weight: 700; font-size: 13px; letter-spacing: .07em; text-transform: uppercase; color: #5C6B63; }
+.dk-card h3 small { text-transform: none; letter-spacing: 0; }
+
+/* indicadores en una sola tira con divisores */
+.dk-kpis { gap: 0; background: #fff; border: 1px solid var(--dk-line); border-radius: 12px; overflow: hidden; }
+.dk-kpi { border-radius: 0; border-left: 0; padding: 14px 18px; background: transparent; }
+.dk-kpi:nth-child(even) { border-left: 1px solid var(--dk-line); }
+.dk-kpi:nth-child(n+3) { border-top: 1px solid var(--dk-line); }
+.dk-kpi span { font-size: 11.5px; letter-spacing: .07em; text-transform: uppercase; color: #5C6B63; order: -1; }
+.dk-kpi b { font: 600 34px/1.05 var(--dk-num); letter-spacing: -.03em; }
+.dk-kpi--lime b { color: #4E8A2A; }
+.dk-big b, .dk-col-val, .dk-funnel-val b, .dk-bars-val b, .dk-split b, .dk-cover-foot b { font-family: var(--dk-num); font-weight: 600; letter-spacing: -.02em; }
+.dk-big { border-radius: 12px; }
+
+/* barras con pista graduada y relleno verde → lima */
+.dk-bars-track { height: 16px; border-radius: 3px; background: var(--dk-pista), #E6ECE8; box-shadow: inset 0 1px 2px rgb(0 0 0 / .08); }
+.dk-bars-fill { background: linear-gradient(90deg, var(--dk-green), var(--dk-lime)); }
+.dk-bars-proc { background: repeating-linear-gradient(-45deg, var(--dk-lime) 0 6px, #A8D287 6px 12px); opacity: 1; }
+.dk-funnel-bar { border-radius: 3px; }
+.dk-funnel li { position: relative; }
+
+/* meses: los vencidos en rojo */
+.dk-col-bar { border-radius: 3px 3px 0 0; background: linear-gradient(180deg, var(--dk-lime), var(--dk-green)); }
+.dk-col-m.is-late .dk-col-bar { background: linear-gradient(180deg, #E07A5F, var(--dk-red)); }
+.dk-col-m.is-late { background: rgb(180 70 45 / .06); border-radius: 8px; }
+.dk-col-sin { background: repeating-linear-gradient(-45deg, #8A8F8C 0 5px, #A9AEAB 5px 10px); }
+.dk-l-proc { background: repeating-linear-gradient(-45deg, var(--dk-lime) 0 3px, #A8D287 3px 6px); }
+
+/* tabla */
+.dk-table td { border-bottom-color: #E4E9E6; }
+.dk-mono { font-family: var(--dk-num); font-weight: 600; }
+.dk-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; border-left: 0; }

@@ -21,6 +21,7 @@ const KEY = 'reclutapp.pos.filters';
 const saved = loadLocal(KEY, {});
 export const posFilters = restoreFilters(saved, DIMS);
 let search = '';
+export function buscarEnPosiciones(t) { search = t; }
 let soloPendientes = !!saved.soloPendientes;
 // Vista elegida desde un indicador: pendientes, sin candidato o vencidas
 let vista = null;

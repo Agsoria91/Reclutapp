@@ -21,3 +21,13 @@ export const CAMPOS_PERSONA = ['nombre', 'dni', 'cuil', 'fecha_nacimiento', 'tel
 
 // El archivo del CV puede estar compartido entre entrevistas de la misma persona.
 export const cvCompartido = (path, exceptId) => !!path && state.candidates.some((x) => x.id !== exceptId && x.cv_path === path);
+
+// Fichas y nómina que ya tienen ese DNI (para avisar duplicados al cargar)
+export function yaCargado(dni) {
+  const d = String(dni ?? '').replace(/\D/g, '');
+  if (d.length < 7) return { fichas: [], nomina: [] };
+  return {
+    fichas: state.candidates.filter((x) => dniDe(x) === d),
+    nomina: state.nomina.filter((n) => dniDe(n) === d && n.estado === 'activo'),
+  };
+}

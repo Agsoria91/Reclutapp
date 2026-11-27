@@ -60,6 +60,15 @@ export function mascotSVG(stateName = 'loading', size = 160) {
 }
 
 export function mascot(stateName = 'loading', { title, text, size = 160, compact = false, action } = {}) {
+  // cargando: silueta gris de la pantalla (encabezado, indicadores y listado) en lugar de la animación
+  if (stateName === 'loading' && !title && !text) {
+    const linea = (w) => `<span class="sk" style="width:${w}%"></span>`;
+    return raw(`<div class="esqueleto" role="status" aria-label="Cargando datos">
+      <div class="sk-head">${linea(28)}${linea(18)}</div>
+      <div class="sk-kpis">${[1, 2, 3, 4].map(() => `<div>${linea(45)}<span class="sk sk--num"></span>${linea(70)}</div>`).join('')}</div>
+      <div class="sk-card">${[92, 84, 88, 76, 90, 80].map((w) => `<div class="sk-fila">${linea(w)}</div>`).join('')}</div>
+    </div>`);
+  }
   const [t, d] = MSG[stateName] || MSG.loading;
   return html`<div class="mascot ${compact ? 'mascot--compact' : ''}" role="${stateName === 'error' ? 'alert' : 'status'}">
     ${mascotSVG(stateName, size)}
