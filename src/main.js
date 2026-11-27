@@ -14,6 +14,7 @@ import * as presentar from './views/presentar.js';
 import * as importar from './views/importar.js';
 import * as login from './views/login.js';
 import * as usuarios from './views/usuarios.js';
+import * as revisar from './views/revisar.js';
 import * as ingresos from './views/ingresos.js';
 import * as entrevistas from './views/entrevistas.js';
 import * as nomina from './views/nomina.js';
@@ -47,6 +48,7 @@ const ROUTES = {
   nomina: { view: nomina, label: 'Nómina', staff: true },
   importar: { view: importar, label: 'Importar', staff: true },
   usuarios: { view: usuarios, label: 'Usuarios', staff: true },
+  revisar: { view: revisar, label: 'Revisar datos', staff: true },
   presentar: { view: presentar, bare: true },
   reunion: { view: reunion, bare: true },
   historial: { view: historial, bare: true, staff: true },
@@ -99,11 +101,11 @@ const GRUPOS = [
   ['Cobertura', ['posiciones', 'mapa', 'candidatos']],
   ['Proceso', ['agenda', 'entrevistas', 'examenes', 'ingresos']],
   ['Dotación', ['nomina', 'legajos', 'dashboardpj']],
-  ['Administración', ['importar', 'usuarios']],
+  ['Administración', ['importar', 'revisar', 'usuarios']],
 ];
 const lateralCorto = () => loadLocal('reclutapp.lateral.corto', false) === true;
 // Iniciales de cada sección (navegación lateral del estilo IRIS)
-const INICIALES = { mapa: 'MA', posiciones: 'PO', candidatos: 'CA', entrevistas: 'EN', dashboardpj: 'PJ', examenes: 'EX', ingresos: 'IN', legajos: 'LE', nomina: 'NO', importar: 'IM', usuarios: 'US' };
+const INICIALES = { mapa: 'MA', posiciones: 'PO', candidatos: 'CA', entrevistas: 'EN', dashboardpj: 'PJ', examenes: 'EX', ingresos: 'IN', legajos: 'LE', nomina: 'NO', importar: 'IM', revisar: 'RD', usuarios: 'US' };
 let current = { name: null, container: null };
 initFolds(app, () => current.name);
 initModerno(() => draw());

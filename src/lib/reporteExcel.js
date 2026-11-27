@@ -115,7 +115,7 @@ export function armarLibro() {
 
   // 3) Sillas
   const sillaCols = [['Área', 6], ['Sector', 16], ['Puesto', 30], ['POS SAP', 11], ['Persona asignada', 30], ['Procedencia', 13], ['Localidad', 20],
-    ['Estado', 18], ['Mes objetivo', 12], ['Vencida', 8], ['Fecha de ingreso', 12], ['Diagrama', 9], ['Convenio', 30], ['Cobertura', 17], ['En terna', 8]];
+    ['Estado', 18], ['Mes objetivo', 12], ['Vencida', 8], ['Ingreso previsto', 12], ['Fecha de ingreso', 12], ['Diagrama', 9], ['Convenio', 30], ['Cobertura', 17], ['En terna', 8]];
   if (staff) sillaCols.push(['Básico', 12], ['Observaciones', 30]);
   sheets.push({
     name: 'Sillas', title: 'Mapa de posiciones',
@@ -123,7 +123,7 @@ export function armarLibro() {
     rows: [...P].sort((a, b) => (a.yacimiento + a.sector + a.puesto).localeCompare(b.yacimiento + b.sector + b.puesto, 'es', { numeric: true })).map((p) => {
       const late = !isCovered(p) && p.fecha_objetivo && monthKey(p.fecha_objetivo) < monthKey(hoy);
       const row = [p.yacimiento, p.sector, p.puesto, p.pos_sap, hasPerson(p) ? p.candidato_nombre : '(vacante)', p.procedencia, p.localidad, lbl(p.stage),
-        p.fecha_objetivo ? fmtMonth(p.fecha_objetivo) : '', late ? 'Sí' : '', p.fecha_ingreso, p.diagrama, convenioLabel(p), p.tipo_cobertura, p.cand_activos || null];
+        p.fecha_objetivo ? fmtMonth(p.fecha_objetivo) : '', late ? 'Sí' : '', p.ingreso_previsto, p.fecha_ingreso, p.diagrama, convenioLabel(p), p.tipo_cobertura, p.cand_activos || null];
       if (staff) row.push(p.basico != null ? Number(p.basico) : null, p.observaciones);
       return row;
     }),

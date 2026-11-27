@@ -66,6 +66,13 @@ function datos() {
   activos[0].fecha_nacimiento = `1990-${md(0)}`; activos[5].fecha_nacimiento = `1984-${md(0)}`; activos[9].fecha_nacimiento = `1999-${md(1)}`;
   activos[12].fecha_ingreso = `2021-${md(2)}`; activos[15].fecha_ingreso = `2016-${md(4)}`; activos[20].fecha_ingreso = `2023-${md(5)}`; // aniversarios
   const prox = candidates.find((c) => c.stage === 'proximo_ingreso'); if (prox) prox.fecha_nacimiento = `2001-${md(1)}`;
+  // casos para "Revisar datos"
+  const enCurso = candidates.filter((c) => !['cancelado', 'ingresado'].includes(c.stage));
+  enCurso[2].dni = activos[30].dni;
+  const avz = candidates.filter((c) => ['examen_medico', 'apto'].includes(c.stage)); if (avz[0]) avz[0].dni = null;
+  candidates[3].dni = null;
+  const libre = positions.find((p) => !p.candidate_id); if (libre) libre.ingreso_previsto = '2026-10-05';
+  activos[40].localidad = 'NEUQUEN';
   return { candidates, positions, nomina };
 };
 
