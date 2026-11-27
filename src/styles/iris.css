@@ -1382,7 +1382,7 @@ dialog.buscador::backdrop { background: rgba(8, 18, 14, .45); }
 @media (max-width: 900px) { .ag-cel.is-hoy .ag-cel-n { background: none; color: var(--ir-pri); padding: 0; text-decoration: underline 2px; text-underline-offset: 3px; } }
 
 /* cumpleaños de hoy y mañana */
-.cumples { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 14px; background: var(--ir-card); border: 1px solid var(--ir-line); border-left: 3px solid #C9A227; border-radius: var(--r); }
+.cumples { display: grid; gap: 8px; padding: 6px 10px 6px 8px; background: var(--ir-card); border: 1px solid var(--ir-line); border-left: 3px solid #C9A227; border-radius: var(--r); }
 .cum-ico { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: color-mix(in srgb, #C9A227 16%, transparent); color: #8A6A1F; flex: none; }
 [data-theme="dark"] .cum-ico { color: #E8CF8F; }
 .cum-ico .ico { width: 18px; height: 18px; }
@@ -1447,3 +1447,72 @@ dialog.buscador::backdrop { background: rgba(8, 18, 14, .45); }
 .cum-chip.is-hito { border-color: #C9A227; background: color-mix(in srgb, #C9A227 10%, transparent); }
 .cum-chip.is-hito span { color: #8A6A1F; font-weight: 600; }
 [data-theme="dark"] .cum-chip.is-hito span { color: #E8CF8F; }
+
+/* franja de cumpleaños: una línea, se despliega al tocar */
+.cum-linea { display: flex; align-items: center; gap: 10px; }
+.cum-resumen { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; border: 0; background: none; padding: 2px; font: inherit; font-size: 13px; color: var(--text); cursor: pointer; text-align: left; }
+.cum-resumen b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cum-flecha .ico { width: 14px; height: 14px; color: var(--text-2); transition: transform .15s; }
+.cumples.is-abierta .cum-flecha .ico { transform: rotate(90deg); }
+.cum-ocultar { border: 0; background: none; font: 500 12px var(--font-sans); color: var(--text-2); cursor: pointer; padding: 4px 6px; border-radius: 6px; white-space: nowrap; }
+.cum-ocultar:hover { background: var(--ir-hover); color: var(--text); }
+.cum-detalle { display: none; gap: 8px; padding: 4px 0 6px 40px; }
+.cumples.is-abierta .cum-detalle { display: grid; }
+@media (max-width: 640px) { .cum-ocultar { display: none; } .cum-detalle { padding-left: 4px; } }
+
+/* campanita de Para hoy */
+.btn-campana { position: relative; }
+.btn-campana .ico { width: 18px; height: 18px; }
+.campana-n { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--ir-bad); color: #fff; font: 700 10.5px/18px var(--font-num); text-align: center; box-shadow: 0 0 0 2px var(--ir-canvas); }
+.campana-pop { position: fixed; z-index: 70; width: min(340px, calc(100vw - 24px)); background: var(--ir-card); border: 1px solid var(--ir-line); border-radius: 12px; box-shadow: 0 16px 40px rgba(0, 0, 0, .18); padding: 12px; display: grid; gap: 6px; animation: m-entra .15s ease; }
+.campana-pop .hoy { text-align: left; width: 100%; border-radius: 8px; padding: 8px 12px; }
+.campana-tit { font: 700 11px var(--font-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); padding: 0 2px 4px; }
+.campana-vacio { margin: 0; color: var(--text-2); font-size: 13px; padding: 4px 2px; }
+
+/* color por yacimiento */
+[data-estilo="iris"] .area-tag[style*="--yac"] { background: var(--yac); color: #fff; border-radius: 4px; }
+[data-estilo="iris"] .pend-areas .chip[style*="--yac"]::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--yac); margin-right: 5px; vertical-align: 1px; }
+[data-estilo="iris"] .bars-btn[style*="--yac"] .bars-fill { background: var(--yac) !important; }
+.yac-dot::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--yac); margin-right: 6px; vertical-align: 1px; }
+[data-theme="dark"] .bars-btn[style*="--yac"] .bars-fill { filter: brightness(1.25); }
+
+/* ilustraciones de estado */
+.ilu { display: block; }
+.ilu-piso { stroke: var(--ir-line-2); stroke-width: 2; }
+.ilu-linea { stroke: var(--text-2); stroke-width: 2.2; }
+.ilu-suave { stroke: var(--ir-line-3); stroke-width: 2; }
+.ilu-acento { stroke: var(--ir-pri); stroke-width: 2.6; }
+.ilu-alerta { stroke: var(--ir-bad); stroke-width: 3.2; }
+.ilu--error .ilu-linea { stroke: var(--ir-bad); opacity: .55; }
+.ilu--success { animation: ilu-entra .5s ease; }
+@keyframes ilu-entra { from { transform: scale(.9); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ilu--success { animation: none; } }
+.mascot { color: var(--text); }
+
+/* ingreso: fondo oscuro de Vaca Muerta con curvas de nivel y los yacimientos */
+[data-estilo="iris"] .view:has(> .login-fondo) { max-width: none; padding: 0; }
+.login-fondo { position: relative; min-height: calc(100vh - 66px); display: grid; place-items: center; padding: 32px 16px; overflow: hidden;
+  background: radial-gradient(ellipse at 55% 45%, #133326 0%, #0A1A13 55%, #050C09 100%); }
+.login-mapa { position: absolute; inset: 0; width: 100%; height: 100%; }
+.lf-curvas path { fill: none; stroke: rgba(120, 180, 80, .14); stroke-width: 1.2; }
+.lf-puntos circle { fill: #78B450; }
+.lf-puntos .lf-halo { fill: none; stroke: rgba(120, 180, 80, .35); stroke-width: 1.2; }
+.lf-puntos text { fill: rgba(220, 235, 225, .55); font: 600 13px var(--font-num); letter-spacing: .05em; }
+@media (prefers-reduced-motion: no-preference) { .lf-puntos .lf-halo { animation: lf-pulso 3.2s ease-out infinite; transform-box: fill-box; transform-origin: center; } }
+@keyframes lf-pulso { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(1.6); opacity: 0; } }
+[data-estilo="iris"] .login-fondo .login { position: relative; z-index: 1; width: min(440px, 100%); margin: 0; padding: 32px 32px 26px; border-radius: 16px; box-shadow: 0 24px 60px rgba(0, 0, 0, .45); border: 1px solid rgba(255, 255, 255, .06); }
+.login-logo { height: 44px; justify-self: start; }
+.login-fondo .login h1 { text-align: left !important; margin: 4px 0 0 !important; }
+.login-fondo .login .form-actions .btn--primary { width: 100%; justify-content: center; padding: 10px; }
+.login-fondo .login .form-actions .spacer { display: none; }
+.login-fondo ~ .foot, .view:has(> .login-fondo) ~ .foot { display: none; }
+
+/* detalle al pasar el mouse por un gráfico */
+.detalle-grafico { position: fixed; z-index: 65; pointer-events: none; background: #16231D; color: #F2F6F3; border-radius: 8px; padding: 7px 10px; display: grid; gap: 1px; font-size: 12px; box-shadow: 0 8px 22px rgba(0, 0, 0, .25); opacity: 0; transition: opacity .1s; max-width: 260px; }
+.detalle-grafico.is-on { opacity: 1; }
+.detalle-grafico b { font-size: 12.5px; }
+.detalle-grafico span { font-family: var(--font-num); font-size: 11.5px; color: #C9D8CF; }
+.detalle-grafico .is-up { color: #8FD9B1; } .detalle-grafico .is-down { color: #F4A58F; }
+.cumples { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.cum-linea { min-width: 0; }
+@media (min-width: 1100px) { .login-fondo { justify-items: end; padding-right: 7vw; } }

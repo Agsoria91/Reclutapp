@@ -120,7 +120,7 @@ export function bars(rows, { max, color = 'blue', limit = 10, fmt = (n) => n, to
       <span class="bars-track"><span class="bars-fill bars-fill--${tone || color}" style="width:${from}%" data-w="${w}" data-k="${key}"></span></span>
       <span class="bars-val">${fmt(n)}${total ? html` <small>${Math.round((n / total) * 100)}%</small>` : ''}</span>`;
     return html`<li class="${sel ? 'is-sel' : anySel ? 'is-dim' : ''}">${dim
-      ? html`<button type="button" class="bars-btn" data-filter="${dim}" data-value="${v}" aria-pressed="${!!sel}" title="Filtrar por ${k}">${inner}</button>`
+      ? html`<button type="button" class="bars-btn" data-filter="${dim}" data-value="${v}" aria-pressed="${!!sel}" aria-label="Filtrar por ${k}">${inner}</button>`
       : inner}</li>`;
   })}</ul>`;
 }

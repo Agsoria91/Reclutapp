@@ -7,10 +7,11 @@ import { estaDemorado, isCovered, monthKey } from '../lib/kpis.js';
 import { pendientesDeAviso } from './avisos.js';
 import { preingresoProgress } from './ingreso.js';
 import { estadoMedico } from './examen.js';
+import { icono } from './iconos.js';
 
 const masDias = (iso, n) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 
-function items() {
+export function items() {
   const hoy = todayISO();
   const semana = masDias(hoy, 7);
   const semana30 = masDias(hoy, 30); // plazos fijos: aviso con 30 días para decidir la renovación
@@ -59,4 +60,16 @@ export async function irA(k) {
     (await import('../views/posiciones.js')).elegirVencenEsteMes();
     return 'redibujar';
   }
+}
+
+// Campanita de la barra superior: cantidad de pendientes y la misma lista desplegable
+export function campanaHtml() {
+  if (!state.isStaff) return '';
+  const n = items().length;
+  return html`<button type="button" class="icon-btn btn-campana" id="btn-campana" aria-haspopup="true" aria-expanded="false" title="${n ? `Para hoy: ${n} ${n === 1 ? 'pendiente' : 'pendientes'}` : 'Para hoy: nada pendiente'}">${icono('campana')}${n ? html`<b class="campana-n">${n}</b>` : ''}</button>`;
+}
+export function campanaLista() {
+  const xs = items();
+  return xs.length ? html`<span class="campana-tit">Para hoy</span>${xs.map(([k, n, txt, tono]) => html`<button type="button" class="hoy hoy--${tono}" data-hoy="${k}">${txt(n)}</button>`)}`
+    : html`<span class="campana-tit">Para hoy</span><p class="campana-vacio">No hay pendientes.</p>`;
 }

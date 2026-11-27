@@ -29,6 +29,9 @@ import { abrirBuscador, initBuscador } from './components/buscador.js';
 import * as agenda from './views/agenda.js';
 import { initCumples } from './components/cumples.js';
 import { initTarjetaFlotante } from './components/tarjetaFlotante.js';
+import { campanaHtml, campanaLista, irA } from './components/paraHoy.js';
+import { pintarYacimientos } from './lib/coloresYac.js';
+import { initDetalleGrafico } from './components/detalleGrafico.js';
 import { initModerno } from './components/moderno.js';
 
 const ROUTES = {
@@ -107,6 +110,7 @@ initModerno(() => draw());
 initBuscador();
 initCumples();
 initTarjetaFlotante();
+initDetalleGrafico();
 // En celular las tablas de personas se ven como tarjetas: cada celda lleva el
 // nombre de su columna (data-th) para mostrarlo como etiqueta.
 function rotularTablas() {
@@ -117,7 +121,7 @@ function rotularTablas() {
   }
 }
 let rotPend = false;
-new MutationObserver(() => { if (!rotPend) { rotPend = true; queueMicrotask(() => { rotPend = false; rotularTablas(); }); } }).observe(app, { childList: true, subtree: true });
+new MutationObserver(() => { if (!rotPend) { rotPend = true; queueMicrotask(() => { rotPend = false; rotularTablas(); pintarYacimientos(app); }); } }).observe(app, { childList: true, subtree: true });
 // Barra inferior en celular: las secciones de uso diario + "Más" (menú completo)
 const INFERIOR = ['posiciones', 'candidatos', 'entrevistas', 'nomina', 'mapa'];
 
@@ -153,6 +157,7 @@ function shell(name) {
     ${(() => { const g = GRUPOS.find(([, ks]) => ks.includes(name)); return g && r.label ? html`<span class="miga">${g[0]} <i>/</i> <b>${r.label}</b></span>` : ''; })()}
     <div class="topbar-right">
       ${state.canRead ? html`<button class="icon-btn btn-buscar" id="btn-buscar" title="Buscar (Ctrl+K)" aria-label="Buscar">${icono('buscar')}<span class="bus-atajo">Buscar <kbd>Ctrl K</kbd></span></button>` : ''}
+      ${campanaHtml()}
       ${state.canRead ? html`<button class="btn btn--sm btn--excel" id="btn-excel" title="${state.isStaff ? 'Descargar todo en Excel (incluye nómina y datos personales)' : 'Descargar resumen en Excel (sin datos personales)'}">${ICON.descarga} Excel</button>
       <button class="icon-btn" id="btn-refresh" title="Actualizar datos" aria-label="Actualizar datos">${ICON.actualizar}</button>` : ''}
       ${state.canRead ? html`<button class="icon-btn btn-compacto ${loadLocal('reclutapp.compacto', false) ? 'is-on' : ''}" id="btn-compacto" title="${loadLocal('reclutapp.compacto', false) ? 'Vista normal' : 'Vista compacta: más filas por pantalla'}" aria-label="Vista compacta" aria-pressed="${!!loadLocal('reclutapp.compacto', false)}">${icono('densidad')}</button>` : ''}
@@ -211,6 +216,7 @@ function route() {
   $('#menu-secciones')?.addEventListener('click', (e) => { if (e.target.closest('a')) cerrarMenu(); });
   $('#btn-theme')?.addEventListener('click', toggleTheme);
   $('#btn-buscar')?.addEventListener('click', () => abrirBuscador());
+  $('#btn-campana')?.addEventListener('click', (e) => { e.stopPropagation(); alternarCampana(e.currentTarget); });
   $('#btn-compacto')?.addEventListener('click', (e) => {
     const on = !loadLocal('reclutapp.compacto', false);
     saveLocal('reclutapp.compacto', on);
@@ -260,7 +266,35 @@ function draw() {
   window.scrollTo(0, scroll);
 }
 
-subscribe(() => draw());
+subscribe(() => { draw(); refrescarCampana(); });
+
+// Campanita: lista de "Para hoy" desde cualquier pantalla
+function alternarCampana(btn) {
+  let pop = document.querySelector('.campana-pop');
+  if (pop) { pop.remove(); btn.setAttribute('aria-expanded', 'false'); return; }
+  pop = document.createElement('div');
+  pop.className = 'campana-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', 'Para hoy');
+  pop.innerHTML = String(campanaLista());
+  document.body.appendChild(pop);
+  const r = btn.getBoundingClientRect();
+  pop.style.top = (r.bottom + 8) + 'px';
+  pop.style.right = Math.max(12, window.innerWidth - r.right) + 'px';
+  btn.setAttribute('aria-expanded', 'true');
+  pop.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-hoy]'); if (!b) return;
+    pop.remove(); btn.setAttribute('aria-expanded', 'false');
+    const res = await irA(b.dataset.hoy);
+    if (res === 'redibujar') { saveLocal('reclutapp.tab.posiciones', 'mapa'); if (location.hash.startsWith('#/posiciones')) route(); else location.hash = '#/posiciones'; }
+  });
+}
+document.addEventListener('click', (e) => { const pop = document.querySelector('.campana-pop'); if (pop && !e.target.closest('.campana-pop, #btn-campana')) { pop.remove(); $('#btn-campana')?.setAttribute('aria-expanded', 'false'); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelector('.campana-pop')?.remove(); });
+function refrescarCampana() {
+  const b = $('#btn-campana'); if (!b) return;
+  const nuevo = String(campanaHtml()); const tmp = document.createElement('div'); tmp.innerHTML = nuevo;
+  const n = tmp.firstElementChild; if (!n) return;
+  b.title = n.title; b.innerHTML = n.innerHTML;
+}
 // cambio de pantalla con un fundido corto (si el navegador lo soporta y no se pidió reducir movimiento)
 const conTransicion = (fn) => {
   if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return fn();
