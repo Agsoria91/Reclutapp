@@ -62,6 +62,7 @@ async function servidor() {
   await go(p, 'posiciones'); await snap(p, '03-posiciones');
   if (await p.locator('[data-hoy="plazos"]').count()) { await p.click('[data-hoy="plazos"]'); await p.waitForTimeout(1200); await p.evaluate(() => window.scrollTo(0, 0)); await snap(p, '03b-plazos-fijos'); await p.click('[data-act="m-pf-off"]'); await p.waitForTimeout(300); await p.click('.m-tab[data-tab="resumen"]'); await go(p, 'posiciones'); }
   await tab(p, 'meses'); await desplegar(p); await snap(p, '04-posiciones-meses');
+  await tab(p, 'etapas'); await snap(p, '04b-posiciones-etapas');
   await go(p, 'candidatos'); await tab(p, 'listado'); await snap(p, '05-candidatos');
   await p.evaluate(async () => { const m = await import('/src/views/candidatos.js'); m.openCandidate('c-dup'); }); await p.waitForTimeout(700); await snap(p, '06-candidato-ficha');
   await p.click('[data-act="nueva-ent"]'); await p.waitForTimeout(500); await snap(p, '07-nueva-entrevista');
@@ -142,6 +143,7 @@ async function servidor() {
 
   p = await page({ staff: false });
   await go(p, 'posiciones'); await snap(p, '22-lector-posiciones');
+  await tab(p, 'etapas'); await snap(p, '22b-lector-etapas'); await tab(p, 'mapa');
   await p.context().close();
 
   p = await page({ mobile: true });
