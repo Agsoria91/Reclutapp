@@ -61,6 +61,7 @@ Triggers relevantes: `tg_candidates_hitos` (las fechas adelantan la etapa salvo 
 - Cumpleaños/aniversarios: fijos según el día (no se pueden ocultar); en Agenda, Nómina y campanita.
 - Avisos de turno por clínica: plantillas `turno_synergys` y `turno_cmit` (se ofrecen al guardar un turno; usan `{fecha_turno}` con la hora de `turno_hora`). Cualquier clínica con plantilla `turno_<clínica>` funciona igual.
 - "Días en etapa": CV recibido no cuenta; un turno agendado a futuro no es demora. Plazos en `PLAZOS_ETAPA` (kpis.js).
+- Cargas masivas desde planilla (ej. 27/11/2026, Well Services LT2E enero): si el candidato ya existe solo se completan campos vacíos (no se pisa nada), los nuevos entran en CV recibido, se sientan en sillas libres sin ocupar relevos; sobrantes van a la terna. Respaldo previo en `respaldo.*_AAAAMMDD`.
 - POS SAP: el maestro SAP manda; si quien figura en SAP está de baja en nómina, la POS se considera libre.
 
 ## Pendientes
