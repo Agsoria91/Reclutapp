@@ -87,6 +87,7 @@ export function examenFields(c) {
     ${c.id ? timelineExamen(c) : ''}
     <div class="form-grid">
       ${field('Enviado a examen (EPO)', 'epo', c.epo, { type: 'date' })}
+      ${field('Hora del turno', 'turno_hora', c.turno_hora, { type: 'time' })}
       ${pickField('Clínica', 'clinica', clinicaCanon(c.clinica), clinicas)}
       ${pickField('Sede / localidad del convenio', 'clinica_localidad', c.clinica_localidad, sedes, { hint: 'DIENTS tiene convenios en varias ciudades' })}
       ${field('Resultado recibido', 'aptitud_recibida', c.aptitud_recibida, { type: 'date' })}

@@ -529,9 +529,9 @@ export function openCandidate(id, { volver } = {}) {
     if (ingreso) celebrate();
     // Cambió de etapa: ofrecer avisarle en el momento (mensaje según la etapa)
     // turno nuevo o cambiado en una clínica con mensaje propio (p. ej. Synergys): ofrecer avisarle
-    const turnoNuevo = c.id && data.epo && (data.epo !== c.epo || (data.clinica || '') !== (c.clinica || ''));
+    const turnoNuevo = c.id && data.epo && (data.epo !== c.epo || (data.clinica || '') !== (c.clinica || '') || (data.turno_hora || '') !== (c.turno_hora || ''));
     const cAct = state.candidates.find((x) => x.id === c.id);
-    if (turnoNuevo && cAct && tipoTurno(cAct)) openAvisoDrawer(c.id, { tipo: tipoTurno(cAct), motivo: `Turno cargado para el ${String(data.epo).split('-').reverse().join('/')}. ¿Le avisás?` });
+    if (turnoNuevo && cAct && tipoTurno(cAct)) openAvisoDrawer(c.id, { tipo: tipoTurno(cAct), motivo: `Turno cargado para el ${String(data.epo).split('-').reverse().join('/')}${data.turno_hora ? ` a las ${data.turno_hora} h` : ''}. ¿Le avisás?` });
     else if (c.id && data.stage !== c.stage) avisarCambioDeEtapa(c.id, c.stage);
     else if (volver) volver();
   });
