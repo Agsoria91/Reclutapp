@@ -14,7 +14,6 @@ import {
 } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 import { avisoCumples } from '../components/cumples.js';
-import { mesAnterior } from '../lib/cierreMes.js';
 import { icono } from '../components/iconos.js';
 
 const DIMS = ['yacimiento', 'sector', 'encuadre', 'estado', 'pendiente'];
@@ -344,11 +343,6 @@ function perfilDotacion(rows) {
   const conProv = pers.filter((n) => provinciaDe(n.provincia) !== 'Sin dato');
   const locales = conProv.filter((n) => provinciaDe(n.provincia) === 'Neuquén').length;
   const mujeres = pers.filter((n) => String(n.sexo || '').toUpperCase() === 'F').length;
-  const porYac = countBy(pers, getters.yacimiento).sort((a, b) => b[1] - a[1]).map(([y, tot]) => {
-    const g = pers.filter((n) => getters.yacimiento(n) === y && provinciaDe(n.provincia) !== 'Sin dato');
-    const l = g.filter((n) => provinciaDe(n.provincia) === 'Neuquén').length;
-    return [y, g.length ? Math.round((l / g.length) * 100) : 0, null, y, l, g.length];
-  });
   const f1 = (x) => (x == null ? '—' : x.toLocaleString('es-AR', { maximumFractionDigits: 1 }));
   return html`
   <section class="mk-grid mk-grid--4">
@@ -367,10 +361,7 @@ function perfilDotacion(rows) {
     <article class="card"><h2 class="card-title">Género</h2>${bars(genero.sort((a, b) => b[1] - a[1]), { color: 'green', total: pers.length, chart: 'n-gen' })}</article>
     <article class="card"><h2 class="card-title">Provincia de residencia</h2>${bars(provincias, { color: 'green', total: pers.length, chart: 'n-prov' })}</article>
   </section>
-  <section class="grid-2">
-    <article class="card"><h2 class="card-title">Localidades de residencia <small class="muted">las 10 principales</small></h2>${bars(localidades, { color: 'green', total: pers.length, chart: 'n-loc', limit: 10 })}</article>
-    <article class="card"><h2 class="card-title">Residentes en Neuquén por yacimiento <small class="muted">% de cada uno</small></h2>${bars(porYac, { color: 'green', max: 100, fmt: (v) => v + '%', chart: 'n-locyac', limit: 12 })}</article>
-  </section>`;
+  <section class="card"><h2 class="card-title">Localidades de residencia <small class="muted">las 10 principales</small></h2>${bars(localidades, { color: 'green', total: pers.length, chart: 'n-loc', limit: 10 })}</section>`;
 }
 
 // Diferencias entre la app y el maestro de SAP (solo RRHH)
@@ -488,7 +479,6 @@ function vistaModerna({ base, rows, shown, recientes, pfProx }) {
   <section class="m-head">
     <div><h1>Nómina</h1><p>${fmtInt(base.length)} personas ${meses.size ? 'en el período elegido' : 'activas'}${activos ? ` · ${activos} filtro${activos === 1 ? '' : 's'}` : ''}</p></div>
     <div class="m-acciones">
-      <a class="btn btn--ghost" href="#/reunion?mes=${mesAnterior(todayISO())}&ir=cierre-mes" title="Resumen del mes: dotación, ingresos, bajas, sillas y reclutamiento">Cierre de mes</a>
       <label class="btn btn--ghost">Reimportar<input type="file" id="nom-file" accept=".csv,text/csv" hidden></label>
       <button class="btn btn--ghost" data-act="export">Exportar</button>
       <button class="btn btn--primary" data-act="new">+ Alta</button>
