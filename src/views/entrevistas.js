@@ -8,6 +8,7 @@ import { countBy, interviewStats, reached, isCovered } from '../lib/kpis.js';
 import { mHead, mBarra, mChips, mPanel, mKpis, mTabs, subTab } from '../components/moderno.js';
 import { filterGroup, toggleFilter, kpi, bars, saveLocal, loadLocal, serializeFilters, restoreFilters, animateIn, prevSize } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
+import { renderEvaluaciones } from './evaluaciones.js';
 
 const DIMS = ['area', 'sector', 'procedencia', 'mes'];
 const KEY = 'reclutapp.ent.filters';
@@ -39,6 +40,9 @@ const pctTxt = (v) => (v == null ? '—' : v + '%');
 export function render(el) {
   if (state.loading && !state.candidates.length) { el.innerHTML = String(mascot('loading')); return; }
   if (state.error) { el.innerHTML = String(mascot('error', { text: state.error })); return; }
+  const TABS = [...(state.isStaff ? [['evaluaciones', 'Evaluaciones']] : []), ['graficos', 'Embudo y meses'], ['tabla', 'Efectividad por grupo']];
+  const tab = subTab('entrevistas', TABS.map(([k]) => k), state.isStaff ? 'evaluaciones' : 'graficos');
+  if (tab === 'evaluaciones') { renderEvaluaciones(el, tab, TABS); animateIn(el); return; }
 
   const SM = state.stageMap;
   const rows = filterRows(null);
@@ -78,7 +82,6 @@ export function render(el) {
   const de10 = s.entrevistados ? Math.round((s.aprobados / s.entrevistados) * 10) : null;
   const ing10 = s.entrevistados ? Math.round((s.ingresados / s.entrevistados) * 10) : null;
 
-  const tab = subTab('entrevistas', ['graficos', 'tabla'], 'graficos');
   el.innerHTML = String(html`
   ${mHead({ titulo: 'Entrevistas', sub: s.entrevistados ? `De cada 10 entrevistados, ${de10} aprueban y ${ing10} ingresan` : 'Efectividad de las entrevistas' })}
   ${mBarra({ seccion: 'entrevistas', nFiltros: chips.length })}
@@ -95,7 +98,7 @@ export function render(el) {
     { icono: 'alta', label: 'Ingresaron', valor: s.ingresados, id: 'e-ing', tono: 'ok', sub: `${pctTxt(s.conversion)} de los entrevistados` },
     { icono: 'documento', label: 'Bajas post-entrevista', valor: s.bajasPost, id: 'e-baj', tono: s.bajasPost ? 'alerta' : '', sub: 'no continuaron' },
   ])}
-  ${mTabs('entrevistas', [['graficos', 'Embudo y meses'], ['tabla', 'Efectividad por grupo']], tab)}
+  ${mTabs('entrevistas', TABS, tab)}
   <div class="m-cuerpo">
   ${tab === 'tabla' ? html`
   <section class="card">

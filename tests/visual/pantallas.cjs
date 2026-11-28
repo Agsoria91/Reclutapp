@@ -91,6 +91,11 @@ async function servidor() {
   await abrir(async () => { (await import('/src/views/candidatos.js')).openCandidate(null); }, '33-nuevo-candidato');
   await abrir(async () => { (await import('/src/components/ui.js')).confirmDialog('¿Confirmar acción de prueba?', { ok: 'Confirmar' }); }, '34-dialogo');
   await abrir(async () => { (await import('/src/views/usuarios.js')).openChangePassword(); }, '35-contrasena');
+  // evaluación de entrevista
+  await go(p, 'entrevistas'); await tab(p, 'evaluaciones'); await snap(p, '35e-evaluaciones-pend');
+  await p.click('[data-evvista="eval"]'); await p.waitForTimeout(500); await snap(p, '35f-evaluaciones');
+  await p.click('[data-ev-cand]'); await p.waitForTimeout(900); await snap(p, '35g-ficha-evaluacion');
+  await p.evaluate(async () => { (await import('/src/components/ui.js')).closeDrawer(); document.querySelectorAll('dialog, .drawer-root').forEach((x) => x.remove()); }); await p.waitForTimeout(300);
   // obligatorios, cambios sin guardar y error en castellano
   const limpiar = async () => { await p.evaluate(async () => { (await import('/src/components/ui.js')).closeDrawer(); document.querySelectorAll('dialog, .drawer-root, .toast').forEach((x) => x.remove()); }); await p.waitForTimeout(300); };
   await p.evaluate(async () => { (await import('/src/views/candidatos.js')).openCandidate(null); }); await p.waitForTimeout(700);
