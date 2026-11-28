@@ -1579,3 +1579,38 @@ dialog.buscador::backdrop { background: rgba(8, 18, 14, .45); }
 .field:has(:required) > span::after { content: ' *'; color: var(--st-red); font-weight: 700; }
 .field.is-invalido > :is(input, select, textarea) { border-color: var(--st-red); box-shadow: 0 0 0 3px color-mix(in srgb, var(--st-red) 15%, transparent); }
 .field > small.field-error { color: var(--st-red); font-weight: 600; font-size: 12px; }
+
+/* ---------- evaluación de entrevista ---------- */
+.ev-pane { display: grid; gap: 16px; max-width: 760px; }
+.ev-total { padding: 14px 16px; border: 1px solid var(--ir-line); border-radius: var(--r); background: var(--ir-card); }
+.ev-quien { margin: -8px 0 0; }
+.ev-criterios { display: grid; gap: 10px; }
+.ev-fila { border: 0; margin: 0; padding: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.ev-fila > legend { float: left; font-weight: 600; font-size: 14px; padding: 0; }
+.ev-fila--tags { display: grid; gap: 8px; }
+.ev-escala { display: inline-flex; gap: 6px; }
+.ev-op { position: relative; cursor: pointer; }
+.ev-op input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.ev-op span { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--ir-line-2); font: 700 14px var(--font-num); color: var(--text-2); background: var(--ir-card); transition: background .12s, color .12s, border-color .12s; }
+.ev-op:hover span { border-color: var(--ir-pri); color: var(--text); }
+.ev-op input:checked + span { background: var(--ir-pri); border-color: var(--ir-pri); color: #fff; }
+.ev-op--nada input:checked + span { background: var(--ir-tabs); border-color: var(--ir-line-2); color: var(--text-2); }
+.ev-op input:focus-visible + span { outline: 2px solid var(--ir-pri); outline-offset: 2px; }
+.chip-check { border: 1px solid var(--ir-line); border-radius: 999px; padding: 5px 12px; font-size: 13px; }
+.chip-check:has(input:checked) { border-color: var(--ir-pri); background: color-mix(in srgb, var(--ir-pri) 10%, transparent); color: var(--text); font-weight: 600; }
+.ev-barra { display: inline-flex; align-items: center; gap: 10px; min-width: 220px; }
+.ev-barra b { font: 700 22px var(--font-num); min-width: 3.2ch; }
+.ev-barra em { font-style: normal; font-weight: 600; font-size: 13px; color: var(--text-2); }
+.ev-track { flex: 1; height: 8px; border-radius: 999px; background: var(--ir-tabs); overflow: hidden; min-width: 120px; }
+.ev-track > span { display: block; height: 100%; border-radius: inherit; background: var(--ev); transition: width .25s; }
+.ev--ok { --ev: var(--ir-pri); } .ev--medio { --ev: #D9A21B; } .ev--bajo { --ev: #C9653A; }
+.ev-barra--chica { min-width: 140px; gap: 8px; } .ev-barra--chica b { font-size: 14px; } .ev-barra--chica .ev-track { min-width: 80px; height: 6px; }
+.ev-sin { font-size: 12.5px; color: var(--text-2); }
+.ev-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.ev-buscar { flex: 1 1 260px; min-width: 0; padding: 9px 12px; border: 1px solid var(--ir-line); border-radius: 10px; background: var(--ir-card); color: var(--text); font: inherit; }
+.ev-etqs { display: flex; flex-wrap: wrap; gap: 6px; }
+.ev-etqs .chip { cursor: pointer; font-family: var(--font-sans); }
+.ev-etqs .chip.is-on { border-color: var(--ir-pri); color: var(--ir-pri); font-weight: 700; }
+.tbl--ev tbody tr { cursor: pointer; }
+.chip--sm { font-size: 11px; padding: 1px 7px; }
+@media (max-width: 560px) { .ev-fila { display: grid; } .ev-op span { width: 44px; height: 44px; } }

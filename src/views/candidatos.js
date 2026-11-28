@@ -1,3 +1,5 @@
+import { evaluacionPane, leerEvaluacion, bindEvaluacion } from '../components/evaluacion.js';
+import { armarEvaluacion } from '../lib/evaluacion.js';
 import { html, raw, $ } from '../lib/html.js';
 import { state, loadAll, stageOrder, set } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
@@ -358,7 +360,7 @@ const FECHAS_ETAPA = [['en_entrevista', 'entrevista', 'la fecha de entrevista'],
 const MOTIVOS = ['No Califica', 'CV No Califica', 'Rechaza Propuesta', 'Secundario Incompleto', 'No Apto Medico', 'Sin vacante disponible', 'No se presenta', 'Otro'];
 
 // `volver`: si se abrió desde otra pantalla (p. ej. la silla), a dónde volver al terminar.
-export function openCandidate(id, { volver } = {}) {
+export function openCandidate(id, { volver, pane } = {}) {
   const c = id ? state.candidates.find((x) => x.id === id) : { stage: 'cv_recibido', cv_recibido: todayISO(), motivos_baja: [] };
   if (!c) return;
   const stageOpts = state.stages.filter((s) => s.code !== 'sin_candidato').map((s) => [s.code, s.label]);
@@ -368,7 +370,7 @@ export function openCandidate(id, { volver } = {}) {
     ${volver ? html`<button type="button" class="btn btn--ghost btn--sm volver-silla" data-act="volver">← Volver a la silla</button>` : ''}
     ${c.id ? avisoBar(c) : ''}
     <nav class="ficha-tabs" role="tablist" aria-label="Secciones de la ficha">
-      ${[['proceso', 'Proceso y silla'], ['medico', 'Examen médico'], ['datos', 'Datos y CV']].map(([k, t], i) => html`<button type="button" role="tab" class="ficha-tab ${i === 0 ? 'is-on' : ''}" data-pane-tab="${k}" aria-selected="${i === 0}">${t}</button>`)}
+      ${[['proceso', 'Proceso y silla'], ['evaluacion', 'Evaluación'], ['medico', 'Examen médico'], ['datos', 'Datos y CV']].map(([k, t], i) => html`<button type="button" role="tab" class="ficha-tab ${i === 0 ? 'is-on' : ''}" data-pane-tab="${k}" aria-selected="${i === 0}">${t}</button>`)}
     </nav>
     ${c.id ? '' : html`<div class="dup-aviso" hidden></div>`}
     <form id="cand-form" class="ficha-form">
@@ -406,6 +408,7 @@ export function openCandidate(id, { volver } = {}) {
           ${field('Comentarios', 'comentarios', c.comentarios, { type: 'textarea', span: 2 })}
         </div>
       </div>
+      <div class="ficha-pane" data-pane="evaluacion" hidden>${evaluacionPane(c)}</div>
       <div class="ficha-pane" data-pane="medico" hidden><div class="form-grid">${examenFields(c)}</div></div>
       <div class="ficha-pane" data-pane="datos" hidden>
         ${c.id ? html`<div class="cv-box">
@@ -432,6 +435,8 @@ export function openCandidate(id, { volver } = {}) {
     root.querySelectorAll('[data-pane-tab]').forEach((b) => { const on = b.dataset.paneTab === k; b.classList.toggle('is-on', on); b.setAttribute('aria-selected', String(on)); });
   };
   root.querySelector('.ficha-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-pane-tab]'); if (b) verPane(b.dataset.paneTab); });
+  bindEvaluacion(root, form);
+  if (pane) verPane(pane);
   // un dato inválido en otra pestaña: mostrar esa pestaña para poder corregirlo
   form.addEventListener('invalid', (e) => { const p = e.target.closest('.ficha-pane'); if (p?.hidden) verPane(p.dataset.pane); }, true);
   root.querySelector('.etapas')?.addEventListener('click', (e) => {
@@ -478,6 +483,9 @@ export function openCandidate(id, { volver } = {}) {
     const data = formData(form);
     data.motivos_baja = [...form.querySelectorAll('input[name="motivo"]:checked')].map((i) => i.value);
     delete data.motivo;
+    Object.keys(data).filter((k) => k.startsWith('ev_')).forEach((k) => delete data[k]);
+    const ev = armarEvaluacion(leerEvaluacion(form), c.evaluacion || null, { hoy: todayISO(), uid: state.session?.user?.id });
+    if (ev !== undefined) data.evaluacion = ev;
     data.cancelado = data.stage === 'cancelado';
     data.entrevista_ok = stageOrder(data.stage) >= stageOrder('entrevista_aprobada') && !data.cancelado;
     data.listo_ingreso = ['proximo_ingreso', 'ingresado'].includes(data.stage);

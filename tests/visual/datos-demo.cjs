@@ -73,6 +73,12 @@ function datos() {
   candidates[3].dni = null;
   const libre = positions.find((p) => !p.candidate_id); if (libre) libre.ingreso_previsto = '2026-10-05';
   activos[40].localidad = 'NEUQUEN';
+  // evaluaciones de entrevista ficticias
+  const ETQ = ['Buena actitud', 'Muy predispuesto', 'Joven sin experiencia', 'Disponible para diagramas de campo', 'Potencial para otro puesto', 'Requiere capacitación'];
+  candidates.filter((c) => !['cv_recibido', 'entrevista', 'cancelado'].includes(c.stage)).slice(0, 26).forEach((c, i) => {
+    const n = () => 2 + Math.floor(r() * 4);
+    c.evaluacion = { actitud: n(), tecnico: n(), experiencia: i % 4 === 0 ? 1 : n(), seguridad: i % 5 === 0 ? null : n(), etiquetas: [ETQ[i % 6], ...(i % 3 === 0 ? [ETQ[(i + 2) % 6]] : [])], comentario: i % 2 ? 'Buena comunicación, conoce el trabajo en turnos.' : null, fecha: fecha(10, 1), por: 'x' };
+  });
   // ingresos previstos (Agenda) y uno en Próximo ingreso sin fecha confirmada
   positions.filter((p) => ['cv_recibido', 'entrevista'].includes(p.stage)).slice(0, 4).forEach((p, i) => { p.ingreso_previsto = rel(3 + i * 4); });
   const pi = positions.find((p) => p.stage === 'proximo_ingreso'); if (pi) { pi.ingreso_previsto = rel(9); pi.fecha_ingreso = null; }
