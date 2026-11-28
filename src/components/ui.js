@@ -1,5 +1,6 @@
 import { html, raw, esc, $ } from '../lib/html.js';
 import { state } from '../lib/store.js';
+import { mensajeError } from '../lib/errores.js';
 
 export function stagePill(code, { small = false } = {}) {
   const s = state.stageMap[code];
@@ -185,8 +186,24 @@ export function openDrawer(content, { title = '', wide = false, onClose, modific
   document.body.appendChild(root);
   ultimaModif(root, modificado);
   const prevFocus = document.activeElement;
-  const onKey = (e) => { if (e.key === 'Escape') closeDrawer(); };
-  root.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeDrawer(); });
+  // cambios sin guardar: se pregunta antes de cerrar a mano (X, Cancelar, Esc, fondo, deslizar)
+  let sucio = false; let preguntando = false;
+  const marcar = (e) => { if (e.target.closest?.('form') && !e.target.closest('[data-no-sucio]') && e.target.type !== 'search') sucio = true; };
+  root.addEventListener('input', marcar);
+  root.addEventListener('change', marcar);
+  const cerrarAMano = async () => {
+    if (preguntando) return;
+    if (sucio) {
+      preguntando = true;
+      const ok = await confirmDialog('Hay cambios sin guardar. ¿Cerrar igual?', { ok: 'Descartar cambios', cancel: 'Seguir editando', danger: true });
+      preguntando = false;
+      if (!ok) return;
+    }
+    if (root.isConnected && !root.classList.contains('is-closing')) closeDrawer();
+  };
+  // el Esc que abre la pregunta no debe cerrarla en el mismo momento
+  const onKey = (e) => { if (e.key === 'Escape' && !document.querySelector('dialog[open]')) { e.preventDefault(); setTimeout(cerrarAMano, 0); } };
+  root.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) cerrarAMano(); });
   document.addEventListener('keydown', onKey);
   requestAnimationFrame(() => {
     root.classList.add('is-open');
@@ -205,7 +222,7 @@ export function openDrawer(content, { title = '', wide = false, onClose, modific
   panel.addEventListener('touchend', () => {
     if (x0 == null) return;
     x0 = null; panel.style.transition = ''; panel.style.transform = '';
-    if (dx > 90) closeDrawer();
+    if (dx > 90) cerrarAMano();
   });
   drawerCleanup = () => {
     document.removeEventListener('keydown', onKey);
@@ -258,6 +275,12 @@ export function confirmDialog(message, { ok = 'Confirmar', cancel = 'Cancelar', 
 export function toast(message, tone = 'info', ms = 3500) {
   let host = $('#toasts');
   if (!host) { host = document.createElement('div'); host.id = 'toasts'; host.setAttribute('aria-live', 'polite'); document.body.appendChild(host); }
+  if (tone === 'error') {
+    const claro = mensajeError(message);
+    if (claro !== String(message)) console.warn('Detalle del error:', message);
+    message = claro;
+    if (ms === 3500) ms = 6000;
+  }
   const t = document.createElement('div');
   t.className = `toast toast--${tone}`;
   t.textContent = message;
@@ -448,4 +471,44 @@ export function rowsToCSV(cols, rows) {
 export function dimSelect(id, label, dims, value) {
   return html`<label class="fselect"><span>${label}</span><select id="${id}">
     ${dims.map(([k, l]) => html`<option value="${k}" ${raw(k === value ? 'selected' : '')}>${l}</option>`)}</select></label>`;
+}
+
+// ---------------------------------------------------------------------------
+// Campos obligatorios: en lugar del globo del navegador, el campo se marca en rojo
+// con el motivo debajo; se limpia al corregirlo. Vale para todos los formularios.
+// ---------------------------------------------------------------------------
+function motivoInvalido(el) {
+  const v = el.validity;
+  if (v.valueMissing) return 'Obligatorio';
+  if (v.typeMismatch) return el.type === 'email' ? 'Correo inválido' : 'Formato inválido';
+  if (v.tooShort) return `Mínimo ${el.minLength} caracteres`;
+  if (v.rangeUnderflow) return `Mínimo ${el.min}`;
+  if (v.rangeOverflow) return `Máximo ${el.max}`;
+  if (v.badInput || v.patternMismatch || v.stepMismatch) return 'Valor inválido';
+  return el.validationMessage || 'Valor inválido';
+}
+function limpiarInvalido(el) {
+  const f = el.closest('.field'); if (!f) return;
+  f.classList.remove('is-invalido');
+  f.querySelector('.field-error')?.remove();
+}
+if (typeof document !== 'undefined' && !document._validBound) {
+  document._validBound = true;
+  let primero = null;
+  document.addEventListener('invalid', (e) => {
+    const el = e.target; const f = el.closest?.('.field');
+    if (!f) return;
+    e.preventDefault();
+    f.classList.add('is-invalido');
+    let m = f.querySelector('.field-error');
+    if (!m) { m = document.createElement('small'); m.className = 'field-error'; m.setAttribute('role', 'alert'); el.after(m); }
+    m.textContent = motivoInvalido(el);
+    if (!primero) {
+      primero = el;
+      queueMicrotask(() => { primero.scrollIntoView?.({ block: 'center', behavior: 'smooth' }); primero.focus?.({ preventScroll: true }); primero = null; });
+    }
+  }, true);
+  const alCorregir = (e) => { if (e.target.closest?.('.field.is-invalido') && e.target.checkValidity?.()) limpiarInvalido(e.target); };
+  document.addEventListener('input', alCorregir, true);
+  document.addEventListener('change', alCorregir, true);
 }
