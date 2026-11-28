@@ -8,6 +8,7 @@ const CORPORATIVO = /^[^@\s]+@(tecpetrol|efis)\.com(\.ar)?$/i;
 
 export function render(el) {
   if (state.session && state.canRead) { location.hash = '#/posiciones'; return; }
+  if (state.session && state.isEntrevistador) { location.hash = '#/misentrevistas'; return; }
   el.innerHTML = String(html`<div class="login-fondo">${fondoVacaMuerta()}
   <section class="login card">
     <img src="./brand/efis-isologo.svg" alt="EFiS Energy Field Services" class="login-logo brand-logo--color">

@@ -22,6 +22,9 @@ export const state = {
   sap: [],         // solo RRHH: maestro de posiciones ocupadas de SAP
   avisos: [],      // solo RRHH: avisos enviados a candidatos
   plantillas: [],  // solo RRHH: textos de los avisos
+  evaluaciones: [], // solo RRHH: evaluaciones de entrevista (todas)
+  misEntrevistas: [], // entrevistador: su lista (la base la recorta a su alcance)
+  isEntrevistador: false,
   loadedAt: null,
 };
 
@@ -34,27 +37,40 @@ export async function refreshAuth() {
   const session = data.session;
   let isStaff = false;
   let canRead = false;
+  let isEntrevistador = false;
   if (session) {
-    const [st, rd] = await Promise.all([sb.rpc('is_staff'), sb.rpc('puede_leer')]);
+    const [st, rd, en] = await Promise.all([sb.rpc('is_staff'), sb.rpc('puede_leer'), sb.rpc('es_entrevistador')]);
     isStaff = !st.error && st.data === true;
     canRead = isStaff || (!rd.error && rd.data === true);
+    isEntrevistador = !isStaff && !en.error && en.data === true;
   }
   state.session = session;
   state.isStaff = isStaff;
   state.canRead = canRead;
+  state.isEntrevistador = isEntrevistador;
   state.authChecked = true;
 }
 
 export async function loadAll({ silent = false } = {}) {
   // Sin cuenta habilitada no se pide NADA a la base (y la base tampoco lo daría).
+  if (!state.canRead && !state.isEntrevistador) {
+    set({ stages: [], stageMap: {}, positions: [], candidates: [], hires: [], nomina: [], historial: [], avisos: [], plantillas: [], sap: [], evaluaciones: [], misEntrevistas: [], loading: false, error: null });
+    return;
+  }
+  // Entrevistador (supervisor): solo su lista, ya recortada por la base a su alcance
   if (!state.canRead) {
-    set({ stages: [], stageMap: {}, positions: [], candidates: [], hires: [], nomina: [], historial: [], avisos: [], plantillas: [], sap: [], loading: false, error: null });
+    if (!silent) set({ loading: true, error: null });
+    try {
+      const [stages, mis] = await Promise.all([fetchAll('stages', '*', 'orden'), sb.rpc('mis_entrevistas')]);
+      if (mis.error) throw mis.error;
+      set({ stages, stageMap: Object.fromEntries(stages.map((s) => [s.code, s])), misEntrevistas: mis.data || [], positions: [], candidates: [], loading: false, error: null, loadedAt: new Date() });
+    } catch (e) { console.error(e); set({ loading: false, error: e.message || String(e) }); }
     return;
   }
   if (!silent) set({ loading: true, error: null });
   try {
     const staff = state.isStaff;
-    const [stages, positions, candidates, terna, nomina, historial, avisos, plantillas, sap] = await Promise.all([
+    const [stages, positions, candidates, terna, nomina, historial, avisos, plantillas, sap, evaluaciones, misEntrevistas] = await Promise.all([
       fetchAll('stages', '*', 'orden'),
       fetchAll(staff ? 'positions' : 'positions_public'),
       fetchAll(staff ? 'candidates' : 'candidates_public'),
@@ -66,6 +82,8 @@ export async function loadAll({ silent = false } = {}) {
       staff ? fetchAll('plantillas_aviso', '*', 'orden').catch(() => []) : Promise.resolve([]),
       // maestro de posiciones ocupadas de SAP (solo RRHH)
       staff ? fetchAll('sap_posiciones', 'pos,dni,nombre,puesto,ceco', 'pos').catch(() => []) : Promise.resolve([]),
+      staff ? fetchAll('evaluaciones', '*', 'fecha').catch(() => []) : Promise.resolve([]),
+      state.isEntrevistador ? sb.rpc('mis_entrevistas').then((r) => r.data || []) : Promise.resolve([]),
     ]);
     const stageMap = Object.fromEntries(stages.map((s) => [s.code, s]));
     // Legajos = la nómina filtrada a quienes ingresaron por una silla (mismo registro)
@@ -85,7 +103,12 @@ export async function loadAll({ silent = false } = {}) {
         c._ternas.push(p);
       }
     }
-    set({ stages, stageMap, positions, candidates, hires, nomina, historial, avisos, plantillas, sap, loading: false, error: null, loadedAt: new Date() });
+    if (staff) {
+      const porCand = new Map();
+      for (const ev of evaluaciones) { if (!porCand.has(ev.candidate_id)) porCand.set(ev.candidate_id, []); porCand.get(ev.candidate_id).push(ev); }
+      candidates.forEach((c) => { c._evals = porCand.get(c.id) || []; });
+    }
+    set({ stages, stageMap, positions, candidates, hires, nomina, historial, avisos, plantillas, sap, evaluaciones, misEntrevistas, loading: false, error: null, loadedAt: new Date() });
   } catch (e) {
     console.error(e);
     set({ loading: false, error: e.message || String(e) });

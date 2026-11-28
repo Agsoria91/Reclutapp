@@ -25,13 +25,23 @@ export function puntaje(ev) {
 
 export const tieneEvaluacion = (ev) => !!ev && (puntaje(ev) != null || (ev.etiquetas || []).length > 0 || !!String(ev.comentario || '').trim());
 
-// Arma la evaluación desde el formulario; conserva fecha y autor si no cambió nada.
-export function armarEvaluacion(valores, previa, { hoy, uid }) {
+// Arma la fila de evaluación desde el formulario. undefined = no hay nada que guardar;
+// null = se borró todo (eliminar la previa). La fecha solo cambia si cambió el contenido.
+export function armarEvaluacion(valores, previa, { hoy }) {
   const ev = Object.fromEntries(CRITERIOS.map(([k]) => [k, nota(valores[k])]));
   ev.etiquetas = (valores.etiquetas || []).filter((t) => ETIQUETAS.includes(t));
   ev.comentario = String(valores.comentario || '').trim() || null;
-  if (!tieneEvaluacion(ev)) return previa ? null : undefined; // undefined: no tocar
+  if (!tieneEvaluacion(ev)) return previa ? null : undefined;
   const clave = (x) => JSON.stringify([...CRITERIOS.map(([k]) => nota(x?.[k])), [...(x?.etiquetas || [])].sort(), x?.comentario || null]);
-  if (previa && clave(previa) === clave(ev)) return { ...ev, fecha: previa.fecha, por: previa.por };
-  return { ...ev, fecha: hoy, por: uid || null };
+  if (previa && clave(previa) === clave(ev)) return { ...ev, fecha: previa.fecha, sinCambios: true };
+  return { ...ev, fecha: hoy };
+}
+
+// Varias evaluaciones de un mismo candidato: promedio de sus puntajes.
+export function puntajeGrupo(evals = []) {
+  const ps = evals.map(puntaje).filter(Boolean);
+  if (!ps.length) return null;
+  const pct = Math.round(ps.reduce((s, p) => s + p.pct, 0) / ps.length);
+  const [, nivel, tono] = NIVELES.find(([min]) => pct >= min);
+  return { pct, nivel, tono, calificados: ps.length, total: ps.length, varias: ps.length > 1 };
 }

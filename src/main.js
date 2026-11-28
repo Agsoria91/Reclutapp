@@ -15,6 +15,7 @@ import * as importar from './views/importar.js';
 import * as login from './views/login.js';
 import * as usuarios from './views/usuarios.js';
 import * as revisar from './views/revisar.js';
+import * as misEntrevistas from './views/misEntrevistas.js';
 import * as ingresos from './views/ingresos.js';
 import * as entrevistas from './views/entrevistas.js';
 import * as nomina from './views/nomina.js';
@@ -39,6 +40,7 @@ const ROUTES = {
   mapa: { view: mapa, label: 'Mapa', full: true },
   posiciones: { view: posiciones, label: 'Posiciones' },
   candidatos: { view: candidatos, label: 'Candidatos' },
+  misentrevistas: { view: misEntrevistas, label: 'Mis entrevistas', entrev: true },
   entrevistas: { view: entrevistas, label: 'Entrevistas' },
   agenda: { view: agenda, label: 'Agenda', staff: true },
   dashboardpj: { view: dashboardpj, label: 'Dashboard PJ', staff: true },
@@ -99,13 +101,13 @@ const app = $('#app');
 // Secciones agrupadas en la barra lateral
 const GRUPOS = [
   ['Cobertura', ['posiciones', 'mapa', 'candidatos']],
-  ['Proceso', ['agenda', 'entrevistas', 'examenes', 'ingresos']],
+  ['Proceso', ['misentrevistas', 'agenda', 'entrevistas', 'examenes', 'ingresos']],
   ['Dotación', ['nomina', 'legajos', 'dashboardpj']],
   ['Administración', ['importar', 'revisar', 'usuarios']],
 ];
 const lateralCorto = () => loadLocal('reclutapp.lateral.corto', false) === true;
 // Iniciales de cada sección (navegación lateral del estilo IRIS)
-const INICIALES = { mapa: 'MA', posiciones: 'PO', candidatos: 'CA', entrevistas: 'EN', dashboardpj: 'PJ', examenes: 'EX', ingresos: 'IN', legajos: 'LE', nomina: 'NO', importar: 'IM', revisar: 'RD', usuarios: 'US' };
+const INICIALES = { mapa: 'MA', posiciones: 'PO', candidatos: 'CA', misentrevistas: 'ME', entrevistas: 'EN', dashboardpj: 'PJ', examenes: 'EX', ingresos: 'IN', legajos: 'LE', nomina: 'NO', importar: 'IM', revisar: 'RD', usuarios: 'US' };
 let current = { name: null, container: null };
 initFolds(app, () => current.name);
 initModerno(() => draw());
@@ -130,7 +132,7 @@ const INFERIOR = ['posiciones', 'candidatos', 'entrevistas', 'nomina', 'mapa'];
 function shell(name) {
   const r = ROUTES[name];
   if (r.bare) return html`<main id="view" class="view view--bare"></main>`;
-  const navItems = state.canRead ? Object.entries(ROUTES).filter(([, v]) => v.label && (!v.staff || state.isStaff)) : [];
+  const navItems = Object.entries(ROUTES).filter(([, v]) => v.label && (v.entrev ? state.isEntrevistador : state.canRead && (!v.staff || state.isStaff)));
   return html`
   <a href="#view" class="skip">Saltar al contenido</a>
   <header class="topbar">
@@ -151,7 +153,7 @@ function shell(name) {
       ${GRUPOS.map(([g, ks]) => { const items = ks.map((k) => navItems.find(([n]) => n === k)).filter(Boolean); return items.length ? html`<div class="nav-grupo"><span class="nav-gtit">${g}</span>
         ${items.map(([k, v]) => html`<a href="#/${k}" class="${k === name ? 'is-active' : ''}" ${k === name ? html`aria-current="page"` : ''} title="${v.label}"><span class="nav-ini" aria-hidden="true">${INICIALES[k] || v.label.slice(0, 2).toUpperCase()}</span><span class="nav-ico">${icono(k)}</span><span class="nav-txt">${v.label}</span></a>`)}</div>` : ''; })}
       ${state.session ? html`<div class="nav-pie">
-        <span class="nav-user" title="${state.session.user.email}"><b>${state.session.user.email.split('@')[0]}</b><small>${state.isStaff ? 'RRHH' : 'Lectura'}</small></span>
+        <span class="nav-user" title="${state.session.user.email}"><b>${state.session.user.email.split('@')[0]}</b><small>${state.isStaff ? 'RRHH' : state.canRead ? 'Lectura' : 'Entrevistador'}</small></span>
         <button type="button" class="nav-acc" data-act="pass" title="Mi contraseña">${icono('llave')}<span class="nav-txt">Mi contraseña</span></button>
         <button type="button" class="nav-acc" data-act="salir" title="Salir">${icono('salir')}<span class="nav-txt">Salir</span></button>
       </div>` : ''}
@@ -165,8 +167,8 @@ function shell(name) {
       ${state.canRead ? html`<button class="icon-btn btn-compacto ${loadLocal('reclutapp.compacto', false) ? 'is-on' : ''}" id="btn-compacto" title="${loadLocal('reclutapp.compacto', false) ? 'Vista normal' : 'Vista compacta: más filas por pantalla'}" aria-label="Vista compacta" aria-pressed="${!!loadLocal('reclutapp.compacto', false)}">${icono('densidad')}</button>` : ''}
       <button class="icon-btn btn-tema ${temaPreferido() === 'auto' ? 'is-auto' : ''}" id="btn-theme" title="Tema: ${TEMA_TXT[temaPreferido()]}" aria-label="Cambiar tema (claro, oscuro o automático)">${ICON.tema}</button>
       ${state.session
-        ? html`<span class="user ${state.canRead ? '' : 'user--warn'}" title="${state.session.user.email}">${state.isStaff ? 'RRHH' : state.canRead ? 'Lectura' : 'Sin permisos'} · ${state.session.user.email.split('@')[0]}</span>
-               ${state.canRead ? html`<button class="btn btn--ghost btn--sm" id="btn-pass">Mi contraseña</button>` : ''}
+        ? html`<span class="user ${state.canRead || state.isEntrevistador ? '' : 'user--warn'}" title="${state.session.user.email}">${state.isStaff ? 'RRHH' : state.canRead ? 'Lectura' : state.isEntrevistador ? 'Entrevistador' : 'Sin permisos'} · ${state.session.user.email.split('@')[0]}</span>
+               ${state.canRead || state.isEntrevistador ? html`<button class="btn btn--ghost btn--sm" id="btn-pass">Mi contraseña</button>` : ''}
                <button class="btn btn--ghost btn--sm" id="btn-logout">Salir</button>`
         : ''}
     </div>
@@ -192,7 +194,10 @@ function route() {
   const { name, params } = parseHash();
   const r = ROUTES[name];
   // Todo requiere cuenta corporativa habilitada; las pantallas de RRHH, además, rol RRHH.
-  if (state.authChecked && name !== 'login' && (!state.canRead || (r.staff && !state.isStaff))) { location.hash = '#/login'; return; }
+  if (state.authChecked && name !== 'login') {
+    const permitido = r.entrev ? state.isEntrevistador : state.canRead && (!r.staff || state.isStaff);
+    if (!permitido) { location.hash = state.isEntrevistador && !state.canRead ? '#/misentrevistas' : '#/login'; return; }
+  }
   closeDrawer();
   app.innerHTML = String(shell(name));
   const conLateral = !r.bare && !!document.querySelector('#menu-secciones .nav-grupo');
@@ -327,8 +332,9 @@ async function boot() {
     await refreshAuth();
     set({ positions: [], candidates: [], hires: [], nomina: [], loading: true }); // nunca mezclar datos de sesiones distintas
     if (event === 'SIGNED_IN') {
-      toast(state.canRead ? `Hola, ${session.user.email}` : 'Tu cuenta no está habilitada. Pedile acceso a RRHH.', state.canRead ? 'ok' : 'error', 5000);
-      if (state.canRead && parseHash().name === 'login') location.hash = '#/posiciones';
+      const habilitado = state.canRead || state.isEntrevistador;
+      toast(habilitado ? `Hola, ${session.user.email}` : 'Tu cuenta no está habilitada. Pedile acceso a RRHH.', habilitado ? 'ok' : 'error', 5000);
+      if (habilitado && parseHash().name === 'login') location.hash = state.canRead ? '#/posiciones' : '#/misentrevistas';
     }
     if (event === 'SIGNED_OUT') location.hash = '#/login';
     route();

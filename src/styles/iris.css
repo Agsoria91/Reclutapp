@@ -1614,3 +1614,21 @@ dialog.buscador::backdrop { background: rgba(8, 18, 14, .45); }
 .tbl--ev tbody tr { cursor: pointer; }
 .chip--sm { font-size: 11px; padding: 1px 7px; }
 @media (max-width: 560px) { .ev-fila { display: grid; } .ev-op span { width: 44px; height: 44px; } }
+
+/* ---------- evaluaciones de varios entrevistadores y vista del entrevistador ---------- */
+.ev-otras { display: grid; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid var(--ir-line); }
+.ev-otra { border: 1px solid var(--ir-line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 6px; background: var(--ir-card); }
+.ev-otra header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.ev-notas { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; color: var(--text-2); }
+.ev-coment { margin: 0; white-space: pre-wrap; }
+.ev-tit { margin: 4px 0 0; font-size: 15px; }
+.ev-dec { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font: 700 11px var(--font-sans); }
+.ev-dec--ok { background: color-mix(in srgb, var(--ir-pri) 14%, transparent); color: var(--ir-pri); }
+.ev-dec--no { background: color-mix(in srgb, var(--st-red) 14%, transparent); color: var(--st-red); }
+.ev-quienes { display: block; font-size: 12.5px; }
+.me-datos { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px 16px; margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--ir-line); border-radius: var(--r); background: var(--ir-card); }
+.me-datos dt { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-2); }
+.me-datos dd { margin: 2px 0 0; font-weight: 600; }
+.me-decision { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--ir-line); }
+.me-motivo { max-width: 320px; }
+.me-motivo[hidden], .u-alcance[hidden] { display: none; }
