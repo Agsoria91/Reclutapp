@@ -24,6 +24,7 @@ export const state = {
   plantillas: [],  // solo RRHH: textos de los avisos
   evaluaciones: [], // solo RRHH: evaluaciones de entrevista (todas)
   misEntrevistas: [], // entrevistador: su lista (la base la recorta a su alcance)
+  entrevistadores: [], // solo RRHH: supervisores con rol entrevistador y su alcance
   isEntrevistador: false,
   loadedAt: null,
 };
@@ -70,7 +71,7 @@ export async function loadAll({ silent = false } = {}) {
   if (!silent) set({ loading: true, error: null });
   try {
     const staff = state.isStaff;
-    const [stages, positions, candidates, terna, nomina, historial, avisos, plantillas, sap, evaluaciones, misEntrevistas] = await Promise.all([
+    const [stages, positions, candidates, terna, nomina, historial, avisos, plantillas, sap, evaluaciones, misEntrevistas, entrevistadores] = await Promise.all([
       fetchAll('stages', '*', 'orden'),
       fetchAll(staff ? 'positions' : 'positions_public'),
       fetchAll(staff ? 'candidates' : 'candidates_public'),
@@ -84,6 +85,7 @@ export async function loadAll({ silent = false } = {}) {
       staff ? fetchAll('sap_posiciones', 'pos,dni,nombre,puesto,ceco', 'pos').catch(() => []) : Promise.resolve([]),
       staff ? fetchAll('evaluaciones', '*', 'fecha').catch(() => []) : Promise.resolve([]),
       state.isEntrevistador ? sb.rpc('mis_entrevistas').then((r) => r.data || []) : Promise.resolve([]),
+      staff ? fetchAll('entrevistadores', '*', 'email').catch(() => []) : Promise.resolve([]),
     ]);
     const stageMap = Object.fromEntries(stages.map((s) => [s.code, s]));
     // Legajos = la nómina filtrada a quienes ingresaron por una silla (mismo registro)
@@ -108,7 +110,7 @@ export async function loadAll({ silent = false } = {}) {
       for (const ev of evaluaciones) { if (!porCand.has(ev.candidate_id)) porCand.set(ev.candidate_id, []); porCand.get(ev.candidate_id).push(ev); }
       candidates.forEach((c) => { c._evals = porCand.get(c.id) || []; });
     }
-    set({ stages, stageMap, positions, candidates, hires, nomina, historial, avisos, plantillas, sap, evaluaciones, misEntrevistas, loading: false, error: null, loadedAt: new Date() });
+    set({ stages, stageMap, positions, candidates, hires, nomina, historial, avisos, plantillas, sap, evaluaciones, misEntrevistas, entrevistadores, loading: false, error: null, loadedAt: new Date() });
   } catch (e) {
     console.error(e);
     set({ loading: false, error: e.message || String(e) });

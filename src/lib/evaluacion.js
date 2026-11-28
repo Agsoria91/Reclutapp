@@ -23,7 +23,7 @@ export function puntaje(ev) {
   return { pct, nivel, tono, calificados: notas.length, total: CRITERIOS.length };
 }
 
-export const tieneEvaluacion = (ev) => !!ev && (puntaje(ev) != null || (ev.etiquetas || []).length > 0 || !!String(ev.comentario || '').trim());
+export const tieneEvaluacion = (ev) => !!ev && (puntaje(ev) != null || (ev.etiquetas || []).length > 0 || !!String(ev.comentario || '').trim() || !!ev.categoria_sugerida || !!ev.decision);
 
 // Arma la fila de evaluación desde el formulario. undefined = no hay nada que guardar;
 // null = se borró todo (eliminar la previa). La fecha solo cambia si cambió el contenido.
@@ -31,8 +31,11 @@ export function armarEvaluacion(valores, previa, { hoy }) {
   const ev = Object.fromEntries(CRITERIOS.map(([k]) => [k, nota(valores[k])]));
   ev.etiquetas = (valores.etiquetas || []).filter((t) => ETIQUETAS.includes(t));
   ev.comentario = String(valores.comentario || '').trim() || null;
+  ev.categoria_sugerida = CATEGORIAS.includes(valores.categoria_sugerida) ? valores.categoria_sugerida : null;
+  if ('decision' in valores) { ev.decision = ['aprobado', 'rechazado'].includes(valores.decision) ? valores.decision : null; ev.motivo = ev.decision === 'rechazado' ? valores.motivo || null : null; }
   if (!tieneEvaluacion(ev)) return previa ? null : undefined;
-  const clave = (x) => JSON.stringify([...CRITERIOS.map(([k]) => nota(x?.[k])), [...(x?.etiquetas || [])].sort(), x?.comentario || null]);
+  const clave = (x) => JSON.stringify([...CRITERIOS.map(([k]) => nota(x?.[k])), [...(x?.etiquetas || [])].sort(), x?.comentario || null, x?.categoria_sugerida || null,
+    'decision' in ev ? [x?.decision || null, x?.motivo || null] : null]);
   if (previa && clave(previa) === clave(ev)) return { ...ev, fecha: previa.fecha, sinCambios: true };
   return { ...ev, fecha: hoy };
 }
@@ -44,4 +47,24 @@ export function puntajeGrupo(evals = []) {
   const pct = Math.round(ps.reduce((s, p) => s + p.pct, 0) / ps.length);
   const [, nivel, tono] = NIVELES.find(([min]) => pct >= min);
   return { pct, nivel, tono, calificados: ps.length, total: ps.length, varias: ps.length > 1 };
+}
+
+// Categoría sugerida por el entrevistador (convenio de petroleros)
+export const CATEGORIAS = ['Ingresante sin experiencia', 'Ayudante', 'Medio oficial', 'Oficial', 'Especializado'];
+// Especialidades dentro de un sector (hoy: Mantenimiento)
+export const SUBSECTORES = ['Mecánico', 'Eléctrico', 'Generación', 'Instrumentación'];
+
+// Evaluación completa: las 4 habilidades, categoría sugerida y comentario
+export function completa(ev) {
+  return !!ev && CRITERIOS.every(([k]) => nota(ev[k]) != null) && !!ev.categoria_sugerida && !!String(ev.comentario || '').trim();
+}
+
+// ¿El candidato entra en el alcance de un entrevistador? (misma regla que la base)
+const nx = (v) => String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+export function enAlcance(c, e) {
+  const en = (lista, v) => (lista || []).some((x) => nx(x) === nx(v));
+  return en(e.sectores, c.servicio)
+    && (!(e.subsectores || []).length || en(e.subsectores, c.subsector))
+    && (!(e.yacimientos || []).length || en(e.yacimientos, c.area))
+    && (!(e.puestos || []).length || en(e.puestos, c.posicion));
 }

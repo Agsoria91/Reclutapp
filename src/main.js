@@ -35,6 +35,7 @@ import { campanaHtml, campanaLista, irA } from './components/paraHoy.js';
 import { pintarYacimientos } from './lib/coloresYac.js';
 import { initDetalleGrafico } from './components/detalleGrafico.js';
 import { initModerno } from './components/moderno.js';
+import { initAuditoria } from './components/auditoria.js';
 
 const ROUTES = {
   mapa: { view: mapa, label: 'Mapa', full: true },
@@ -115,6 +116,7 @@ initBuscador();
 initCumples();
 initTarjetaFlotante();
 initDetalleGrafico();
+initAuditoria();
 // En celular las tablas de personas se ven como tarjetas: cada celda lleva el
 // nombre de su columna (data-th) para mostrarlo como etiqueta.
 function rotularTablas() {

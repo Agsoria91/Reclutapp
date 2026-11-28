@@ -6,6 +6,7 @@ import { state } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
 import { toast, confirmDialog, openDrawer, closeDrawer, opcionesDe } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
+import { SUBSECTORES } from '../lib/evaluacion.js';
 
 // Contraseña temporal legible (sin caracteres ambiguos), generada en el navegador.
 export function tempPassword(len = 14) {
@@ -92,7 +93,7 @@ async function upsert(el, email, nombre, title, rol = 'staff', alc = null) {
   const pass = tempPassword();
   if (rol === 'entrevistador' && !alc) alc = entrevistadores.find((x) => x.email === email) || null;
   const { error } = rol === 'entrevistador'
-    ? await sb.rpc('entrevistador_upsert', { p_email: email, p_nombre: nombre || null, p_password: pass, p_sectores: alc?.sectores || [], p_yacimientos: alc?.yacimientos || [], p_puestos: alc?.puestos || [] })
+    ? await sb.rpc('entrevistador_upsert', { p_email: email, p_nombre: nombre || null, p_password: pass, p_sectores: alc?.sectores || [], p_yacimientos: alc?.yacimientos || [], p_puestos: alc?.puestos || [], p_subsectores: alc?.subsectores || [] })
     : await sb.rpc(rol === 'lector' ? 'lector_upsert' : 'staff_upsert_user', { p_email: email, p_nombre: nombre || null, p_password: pass });
   if (error) { toast(error.message, 'error'); return; }
   showPassword(title, email, pass);
@@ -170,6 +171,7 @@ let entrevistadores = [];
 function opcionesAlcance() {
   return {
     sectores: opcionesDe(state.candidates.map((c) => c.servicio), state.positions.map((p) => p.sector)),
+    subsectores: opcionesDe(SUBSECTORES, state.candidates.map((c) => c.subsector)),
     yacimientos: opcionesDe(state.candidates.map((c) => c.area), state.positions.map((p) => p.yacimiento)),
     puestos: opcionesDe(state.candidates.map((c) => c.posicion)),
   };
@@ -181,16 +183,17 @@ function alcanceCampos(a = {}) {
   const grupo = (name, titulo, vals, sel) => html`<fieldset class="u-grupo"><legend>${titulo}</legend><div class="checks">
     ${vals.map((v) => html`<label class="check chip-check"><input type="checkbox" name="${name}" value="${v}" ${marcado(sel, v) ? html`checked` : ''}> ${v}</label>`)}</div></fieldset>`;
   return html`${grupo('a_sector', 'Sectores', o.sectores, a.sectores)}
+    ${grupo('a_sub', 'Especialidad (sin marcar = todas)', o.subsectores, a.subsectores)}
     ${grupo('a_yac', 'Yacimientos (sin marcar = todos)', o.yacimientos, a.yacimientos)}
     <details class="u-puestos" ${(a.puestos || []).length ? html`open` : ''}><summary>Limitar a puestos (sin marcar = todos)</summary>${grupo('a_puesto', 'Puestos', o.puestos, a.puestos)}</details>`;
 }
 
 function leerAlcance(form) {
   const v = (n) => [...form.querySelectorAll(`input[name="${n}"]:checked`)].map((i) => i.value);
-  return { sectores: v('a_sector'), yacimientos: v('a_yac'), puestos: v('a_puesto') };
+  return { sectores: v('a_sector'), subsectores: v('a_sub'), yacimientos: v('a_yac'), puestos: v('a_puesto') };
 }
 
-const resumenAlcance = (u) => [u.sectores.join(', '), u.yacimientos.length ? u.yacimientos.join(', ') : 'todos los yacimientos', u.puestos.length ? u.puestos.join(', ') : ''].filter(Boolean).join(' · ');
+const resumenAlcance = (u) => [u.sectores.join(', '), (u.subsectores || []).join(', '), u.yacimientos.length ? u.yacimientos.join(', ') : 'todos los yacimientos', u.puestos.length ? u.puestos.join(', ') : ''].filter(Boolean).join(' · ');
 
 async function loadEntrevistadores(el) {
   const box = el.querySelector('#e-list');
@@ -219,7 +222,7 @@ function editarAlcance(el, email) {
     e.preventDefault();
     const a = leerAlcance(e.target);
     if (!a.sectores.length) { toast('Elegí al menos un sector para el entrevistador.', 'error'); return; }
-    const { error } = await sb.rpc('entrevistador_upsert', { p_email: email, p_nombre: e.target.nombre.value.trim() || null, p_password: null, p_sectores: a.sectores, p_yacimientos: a.yacimientos, p_puestos: a.puestos });
+    const { error } = await sb.rpc('entrevistador_upsert', { p_email: email, p_nombre: e.target.nombre.value.trim() || null, p_password: null, p_sectores: a.sectores, p_yacimientos: a.yacimientos, p_puestos: a.puestos, p_subsectores: a.subsectores });
     if (error) { toast(error.message, 'error'); return; }
     toast('Alcance actualizado', 'ok'); closeDrawer(); loadEntrevistadores(el);
   });

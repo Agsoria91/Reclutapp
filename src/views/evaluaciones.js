@@ -38,7 +38,7 @@ export function renderEvaluaciones(el, tab, tabs) {
     : [...lista].sort((a, b) => (b.p?.pct ?? -1) - (a.p?.pct ?? -1) || a.c.nombre.localeCompare(b.c.nombre, 'es'));
   const prom = eval_.filter((x) => x.p).length ? Math.round(eval_.filter((x) => x.p).reduce((s, x) => s + x.p.pct, 0) / eval_.filter((x) => x.p).length) : 0;
   const conEtq = (t) => eval_.filter((x) => x.etq.includes(t)).length;
-  const quienes = porEntrevistador();
+
 
   el.innerHTML = String(html`
   ${mHead({ titulo: 'Entrevistas', sub: `${pend.length} por entrevistar · ${eval_.length} evaluados` })}
@@ -46,10 +46,9 @@ export function renderEvaluaciones(el, tab, tabs) {
     { icono: 'entrevistas', label: 'Por entrevistar', valor: pend.length, id: 'ev-pend', attrs: 'data-evvista="pend"', sel: vista === 'pend', sub: 'CV recibido o en entrevista, sin evaluar' },
     { icono: 'candidatos', label: 'Evaluados', valor: eval_.length, id: 'ev-ok', attrs: 'data-evvista="eval"', sel: vista === 'eval', sub: `puntaje promedio ${prom}%` },
     { icono: 'alta', label: 'Destacados', valor: dest.length, id: 'ev-dest', tono: 'ok', attrs: 'data-evvista="dest"', sel: vista === 'dest', sub: '80 % o más' },
-    { icono: 'usuarios', label: 'Entrevistadores', valor: quienes.length, id: 'ev-quien', attrs: 'data-evvista="quien"', sel: vista === 'quien', sub: 'historial por persona' },
   ])}
   ${mTabs('entrevistas', tabs, tab)}
-  <div class="m-cuerpo">${vista === 'quien' ? tablaQuienes(quienes) : html`<section class="card">
+  <div class="m-cuerpo">${html`<section class="card">
     <header class="list-head ev-head">
       <input type="search" class="ev-buscar" placeholder="Buscar nombre, área o puesto" value="${buscar}" aria-label="Buscar">
       ${vista !== 'pend' ? html`<div class="ev-etqs">${ETIQUETAS.map((t) => { const n = conEtq(t); return n ? html`<button type="button" class="chip ${etiqueta === t ? 'is-on' : ''}" data-evetq="${t}" aria-pressed="${etiqueta === t}">${t} <small>${n}</small></button>` : ''; })}</div>` : ''}
@@ -61,7 +60,7 @@ export function renderEvaluaciones(el, tab, tabs) {
         <td>${stagePill(c.stage, { small: true })}</td>
         <td class="hide-sm">${vista === 'pend' ? (c.en_entrevista ? fmtDate(c.en_entrevista) : html`<span class="muted">a coordinar</span>`) : fmtDate(fecha)}</td>
         <td>${barraPuntaje(p, { chica: true })}</td>
-        <td class="hide-sm">${vista === 'pend' ? (c.servicio || html`<span class="muted">sin sector</span>`) : evs.map((e) => html`<span class="ev-quienes">${e.evaluador_nombre || '—'}${decisionChip(e.decision)}</span>`)}</td>
+        <td class="hide-sm">${vista === 'pend' ? ([c.servicio, c.subsector].filter(Boolean).join(" · ") || html`<span class="muted">sin sector</span>`) : evs.map((e) => html`<span class="ev-quienes">${e.evaluador_nombre || '—'}${decisionChip(e.decision)}</span>`)}</td>
         <td class="hide-sm">${etq.map((t) => html`<span class="chip chip--sm">${t}</span>`)}</td>
       </tr>`)}</tbody></table></div>`
     : mascot('empty', { compact: true, size: 110, text: vista === 'pend' ? 'No hay candidatos pendientes de entrevista.' : 'Todavía no hay evaluaciones.' })}
@@ -89,24 +88,3 @@ export function renderEvaluaciones(el, tab, tabs) {
   }
 }
 
-// Historial por entrevistador: cuántas entrevistas, puntaje promedio y decisiones
-function porEntrevistador() {
-  const m = new Map();
-  for (const ev of state.evaluaciones || []) {
-    if (!tieneEvaluacion(ev)) continue;
-    const k = ev.evaluador;
-    if (!m.has(k)) m.set(k, { nombre: ev.evaluador_nombre || '—', rol: ev.rol, evs: [] });
-    m.get(k).evs.push(ev);
-  }
-  return [...m.values()].map((x) => ({ ...x, n: x.evs.length, p: puntajeGrupo(x.evs), ok: x.evs.filter((e) => e.decision === 'aprobado').length,
-    no: x.evs.filter((e) => e.decision === 'rechazado').length, ultima: x.evs.map((e) => e.fecha).sort().at(-1) }))
-    .sort((a, b) => b.n - a.n || a.nombre.localeCompare(b.nombre, 'es'));
-}
-
-function tablaQuienes(qs) {
-  return html`<section class="card">${qs.length ? html`<div class="table-wrap"><table class="tbl">
-    <thead><tr><th>Entrevistador</th><th class="num">Entrevistas</th><th>Puntaje promedio</th><th class="num">Aprobó</th><th class="num">Rechazó</th><th class="hide-sm">Última</th></tr></thead>
-    <tbody>${qs.map((q) => html`<tr><td><strong>${q.nombre}</strong><small class="muted block">${q.rol === 'rrhh' ? 'RRHH' : 'Entrevistador'}</small></td>
-      <td class="num">${q.n}</td><td>${barraPuntaje(q.p, { chica: true })}</td><td class="num">${q.ok}</td><td class="num">${q.no}</td><td class="hide-sm">${fmtDate(q.ultima)}</td></tr>`)}</tbody>
-  </table></div>` : mascot('empty', { compact: true, size: 110, text: 'Todavía no hay evaluaciones.' })}</section>`;
-}
