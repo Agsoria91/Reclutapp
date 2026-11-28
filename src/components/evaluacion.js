@@ -1,19 +1,41 @@
-// Pestaña "Evaluación" de la ficha: habilidades 1 a 5, puntaje en vivo, etiquetas y comentario.
+// Evaluación de entrevista: formulario propio (habilidades 1 a 5, observaciones y comentario)
+// y, para RRHH, las evaluaciones de los demás entrevistadores en modo lectura.
 import { html, raw } from '../lib/html.js';
-import { CRITERIOS, ETIQUETAS, puntaje } from '../lib/evaluacion.js';
+import { CRITERIOS, ETIQUETAS, puntaje, puntajeGrupo } from '../lib/evaluacion.js';
 import { fmtDate } from '../lib/format.js';
 
 export function barraPuntaje(p, { chica = false } = {}) {
   if (!p) return html`<span class="ev-sin">Sin evaluar</span>`;
-  return html`<span class="ev-barra ev--${p.tono} ${chica ? 'ev-barra--chica' : ''}" title="${p.nivel} · ${p.calificados} de ${p.total} habilidades calificadas">
-    <span class="ev-track"><span style="width:${p.pct}%"></span></span><b>${p.pct}%</b>${chica ? '' : html`<em>${p.nivel}</em>`}</span>`;
+  return html`<span class="ev-barra ev--${p.tono} ${chica ? 'ev-barra--chica' : ''}" title="${p.nivel}${p.varias ? ` · promedio de ${p.calificados} evaluaciones` : ''}">
+    <span class="ev-track"><span style="width:${p.pct}%"></span></span><b>${p.pct}%</b>${chica ? '' : html`<em>${p.nivel}${p.varias ? ` · promedio de ${p.calificados}` : ''}</em>`}</span>`;
 }
 
-export function evaluacionPane(c) {
-  const ev = c.evaluacion || {};
+const DECISION = { aprobado: ['Aprobó la entrevista', 'ok'], rechazado: ['Rechazó', 'no'] };
+export const decisionChip = (d) => (d && DECISION[d] ? html`<span class="ev-dec ev-dec--${DECISION[d][1]}">${DECISION[d][0]}</span>` : '');
+
+// Evaluación de otra persona (solo lectura)
+export function tarjetaEval(ev) {
+  const p = puntaje(ev);
+  return html`<article class="ev-otra">
+    <header><b>${ev.evaluador_nombre || 'Entrevistador'}</b> <small class="muted">${ev.rol === 'rrhh' ? 'RRHH' : 'Entrevistador'} · ${fmtDate(ev.fecha)}</small>${decisionChip(ev.decision)}</header>
+    ${barraPuntaje(p, { chica: true })}
+    <p class="ev-notas small">${CRITERIOS.map(([k, l]) => html`<span>${l}: <b>${ev[k] || '–'}</b></span>`)}</p>
+    ${(ev.etiquetas || []).length ? html`<p>${ev.etiquetas.map((t) => html`<span class="chip chip--sm">${t}</span>`)}</p>` : ''}
+    ${ev.comentario ? html`<p class="ev-coment">${ev.comentario}</p>` : ''}
+  </article>`;
+}
+
+export function evaluacionPane(mia, { otros = [], titulo = '' } = {}) {
+  const ev = mia || {};
+  const todas = [...otros, ...(mia ? [mia] : [])];
   return html`<div class="ev-pane">
+    ${otros.length ? html`<section class="ev-otras">
+      <div class="ev-total">${barraPuntaje(puntajeGrupo(todas))}</div>
+      ${otros.map(tarjetaEval)}
+    </section>` : ''}
+    ${titulo ? html`<h3 class="ev-tit">${titulo}</h3>` : ''}
     <div class="ev-total" data-ev-total>${barraPuntaje(puntaje(ev))}</div>
-    ${ev.fecha ? html`<p class="ev-quien small muted" data-ev-por="${ev.por || ''}">Evaluado el ${fmtDate(ev.fecha)}</p>` : ''}
+    ${ev.fecha ? html`<p class="ev-quien small muted">Última actualización: ${fmtDate(ev.fecha)}</p>` : ''}
     <div class="ev-criterios">
       ${CRITERIOS.map(([k, label]) => html`<fieldset class="ev-fila"><legend>${label}</legend>
         <div class="ev-escala" role="radiogroup" aria-label="${label}">
@@ -43,9 +65,20 @@ export function bindEvaluacion(root, form) {
     if (!String(e.target.name || '').startsWith('ev_')) return;
     total.innerHTML = String(barraPuntaje(puntaje(leerEvaluacion(form))));
   });
-  const quien = root.querySelector('[data-ev-por]');
-  if (quien?.dataset.evPor) {
-    import('../lib/supabase.js').then(({ sb }) => sb.rpc('nombre_de_usuario', { p_uid: quien.dataset.evPor }))
-      .then(({ data }) => { if (data) quien.textContent += ` por ${data}`; }).catch(() => {});
+}
+
+// Guarda (o borra) la evaluación propia. Devuelve true si hubo cambios.
+export async function guardarEvaluacion(sb, candidateId, fila, previa) {
+  if (fila === undefined || fila?.sinCambios) return false;
+  if (fila === null) {
+    const { error } = await sb.from('evaluaciones').delete().eq('id', previa.id);
+    if (error) throw error;
+    return true;
   }
+  const datos = { actitud: fila.actitud, tecnico: fila.tecnico, experiencia: fila.experiencia, seguridad: fila.seguridad, etiquetas: fila.etiquetas, comentario: fila.comentario, fecha: fila.fecha };
+  const { error } = previa?.id
+    ? await sb.from('evaluaciones').update(datos).eq('id', previa.id)
+    : await sb.from('evaluaciones').insert({ ...datos, candidate_id: candidateId });
+  if (error) throw error;
+  return true;
 }

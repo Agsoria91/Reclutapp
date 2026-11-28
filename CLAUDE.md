@@ -25,7 +25,7 @@ ingreso → legajo/nómina. La usa RRHH a diario y jefaturas/gerencias como lect
 
 ## Reglas y criterios del usuario (respetar siempre)
 
-- **Privacidad**: Básico/sueldo, teléfono, mail y DNI nunca viajan al navegador sin sesión de RRHH. Se resuelve en la base: los lectores leen solo `positions_public` / `candidates_public`; las tablas completas tienen RLS `is_staff()`. Sin sesión habilitada no se lee nada (`puede_leer()`).
+- **Privacidad**: Básico/sueldo, teléfono, mail y DNI nunca viajan al navegador sin sesión de RRHH. Se resuelve en la base: los lectores leen solo `positions_public` / `candidates_public`; las tablas completas tienen RLS `is_staff()`. Sin sesión habilitada no se lee nada (`puede_leer()`). Los entrevistadores no tienen `puede_leer()`: solo acceden por funciones que recortan a su alcance.
 - Nada de datos personales en el repositorio (planillas `.csv/.xlsx` están en `.gitignore`). Las capturas y pruebas usan **datos ficticios** (`tests/visual/datos-demo.cjs`).
 - **Nada que consuma tokens** ni servicios pagos.
 - Lenguaje **profesional**, sin textos de ayuda en pantalla.
@@ -45,13 +45,13 @@ ingreso → legajo/nómina. La usa RRHH a diario y jefaturas/gerencias como lect
 
 ## Base de datos (tablas principales)
 
-`positions` (sillas), `candidates`, `position_candidates` (ternas), `position_history`, `nomina`, `sap_posiciones` (maestro SAP, solo RRHH), `stages` (etapas), `avisos` y `plantillas_aviso`, `vacantes_pj` (+ `_importaciones`), `staff` (RRHH), `lectores`, `stage_aliases`. Vistas para lectores: `positions_public`, `candidates_public`.
+`positions` (sillas), `candidates`, `position_candidates` (ternas), `position_history`, `nomina`, `sap_posiciones` (maestro SAP, solo RRHH), `stages` (etapas), `avisos` y `plantillas_aviso`, `vacantes_pj` (+ `_importaciones`), `staff` (RRHH), `lectores`, `entrevistadores`, `evaluaciones`, `stage_aliases`. Vistas para lectores: `positions_public`, `candidates_public`.
 Triggers relevantes: `tg_candidates_hitos` (las fechas adelantan la etapa salvo que la etapa se elija a mano), `tg_candidates_after` (sincroniza la silla: etapa, nombre, localidad y procedencia salen siempre de la ficha del candidato), `tg_touch` (updated_by), historial de sillas. Función `nombre_de_usuario(uuid)` para "Modificado por" (solo RRHH).
 
 ## Pruebas
 
 - Unitarias: `npm test` (`tests/*.test.js`).
-- Visuales: `npm run visual:base` (antes) → `npm run visual:nuevo` (después) → `npm run visual:comparar`. 74 pantallas con datos ficticios; ver `tests/visual/README.md`. Al agregar una pantalla, sumarla en `tests/visual/pantallas.cjs`.
+- Visuales: `npm run visual:base` (antes) → `npm run visual:nuevo` (después) → `npm run visual:comparar`. 78 pantallas con datos ficticios; ver `tests/visual/README.md`. Al agregar una pantalla, sumarla en `tests/visual/pantallas.cjs`.
 - Lección aprendida: al "limpiar" CSS no basta con las capturas (hay elementos transitorios: avisos, estados vacíos, diálogos). Solo quitar reglas que nombran clases inexistentes en el código.
 
 ## Historial de decisiones
@@ -66,7 +66,8 @@ Triggers relevantes: `tg_candidates_hitos` (las fechas adelantan la etapa salvo 
 - Fecha de ingreso: `positions.ingreso_previsto` (planificada) separada de `fecha_ingreso` (confirmada, solo en Próximo ingreso/Ingresado). La importación de sillas manda la fecha a prevista si la silla no está en esas etapas. Los previstos se ven en Agenda ("Ingreso previsto", color suave) y al pasar a Próximo ingreso se ofrece confirmarlos (ficha, silla y botón "Confirmar fecha" en Ingresos).
 - 24/12 (Nochebuena) y 31/12 (Fin de año) se marcan como no laborables en la Agenda todos los años (criterio del usuario).
 - Formularios: errores técnicos traducidos a castellano en `src/lib/errores.js` (se aplica solo en `toast(..., 'error')` y en las pantallas de error); al cerrar un panel a mano con cambios sin guardar se pregunta antes (`openDrawer`); los obligatorios llevan * y, si faltan, se marcan en rojo con el motivo debajo del campo (validación global en `ui.js`).
-- Evaluación de entrevista: `candidates.evaluacion` (jsonb, solo RRHH; no está en `candidates_public`). Cuatro habilidades generales 1 a 5 (actitud y predisposición, conocimiento técnico, experiencia en oil & gas, seguridad y trabajo en equipo), puntaje = promedio de lo calificado en %, niveles Destacado ≥80 / Adecuado ≥60 / A desarrollar; observaciones rápidas (etiquetas) y comentario del entrevistador; guarda fecha y autor solo cuando cambia. Pestaña "Evaluación" en la ficha y pestaña "Evaluaciones" en Entrevistas (por entrevistar, evaluados, destacados). Lógica en `src/lib/evaluacion.js`. Ítems por puesto: descartado por ahora (solo generales).
+- Evaluación de entrevista: tabla `evaluaciones` (una por entrevistador y candidato; autor, rol y nombre los pone el trigger `tg_evaluaciones_autor`). Cuatro habilidades 1 a 5 (actitud y predisposición, conocimiento técnico, experiencia en oil & gas, seguridad y trabajo en equipo), puntaje = promedio de lo calificado en %, niveles Destacado ≥80 / Adecuado ≥60 / A desarrollar; varias evaluaciones = promedio. Observaciones rápidas y comentario. RRHH ve todas (pestaña "Evaluación" de la ficha: la suya editable + las de otros) y en Entrevistas › Evaluaciones (por entrevistar, evaluados, destacados, historial por entrevistador). La columna vieja `candidates.evaluacion` quedó sin uso. Lógica en `src/lib/evaluacion.js`. Ítems por puesto: descartado por ahora.
+- Rol **Entrevistador** (supervisores): tabla `entrevistadores` (sectores obligatorios; yacimientos y puestos opcionales, vacío = todos), alta en Usuarios. Solo entra a "Mis entrevistas" (`src/views/misEntrevistas.js`); la base le da su lista con `mis_entrevistas()` (sin DNI/teléfono/mail/sueldo; incluye ruta del CV, política `cvs_entrevistador_select`). Ve y edita solo su propia evaluación; aprueba (→ Entrevista aprobada) o rechaza con motivo (→ Cancelado) con `entrevistador_decidir`, solo si el candidato está en CV recibido/Entrevista. Candidatos sin sector: solo RRHH. Alcance en `en_mi_alcance()`.
 - POS SAP: el maestro SAP manda; si quien figura en SAP está de baja en nómina, la POS se considera libre.
 
 ## Pendientes

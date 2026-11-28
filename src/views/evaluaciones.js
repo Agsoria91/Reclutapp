@@ -5,8 +5,8 @@ import { fmtDate, norm } from '../lib/format.js';
 import { stagePill } from '../components/ui.js';
 import { mHead, mKpis, mTabs } from '../components/moderno.js';
 import { mascot } from '../components/mascot.js';
-import { puntaje, tieneEvaluacion, ETIQUETAS } from '../lib/evaluacion.js';
-import { barraPuntaje } from '../components/evaluacion.js';
+import { puntajeGrupo, tieneEvaluacion, ETIQUETAS } from '../lib/evaluacion.js';
+import { barraPuntaje, decisionChip } from '../components/evaluacion.js';
 
 const POR_ENTREVISTAR = new Set(['cv_recibido', 'entrevista']);
 let vista = 'pend';
@@ -16,8 +16,10 @@ let buscar = '';
 export function elegirVistaEval(v) { vista = v; }
 
 function filas() {
-  const base = state.candidates.filter((c) => c.stage !== 'cancelado' || tieneEvaluacion(c.evaluacion))
-    .map((c) => ({ c, p: puntaje(c.evaluacion), ev: tieneEvaluacion(c.evaluacion) }));
+  const base = state.candidates.map((c) => {
+    const evs = (c._evals || []).filter(tieneEvaluacion);
+    return { c, evs, p: puntajeGrupo(evs), ev: evs.length > 0, etq: [...new Set(evs.flatMap((e) => e.etiquetas || []))], fecha: evs.map((e) => e.fecha).sort().at(-1) };
+  }).filter((x) => x.c.stage !== 'cancelado' || x.ev);
   const pend = base.filter((x) => !x.ev && POR_ENTREVISTAR.has(x.c.stage));
   const eval_ = base.filter((x) => x.ev);
   const dest = eval_.filter((x) => x.p && x.p.pct >= 80);
@@ -28,14 +30,15 @@ export function renderEvaluaciones(el, tab, tabs) {
   if (!state.isStaff) { el.innerHTML = String(mascot('empty', { title: 'Solo RRHH', text: 'Iniciá sesión con un usuario de RRHH.' })); return; }
   const { pend, eval_, dest } = filas();
   let lista = vista === 'pend' ? pend : vista === 'dest' ? dest : eval_;
-  if (etiqueta && vista !== 'pend') lista = lista.filter((x) => (x.c.evaluacion?.etiquetas || []).includes(etiqueta));
+  if (etiqueta && vista !== 'pend') lista = lista.filter((x) => x.etq.includes(etiqueta));
   const q = norm(buscar);
   if (q) lista = lista.filter((x) => norm([x.c.nombre, x.c.area, x.c.servicio, x.c.posicion].join(' ')).includes(q));
   lista = vista === 'pend'
     ? [...lista].sort((a, b) => (a.c.en_entrevista || a.c.cv_recibido || '9').localeCompare(b.c.en_entrevista || b.c.cv_recibido || '9'))
     : [...lista].sort((a, b) => (b.p?.pct ?? -1) - (a.p?.pct ?? -1) || a.c.nombre.localeCompare(b.c.nombre, 'es'));
   const prom = eval_.filter((x) => x.p).length ? Math.round(eval_.filter((x) => x.p).reduce((s, x) => s + x.p.pct, 0) / eval_.filter((x) => x.p).length) : 0;
-  const conEtq = (t) => eval_.filter((x) => (x.c.evaluacion?.etiquetas || []).includes(t)).length;
+  const conEtq = (t) => eval_.filter((x) => x.etq.includes(t)).length;
+  const quienes = porEntrevistador();
 
   el.innerHTML = String(html`
   ${mHead({ titulo: 'Entrevistas', sub: `${pend.length} por entrevistar · ${eval_.length} evaluados` })}
@@ -43,24 +46,26 @@ export function renderEvaluaciones(el, tab, tabs) {
     { icono: 'entrevistas', label: 'Por entrevistar', valor: pend.length, id: 'ev-pend', attrs: 'data-evvista="pend"', sel: vista === 'pend', sub: 'CV recibido o en entrevista, sin evaluar' },
     { icono: 'candidatos', label: 'Evaluados', valor: eval_.length, id: 'ev-ok', attrs: 'data-evvista="eval"', sel: vista === 'eval', sub: `puntaje promedio ${prom}%` },
     { icono: 'alta', label: 'Destacados', valor: dest.length, id: 'ev-dest', tono: 'ok', attrs: 'data-evvista="dest"', sel: vista === 'dest', sub: '80 % o más' },
+    { icono: 'usuarios', label: 'Entrevistadores', valor: quienes.length, id: 'ev-quien', attrs: 'data-evvista="quien"', sel: vista === 'quien', sub: 'historial por persona' },
   ])}
   ${mTabs('entrevistas', tabs, tab)}
-  <div class="m-cuerpo"><section class="card">
+  <div class="m-cuerpo">${vista === 'quien' ? tablaQuienes(quienes) : html`<section class="card">
     <header class="list-head ev-head">
       <input type="search" class="ev-buscar" placeholder="Buscar nombre, área o puesto" value="${buscar}" aria-label="Buscar">
       ${vista !== 'pend' ? html`<div class="ev-etqs">${ETIQUETAS.map((t) => { const n = conEtq(t); return n ? html`<button type="button" class="chip ${etiqueta === t ? 'is-on' : ''}" data-evetq="${t}" aria-pressed="${etiqueta === t}">${t} <small>${n}</small></button>` : ''; })}</div>` : ''}
     </header>
     ${lista.length ? html`<div class="table-wrap"><table class="tbl tbl--ev">
-      <thead><tr><th>Candidato</th><th>Etapa</th><th class="hide-sm">${vista === 'pend' ? 'Entrevista' : 'Evaluado'}</th><th>Puntaje</th><th class="hide-sm">Observaciones</th></tr></thead>
-      <tbody>${lista.map(({ c, p }) => html`<tr data-ev-cand="${c.id}" tabindex="0">
+      <thead><tr><th>Candidato</th><th>Etapa</th><th class="hide-sm">${vista === 'pend' ? 'Entrevista' : 'Evaluado'}</th><th>Puntaje</th><th class="hide-sm">${vista === 'pend' ? 'Sector' : 'Entrevistó'}</th><th class="hide-sm">Observaciones</th></tr></thead>
+      <tbody>${lista.map(({ c, p, evs, etq, fecha }) => html`<tr data-ev-cand="${c.id}" tabindex="0">
         <td><strong>${c.nombre}</strong><small class="muted block">${[c.area, c.servicio, c.posicion].filter(Boolean).join(' · ')}</small></td>
         <td>${stagePill(c.stage, { small: true })}</td>
-        <td class="hide-sm">${vista === 'pend' ? (c.en_entrevista ? fmtDate(c.en_entrevista) : html`<span class="muted">a coordinar</span>`) : fmtDate(c.evaluacion?.fecha)}</td>
+        <td class="hide-sm">${vista === 'pend' ? (c.en_entrevista ? fmtDate(c.en_entrevista) : html`<span class="muted">a coordinar</span>`) : fmtDate(fecha)}</td>
         <td>${barraPuntaje(p, { chica: true })}</td>
-        <td class="hide-sm">${(c.evaluacion?.etiquetas || []).map((t) => html`<span class="chip chip--sm">${t}</span>`)}</td>
+        <td class="hide-sm">${vista === 'pend' ? (c.servicio || html`<span class="muted">sin sector</span>`) : evs.map((e) => html`<span class="ev-quienes">${e.evaluador_nombre || '—'}${decisionChip(e.decision)}</span>`)}</td>
+        <td class="hide-sm">${etq.map((t) => html`<span class="chip chip--sm">${t}</span>`)}</td>
       </tr>`)}</tbody></table></div>`
     : mascot('empty', { compact: true, size: 110, text: vista === 'pend' ? 'No hay candidatos pendientes de entrevista.' : 'Todavía no hay evaluaciones.' })}
-  </section></div>`);
+  </section>`}</div>`);
 
   if (!el._evBound) {
     el._evBound = true;
@@ -82,4 +87,26 @@ export function renderEvaluaciones(el, tab, tabs) {
       const i = el.querySelector('.ev-buscar'); i.focus(); i.setSelectionRange(pos, pos);
     });
   }
+}
+
+// Historial por entrevistador: cuántas entrevistas, puntaje promedio y decisiones
+function porEntrevistador() {
+  const m = new Map();
+  for (const ev of state.evaluaciones || []) {
+    if (!tieneEvaluacion(ev)) continue;
+    const k = ev.evaluador;
+    if (!m.has(k)) m.set(k, { nombre: ev.evaluador_nombre || '—', rol: ev.rol, evs: [] });
+    m.get(k).evs.push(ev);
+  }
+  return [...m.values()].map((x) => ({ ...x, n: x.evs.length, p: puntajeGrupo(x.evs), ok: x.evs.filter((e) => e.decision === 'aprobado').length,
+    no: x.evs.filter((e) => e.decision === 'rechazado').length, ultima: x.evs.map((e) => e.fecha).sort().at(-1) }))
+    .sort((a, b) => b.n - a.n || a.nombre.localeCompare(b.nombre, 'es'));
+}
+
+function tablaQuienes(qs) {
+  return html`<section class="card">${qs.length ? html`<div class="table-wrap"><table class="tbl">
+    <thead><tr><th>Entrevistador</th><th class="num">Entrevistas</th><th>Puntaje promedio</th><th class="num">Aprobó</th><th class="num">Rechazó</th><th class="hide-sm">Última</th></tr></thead>
+    <tbody>${qs.map((q) => html`<tr><td><strong>${q.nombre}</strong><small class="muted block">${q.rol === 'rrhh' ? 'RRHH' : 'Entrevistador'}</small></td>
+      <td class="num">${q.n}</td><td>${barraPuntaje(q.p, { chica: true })}</td><td class="num">${q.ok}</td><td class="num">${q.no}</td><td class="hide-sm">${fmtDate(q.ultima)}</td></tr>`)}</tbody>
+  </table></div>` : mascot('empty', { compact: true, size: 110, text: 'Todavía no hay evaluaciones.' })}</section>`;
 }

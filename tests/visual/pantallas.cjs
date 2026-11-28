@@ -26,7 +26,7 @@ async function servidor() {
   fs.rmSync(OUT, { recursive: true, force: true }); fs.mkdirSync(OUT, { recursive: true });
   const srv = await servidor();
   const b = await chromium.launch(process.env.HTTPS_PROXY ? { proxy: { server: process.env.HTTPS_PROXY, bypass: 'localhost,127.0.0.1' } } : {});
-  async function page({ theme = 'light', mobile = false, staff = true } = {}) {
+  async function page({ theme = 'light', mobile = false, staff = true, entrev = false } = {}) {
     const ctx = await b.newContext(mobile ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : { viewport: { width: +(process.env.ANCHO || 1440), height: 900 }, deviceScaleFactor: 1 });
     // nada sale hacia la base real
     await ctx.route(/supabase\.co/, (r) => {
@@ -38,17 +38,20 @@ async function servidor() {
     p.on('pageerror', (e) => console.log('ERROR en la página:', e.message));
     await p.addInitScript(([t]) => { localStorage.setItem('reclutapp.theme', JSON.stringify(t)); localStorage.setItem('reclutapp.ultimoRespaldo', JSON.stringify(new Date().toISOString())); }, [theme]);
     await p.goto(URL + '/#/login', { waitUntil: 'networkidle' }); await p.waitForTimeout(600);
-    await p.evaluate(async ([d, stages, staff]) => {
+    // esperar a que la app termine de revisar la sesión (si no, pisa los datos de prueba)
+    await p.waitForFunction(async () => (await import('/src/lib/store.js')).state.authChecked === true, null, { timeout: 15000 });
+    await p.evaluate(async ([d, stages, staff, entrev]) => {
       const st = await import('/src/lib/store.js');
       const stageMap = Object.fromEntries(stages.map((s) => [s.code, s]));
       const seat = new Map(d.positions.filter((x) => x.candidate_id).map((x) => [x.candidate_id, x]));
-      d.candidates.forEach((c) => { c._silla = seat.get(c.id) || null; c._ternas = []; });
+      d.candidates.forEach((c) => { c._silla = seat.get(c.id) || null; c._ternas = []; c._evals = staff ? d.evaluaciones.filter((e) => e.candidate_id === c.id) : []; });
       d.positions.forEach((x) => { x._terna = []; });
       st.state.session = { user: { email: 'demo@ejemplo.com', id: 'x' } };
-      st.state.isStaff = staff; st.state.canRead = true; st.state.authChecked = true;
+      st.state.isStaff = staff; st.state.canRead = !entrev; st.state.isEntrevistador = entrev; st.state.authChecked = true;
       st.set({ stages, stageMap, positions: d.positions, candidates: d.candidates, nomina: staff ? d.nomina : [], hires: staff ? d.nomina.filter((n) => n.position_id) : [],
-        historial: [], avisos: [], plantillas: [], sap: [], loading: false, error: null, loadedAt: new Date() });
-    }, [JSON.parse(JSON.stringify(demo)), STAGES, staff]);
+        historial: [], avisos: [], plantillas: [], sap: [], evaluaciones: staff ? d.evaluaciones : [], misEntrevistas: entrev ? d.misEntrevistas : [], loading: false, error: null, loadedAt: new Date() });
+      if (entrev) { st.set({ positions: [], candidates: [], nomina: [] }); }
+    }, [JSON.parse(JSON.stringify(demo)), STAGES, staff, entrev]);
     return p;
   }
   const go = async (p, r, wait = 900) => { await p.evaluate((r) => { location.hash = '#/' + r; }, r); await p.waitForTimeout(wait); await p.evaluate(() => window.scrollTo(0, 0)); };
@@ -115,6 +118,7 @@ async function servidor() {
   await go(p, 'nomina'); await tab(p, 'listado'); await p.evaluate(() => document.querySelector('.tbl tbody tr')?.click()); await p.waitForTimeout(700); await snap(p, '44-nomina-ficha');
   await p.evaluate(async () => { (await import('/src/components/ui.js')).closeDrawer(); });
   await go(p, 'usuarios', 1200); await snap(p, '45-usuarios');
+  await p.check('input[name="rol"][value="entrevistador"]'); await p.waitForTimeout(400); await snap(p, '45b-usuarios-entrevistador');
   await go(p, 'presentar', 1200); await snap(p, '46-presentar');
   await go(p, 'historial?id=p1', 1200); await snap(p, '47-historial');
   await go(p, 'login', 900); await snap(p, '48-login');
@@ -159,6 +163,12 @@ async function servidor() {
   p = await page({ staff: false });
   await go(p, 'posiciones'); await snap(p, '22-lector-posiciones');
   await tab(p, 'etapas'); await snap(p, '22b-lector-etapas'); await tab(p, 'mapa');
+  await p.context().close();
+
+  // rol entrevistador (supervisor)
+  p = await page({ staff: false, entrev: true });
+  await go(p, 'misentrevistas', 1200); await snap(p, '75-entrevistador');
+  await p.click('[data-me-cand]'); await p.waitForTimeout(800); await snap(p, '76-entrevistador-ficha'); await p.check('input[name="me_dec"][value="rechazado"]'); await p.evaluate(() => { const b = document.querySelector('.drawer-body'); b.scrollTop = b.scrollHeight; }); await p.waitForTimeout(300); await snap(p, '76b-entrevistador-decision');
   await p.context().close();
 
   p = await page({ mobile: true });

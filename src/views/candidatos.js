@@ -1,4 +1,5 @@
-import { evaluacionPane, leerEvaluacion, bindEvaluacion } from '../components/evaluacion.js';
+import { MOTIVOS } from '../lib/motivos.js';
+import { evaluacionPane, leerEvaluacion, bindEvaluacion, guardarEvaluacion } from '../components/evaluacion.js';
 import { armarEvaluacion } from '../lib/evaluacion.js';
 import { html, raw, $ } from '../lib/html.js';
 import { state, loadAll, stageOrder, set } from '../lib/store.js';
@@ -357,7 +358,6 @@ function bind(el) {
 // fecha de cada etapa: al volver atrás se ofrece borrar las posteriores
 const FECHAS_ETAPA = [['en_entrevista', 'entrevista', 'la fecha de entrevista'], ['validacion_rrll', 'validacion_rrll', 'la validación RRLL'],
   ['epo', 'examen_medico', 'el envío a examen'], ['aptitud_recibida', 'apto', 'la aptitud'], ['fecha_ingreso', 'proximo_ingreso', 'la fecha de ingreso']];
-const MOTIVOS = ['No Califica', 'CV No Califica', 'Rechaza Propuesta', 'Secundario Incompleto', 'No Apto Medico', 'Sin vacante disponible', 'No se presenta', 'Otro'];
 
 // `volver`: si se abrió desde otra pantalla (p. ej. la silla), a dónde volver al terminar.
 export function openCandidate(id, { volver, pane } = {}) {
@@ -408,7 +408,10 @@ export function openCandidate(id, { volver, pane } = {}) {
           ${field('Comentarios', 'comentarios', c.comentarios, { type: 'textarea', span: 2 })}
         </div>
       </div>
-      <div class="ficha-pane" data-pane="evaluacion" hidden>${evaluacionPane(c)}</div>
+      <div class="ficha-pane" data-pane="evaluacion" hidden>${(() => {
+        const uid = state.session?.user?.id; const evs = c._evals || [];
+        return evaluacionPane(evs.find((x) => x.evaluador === uid), { otros: evs.filter((x) => x.evaluador !== uid), titulo: evs.some((x) => x.evaluador !== uid) ? 'Mi evaluación' : '' });
+      })()}</div>
       <div class="ficha-pane" data-pane="medico" hidden><div class="form-grid">${examenFields(c)}</div></div>
       <div class="ficha-pane" data-pane="datos" hidden>
         ${c.id ? html`<div class="cv-box">
@@ -484,8 +487,8 @@ export function openCandidate(id, { volver, pane } = {}) {
     data.motivos_baja = [...form.querySelectorAll('input[name="motivo"]:checked')].map((i) => i.value);
     delete data.motivo;
     Object.keys(data).filter((k) => k.startsWith('ev_')).forEach((k) => delete data[k]);
-    const ev = armarEvaluacion(leerEvaluacion(form), c.evaluacion || null, { hoy: todayISO(), uid: state.session?.user?.id });
-    if (ev !== undefined) data.evaluacion = ev;
+    const evPrevia = (c._evals || []).find((x) => x.evaluador === state.session?.user?.id) || null;
+    const evFila = armarEvaluacion(leerEvaluacion(form), evPrevia, { hoy: todayISO() });
     data.cancelado = data.stage === 'cancelado';
     data.entrevista_ok = stageOrder(data.stage) >= stageOrder('entrevista_aprobada') && !data.cancelado;
     data.listo_ingreso = ['proximo_ingreso', 'ingresado'].includes(data.stage);
@@ -523,10 +526,11 @@ export function openCandidate(id, { volver, pane } = {}) {
     const previo = c.id ? Object.fromEntries(Object.keys(data).map((k) => [k, c[k] ?? null])) : null;
     const sillaLiberada = c.id && data.stage === 'cancelado' && c.stage !== 'cancelado' && c._silla ? c._silla.id : null;
     const btn = e.submitter; btn.disabled = true;
-    const { error } = c.id ? await sb.from('candidates').update(data).eq('id', c.id) : await sb.from('candidates').insert(data);
+    const { data: nuevo, error } = c.id ? await sb.from('candidates').update(data).eq('id', c.id) : await sb.from('candidates').insert(data).select('id').single();
     btn.disabled = false;
     if (error) return toast(error.message, 'error');
     if (c.id) await sincronizarPersona(c, data);
+    try { await guardarEvaluacion(sb, c.id || nuevo?.id, evFila, evPrevia); } catch (err) { toast('No se pudo guardar la evaluación: ' + (err.message || err), 'error'); }
     const ingreso = data.stage === 'ingresado' && c.stage !== 'ingresado';
     if (c.id && !ingreso) {
       const cambio = data.stage !== c.stage ? `${c.nombre}: ${state.stageMap[data.stage]?.label || data.stage}` : 'Candidato guardado';
