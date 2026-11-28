@@ -1,6 +1,7 @@
 // Ilustraciones de estado (sin datos, error, éxito) en el mismo trazo de línea
 // que los íconos del menú. Paleta EFiS, sin texto.
 import { html, raw } from '../lib/html.js';
+import { mensajeError } from '../lib/errores.js';
 
 const MSG = {
   loading: ['Cargando datos', ''],
@@ -28,6 +29,7 @@ export function mascotSVG(stateName = 'empty', size = 120) {
 }
 
 export function mascot(stateName = 'loading', { title, text, size = 160, compact = false, action } = {}) {
+  if (stateName === 'error' && text) text = mensajeError(text);
   // cargando: silueta gris de la pantalla (encabezado, indicadores y listado) en lugar de la animación
   if (stateName === 'loading' && !title && !text) {
     const linea = (w) => `<span class="sk" style="width:${w}%"></span>`;

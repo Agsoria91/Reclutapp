@@ -91,6 +91,13 @@ async function servidor() {
   await abrir(async () => { (await import('/src/views/candidatos.js')).openCandidate(null); }, '33-nuevo-candidato');
   await abrir(async () => { (await import('/src/components/ui.js')).confirmDialog('¿Confirmar acción de prueba?', { ok: 'Confirmar' }); }, '34-dialogo');
   await abrir(async () => { (await import('/src/views/usuarios.js')).openChangePassword(); }, '35-contrasena');
+  // obligatorios, cambios sin guardar y error en castellano
+  const limpiar = async () => { await p.evaluate(async () => { (await import('/src/components/ui.js')).closeDrawer(); document.querySelectorAll('dialog, .drawer-root, .toast').forEach((x) => x.remove()); }); await p.waitForTimeout(300); };
+  await p.evaluate(async () => { (await import('/src/views/candidatos.js')).openCandidate(null); }); await p.waitForTimeout(700);
+  await p.click('.drawer button[type="submit"]'); await p.waitForTimeout(600); await snap(p, '35b-obligatorio'); await limpiar();
+  await p.evaluate(async () => { (await import('/src/views/candidatos.js')).openCandidate('c1'); }); await p.waitForTimeout(700);
+  await p.fill('.drawer input[name="nombre"]', 'Cambio de prueba'); await p.keyboard.press('Escape'); await p.waitForTimeout(500); await snap(p, '35c-sin-guardar'); await limpiar();
+  await p.evaluate(async () => { (await import('/src/components/ui.js')).toast('duplicate key value violates unique constraint "positions_pos_sap_key"', 'error'); }); await p.waitForTimeout(500); await snap(p, '35d-error'); await limpiar();
   await go(p, 'candidatos'); await tab(p, 'reporte'); await snap(p, '36-cand-reporte');
   await go(p, 'entrevistas'); await tab(p, 'tabla'); await snap(p, '37-entrev-tabla');
   await go(p, 'examenes'); await tab(p, 'graficos'); await snap(p, '38-exam-graf');

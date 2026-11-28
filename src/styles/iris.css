@@ -1574,3 +1574,8 @@ dialog.buscador::backdrop { background: rgba(8, 18, 14, .45); }
 .rv-acc { display: flex; gap: 6px; flex-wrap: wrap; }
 .rv-grupo + .rv-grupo { margin-top: 10px; padding-top: 6px; border-top: 2px solid var(--line); }
 .rv-var { display: inline-block; margin: 0 10px 4px 0; padding: 2px 8px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--line); }
+
+/* ---------- campos obligatorios y con error ---------- */
+.field:has(:required) > span::after { content: ' *'; color: var(--st-red); font-weight: 700; }
+.field.is-invalido > :is(input, select, textarea) { border-color: var(--st-red); box-shadow: 0 0 0 3px color-mix(in srgb, var(--st-red) 15%, transparent); }
+.field > small.field-error { color: var(--st-red); font-weight: 600; font-size: 12px; }
