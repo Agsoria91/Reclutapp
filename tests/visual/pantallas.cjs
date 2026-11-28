@@ -49,7 +49,7 @@ async function servidor() {
       st.state.session = { user: { email: 'demo@ejemplo.com', id: 'x' } };
       st.state.isStaff = staff; st.state.canRead = !entrev; st.state.isEntrevistador = entrev; st.state.authChecked = true;
       st.set({ stages, stageMap, positions: d.positions, candidates: d.candidates, nomina: staff ? d.nomina : [], hires: staff ? d.nomina.filter((n) => n.position_id) : [],
-        historial: [], avisos: [], plantillas: [], sap: [], evaluaciones: staff ? d.evaluaciones : [], misEntrevistas: entrev ? d.misEntrevistas : [], loading: false, error: null, loadedAt: new Date() });
+        historial: [], avisos: [], plantillas: [], sap: [], evaluaciones: staff ? d.evaluaciones : [], entrevistadores: staff ? d.entrevistadores : [], misEntrevistas: entrev ? d.misEntrevistas : [], loading: false, error: null, loadedAt: new Date() });
       if (entrev) { st.set({ positions: [], candidates: [], nomina: [] }); }
     }, [JSON.parse(JSON.stringify(demo)), STAGES, staff, entrev]);
     return p;
@@ -95,7 +95,8 @@ async function servidor() {
   await abrir(async () => { (await import('/src/components/ui.js')).confirmDialog('¿Confirmar acción de prueba?', { ok: 'Confirmar' }); }, '34-dialogo');
   await abrir(async () => { (await import('/src/views/usuarios.js')).openChangePassword(); }, '35-contrasena');
   // evaluación de entrevista
-  await go(p, 'entrevistas'); await tab(p, 'evaluaciones'); await snap(p, '35e-evaluaciones-pend');
+  await go(p, 'entrevistas'); await tab(p, 'control'); await snap(p, '35d2-centro-control');
+  await tab(p, 'evaluaciones'); await snap(p, '35e-evaluaciones-pend');
   await p.click('[data-evvista="eval"]'); await p.waitForTimeout(500); await snap(p, '35f-evaluaciones');
   await p.click('[data-ev-cand]'); await p.waitForTimeout(900); await snap(p, '35g-ficha-evaluacion');
   await p.evaluate(async () => { (await import('/src/components/ui.js')).closeDrawer(); document.querySelectorAll('dialog, .drawer-root').forEach((x) => x.remove()); }); await p.waitForTimeout(300);
@@ -167,8 +168,8 @@ async function servidor() {
 
   // rol entrevistador (supervisor)
   p = await page({ staff: false, entrev: true });
-  await go(p, 'misentrevistas', 1200); await snap(p, '75-entrevistador');
-  await p.click('[data-me-cand]'); await p.waitForTimeout(800); await snap(p, '76-entrevistador-ficha'); await p.check('input[name="me_dec"][value="rechazado"]'); await p.evaluate(() => { const b = document.querySelector('.drawer-body'); b.scrollTop = b.scrollHeight; }); await p.waitForTimeout(300); await snap(p, '76b-entrevistador-decision');
+  await go(p, 'misentrevistas', 1200); await snap(p, '75-entrevistador'); await p.click('[data-mevista="hist"]'); await p.waitForTimeout(400); await snap(p, '75b-entrevistador-historial'); await p.click('[data-mevista="pend"]'); await p.waitForTimeout(300);
+  await p.click('[data-me-cand]'); await p.waitForTimeout(800); await snap(p, '76-entrevistador-ficha'); await p.check('input[name="ev_dec"][value="rechazado"]'); await p.evaluate(() => { const b = document.querySelector('.drawer-body'); b.scrollTop = b.scrollHeight; }); await p.waitForTimeout(300); await snap(p, '76b-entrevistador-decision');
   await p.context().close();
 
   p = await page({ mobile: true });

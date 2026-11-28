@@ -21,6 +21,7 @@ export function items() {
     .filter((p) => { const c = byId.get(p.candidate_id); return !c || preingresoProgress(c).missing.length; });
   const mes = monthKey(hoy);
   return [
+    ['entrevistas', (state.evaluaciones || []).filter((ev) => ev.revision === 'pendiente').length, (n) => `${n} ${n === 1 ? 'resultado de entrevista' : 'resultados de entrevista'} para revisar`, 'alerta'],
     ['avisar', pendientesDeAviso().length, (n) => `${n} ${n === 1 ? 'aviso pendiente' : 'avisos pendientes'}`, 'aviso'],
     ['demorados', state.candidates.filter((c) => estaDemorado(c, hoy)).length, (n) => `${n} ${n === 1 ? 'proceso demorado' : 'procesos demorados'}`, 'alerta'],
     ['interconsulta', state.candidates.filter((c) => c.epo && estadoMedico(c).code === 'interconsulta').length, (n) => `${n} ${n === 1 ? 'interconsulta abierta' : 'interconsultas abiertas'}`, 'aviso'],
@@ -41,7 +42,10 @@ export function paraHoy() {
 
 // Lleva a la pantalla con el filtro aplicado
 export async function irA(k) {
-  if (k === 'avisar' || k === 'demorados') {
+  if (k === 'entrevistas') {
+    (await import('./ui.js')).saveLocal('reclutapp.tab.entrevistas', 'control');
+    if (location.hash.startsWith('#/entrevistas')) window.dispatchEvent(new HashChangeEvent('hashchange')); else location.hash = '#/entrevistas';
+  } else if (k === 'avisar' || k === 'demorados') {
     const m = await import('../views/candidatos.js');
     m.elegirRapido(k);
     const { saveLocal } = await import('./ui.js');

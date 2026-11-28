@@ -76,21 +76,26 @@ function datos() {
   // evaluaciones de entrevista ficticias
   const ETQ = ['Buena actitud', 'Muy predispuesto', 'Joven sin experiencia', 'Disponible para diagramas de campo', 'Potencial para otro puesto', 'Requiere capacitación'];
   const evaluaciones = [];
-  const EVAL = [['x', 'RRHH Demo', 'rrhh'], ['sup1', 'Supervisor Mantenimiento', 'entrevistador'], ['sup2', 'Supervisor Producción', 'entrevistador']];
+  const SUBS = ['Mecánico', 'Eléctrico', 'Generación', 'Instrumentación'];
+  candidates.forEach((c, i) => { if (/manten/i.test(c.servicio || '')) c.subsector = SUBS[i % 4]; });
+  const CAT = ['Ingresante sin experiencia', 'Ayudante', 'Medio oficial', 'Oficial', 'Especializado'];
+  const EVAL = [['x', 'RRHH Demo', 'rrhh', 'rrhh@ejemplo.com'], ['sup1', 'Supervisor Mantenimiento', 'entrevistador', 'sup1@ejemplo.com'], ['sup2', 'Supervisor Producción', 'entrevistador', 'sup2@ejemplo.com']];
+  const entrevistadores = [{ email: 'sup1@ejemplo.com', nombre: 'Supervisor Mantenimiento', sectores: ['Mantenimiento'], subsectores: ['Mecánico', 'Eléctrico'], yacimientos: [], puestos: [] },
+    { email: 'sup2@ejemplo.com', nombre: 'Supervisor Producción', sectores: ['Producción'], subsectores: [], yacimientos: ['LT2E', 'LT1N'], puestos: [] }];
   candidates.filter((c) => !['cv_recibido', 'entrevista', 'cancelado'].includes(c.stage)).slice(0, 26).forEach((c, i) => {
     const n = () => 2 + Math.floor(r() * 4);
     const quienes = i % 3 === 0 ? [EVAL[0], EVAL[1 + (i % 2)]] : [EVAL[i % 3]];
-    quienes.forEach(([ev, nombre, rol], j) => evaluaciones.push({ id: `e${i}-${j}`, candidate_id: c.id, evaluador: ev, evaluador_nombre: nombre, rol, actitud: n(), tecnico: n(), experiencia: i % 4 === 0 ? 1 : n(), seguridad: i % 5 === 0 ? null : n(),
+    quienes.forEach(([ev, nombre, rol, email], j) => evaluaciones.push({ id: `e${i}-${j}`, candidate_id: c.id, evaluador: ev, evaluador_nombre: nombre, evaluador_email: email, categoria_sugerida: CAT[(i + j) % 5], revision: rol === 'entrevistador' ? (i % 5 === 0 ? 'pendiente' : 'confirmada') : null, motivo: null, actitud: n(), tecnico: n(), experiencia: i % 4 === 0 ? 1 : n(), seguridad: i % 5 === 0 ? null : n(),
       etiquetas: [ETQ[(i + j) % 6], ...(i % 3 === 0 ? [ETQ[(i + 2) % 6]] : [])], comentario: (i + j) % 2 ? 'Buena comunicación, conoce el trabajo en turnos.' : null, decision: rol === 'entrevistador' ? (i % 4 ? 'aprobado' : 'rechazado') : null, fecha: fecha(10, 1) }));
   });
   // ingresos previstos (Agenda) y uno en Próximo ingreso sin fecha confirmada
   positions.filter((p) => ['cv_recibido', 'entrevista'].includes(p.stage)).slice(0, 4).forEach((p, i) => { p.ingreso_previsto = rel(3 + i * 4); });
   const pi = positions.find((p) => p.stage === 'proximo_ingreso'); if (pi) { pi.ingreso_previsto = rel(9); pi.fecha_ingreso = null; }
   // lista del entrevistador (lo que devuelve mis_entrevistas: sin datos personales)
-  const misEntrevistas = candidates.filter((c) => /manten/i.test(c.servicio || '')).filter((c) => ['cv_recibido', 'entrevista'].includes(c.stage) || evaluaciones.some((e) => e.candidate_id === c.id && e.evaluador === 'sup1'))
-    .map((c) => ({ id: c.id, nombre: c.nombre, area: c.area, servicio: c.servicio, posicion: c.posicion, stage: c.stage, cv_recibido: c.cv_recibido, en_entrevista: c.en_entrevista, localidad: c.localidad, procedencia: c.procedencia, cv_path: null,
+  const misEntrevistas = candidates.filter((c) => /manten/i.test(c.servicio || '')).filter((c) => ['cv_recibido', 'entrevista'].includes(c.stage) || c.en_entrevista || evaluaciones.some((e) => e.candidate_id === c.id && e.evaluador === 'sup1'))
+    .map((c) => ({ id: c.id, nombre: c.nombre, area: c.area, servicio: c.servicio, subsector: c.subsector, posicion: c.posicion, stage: c.stage, cv_recibido: c.cv_recibido, en_entrevista: c.en_entrevista, localidad: c.localidad, procedencia: c.procedencia, cv_path: null,
       evaluacion: evaluaciones.find((e) => e.candidate_id === c.id && e.evaluador === 'sup1') || null }));
-  return { candidates, positions, nomina, evaluaciones, misEntrevistas };
+  return { candidates, positions, nomina, evaluaciones, misEntrevistas, entrevistadores };
 };
 
 const STAGES = [{"code":"sin_candidato","label":"Sin candidato","orden":0,"color":"neutral","es_activa":false},{"code":"cv_recibido","label":"CV Recibido","orden":10,"color":"sky","es_activa":true},{"code":"entrevista","label":"Entrevista","orden":20,"color":"blue","es_activa":true},{"code":"entrevista_aprobada","label":"Entrevista Aprobada","orden":30,"color":"navy","es_activa":true},{"code":"validacion_rrll","label":"Validación RRLL","orden":40,"color":"plum","es_activa":true},{"code":"propuesta","label":"Propuesta / Oferta","orden":50,"color":"violet","es_activa":true},{"code":"examen_medico","label":"Examen Médico","orden":60,"color":"orange","es_activa":true},{"code":"apto","label":"Apto","orden":70,"color":"yellow","es_activa":true},{"code":"proximo_ingreso","label":"Próximo ingreso","orden":80,"color":"lime","es_activa":true},{"code":"ingresado","label":"Ingresado","orden":90,"color":"green","es_activa":false},{"code":"cancelado","label":"Cancelado","orden":99,"color":"red","es_activa":false}];

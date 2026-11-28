@@ -9,6 +9,7 @@ import { mHead, mBarra, mChips, mPanel, mKpis, mTabs, subTab } from '../componen
 import { filterGroup, toggleFilter, kpi, bars, saveLocal, loadLocal, serializeFilters, restoreFilters, animateIn, prevSize } from '../components/ui.js';
 import { mascot } from '../components/mascot.js';
 import { renderEvaluaciones } from './evaluaciones.js';
+import { renderControl } from './controlEntrevistas.js';
 
 const DIMS = ['area', 'sector', 'procedencia', 'mes'];
 const KEY = 'reclutapp.ent.filters';
@@ -40,9 +41,10 @@ const pctTxt = (v) => (v == null ? '—' : v + '%');
 export function render(el) {
   if (state.loading && !state.candidates.length) { el.innerHTML = String(mascot('loading')); return; }
   if (state.error) { el.innerHTML = String(mascot('error', { text: state.error })); return; }
-  const TABS = [...(state.isStaff ? [['evaluaciones', 'Evaluaciones']] : []), ['graficos', 'Embudo y meses'], ['tabla', 'Efectividad por grupo']];
+  const TABS = [...(state.isStaff ? [['control', 'Centro de control'], ['evaluaciones', 'Evaluaciones']] : []), ['graficos', 'Embudo y meses'], ['tabla', 'Efectividad por grupo']];
   const tab = subTab('entrevistas', TABS.map(([k]) => k), state.isStaff ? 'evaluaciones' : 'graficos');
   if (tab === 'evaluaciones') { renderEvaluaciones(el, tab, TABS); animateIn(el); return; }
+  if (tab === 'control') { renderControl(el, tab, TABS); animateIn(el); return; }
 
   const SM = state.stageMap;
   const rows = filterRows(null);

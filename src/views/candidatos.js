@@ -1,6 +1,6 @@
 import { MOTIVOS } from '../lib/motivos.js';
 import { evaluacionPane, leerEvaluacion, bindEvaluacion, guardarEvaluacion } from '../components/evaluacion.js';
-import { armarEvaluacion } from '../lib/evaluacion.js';
+import { armarEvaluacion, SUBSECTORES } from '../lib/evaluacion.js';
 import { html, raw, $ } from '../lib/html.js';
 import { state, loadAll, stageOrder, set } from '../lib/store.js';
 import { sb } from '../lib/supabase.js';
@@ -395,6 +395,7 @@ export function openCandidate(id, { volver, pane } = {}) {
           ${field('Etapa', 'stage', c.stage, { options: stageOpts, hint: c._silla ? 'Se refleja en su silla.' : '' })}
           ${pickField('Área', 'area', c.area, [state.candidates.map((x) => x.area), state.positions.map((x) => x.yacimiento)])}
           ${pickField('Servicio / Sector', 'servicio', c.servicio, state.candidates.map((x) => x.servicio))}
+          ${pickField('Especialidad', 'subsector', c.subsector, [SUBSECTORES, state.candidates.map((x) => x.subsector)])}
           ${pickField('Posición', 'posicion', c.posicion, state.candidates.map((x) => x.posicion))}
           ${pickField('Procedencia', 'procedencia', c.procedencia, [state.candidates.map((x) => x.procedencia), state.positions.map((x) => x.procedencia)])}
           ${field('CV recibido', 'cv_recibido', c.cv_recibido, { type: 'date' })}
